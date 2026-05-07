@@ -1,8 +1,8 @@
-function CallItem({ call }) {
+function CallItem({ call, onSelectCall }) {
   const formattedDate = new Date(call.created_at).toLocaleString()
 
     return (
-      <div>
+      <div onClick={() => onSelectCall(call.id)}>
         <p>direction: {call.direction}</p>
         <p>from: {call.from}</p>
         <p>to: {call.to}</p>
