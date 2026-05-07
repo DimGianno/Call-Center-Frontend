@@ -36,3 +36,5 @@ const calls = [
         ]
     }
 ];
+
+export default calls;
