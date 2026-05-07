@@ -17,7 +17,9 @@ function App() {
         <p>Total calls: {calls.length}</p>
       </div>
       <div>
-        {calls.map((call) => {
+        {calls
+        .filter((call) => call.is_archived === false)
+        .map((call) => {
           return (
           <div key={call.id} className="call-card">
             <p><strong>direction:</strong> {call.direction}</p>
