@@ -293,45 +293,99 @@ button {
 }
 
 /* =========================
-   Popup bubble
+   Centered call details modal
    ========================= */
 
-.popup-bubble {
+.modal-overlay {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
+  inset: 0;
   z-index: 100;
 
-  width: 340px;
-  max-width: calc(100vw - 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  padding: 20px;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.call-details-modal {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+
+  padding: 24px;
   background: var(--color-surface);
+  color: var(--color-text-main);
+
   border: 1px solid var(--color-border);
   border-radius: var(--radius-popup);
   box-shadow: var(--shadow-popup);
-
-  color: var(--color-text-main);
 }
 
-.popup-bubble p {
-  margin: 6px 0;
-  font-size: 14px;
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  margin-bottom: 20px;
 }
 
-.popup-bubble h3 {
-  margin: 16px 0 8px;
-  font-size: 16px;
+.modal-header h2 {
+  margin: 0;
+  font-size: 22px;
   color: var(--color-text-heading);
 }
 
-.popup-bubble ul {
-  margin: 0;
-  padding-left: 20px;
+
+/* =========================
+   table styles for call details
+   ========================= */
+
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
 }
 
-.popup-bubble li {
-  font-size: 14px;
+.details-table tr {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.details-table tr:last-child {
+  border-bottom: none;
+}
+
+.details-table th,
+.details-table td {
+  padding: 14px 12px;
+  vertical-align: top;
+}
+
+.details-table th {
+  width: 160px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--color-text-heading);
+  background: var(--color-button-bg-hover);
+}
+
+.details-table td {
+  color: var(--color-text-main);
+}
+
+.details-notes {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.details-notes li {
+  margin-bottom: 6px;
+}
+
+.details-notes li:last-child {
+  margin-bottom: 0;
 }
 
 /* =========================
@@ -356,11 +410,31 @@ button {
     width: 100%;
   }
 
-  .popup-bubble {
-    left: 16px;
-    right: 16px;
-    bottom: 16px;
-    width: auto;
-    max-width: none;
+  .modal-overlay {
+    padding: 16px;
+    align-items: flex-start;
+  }
+
+  .call-details-modal {
+    max-height: calc(100vh - 32px);
+    padding: 18px;
+  }
+
+  .modal-header {
+    align-items: flex-start;
+  }
+
+  .details-table th,
+  .details-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .details-table th {
+    padding-bottom: 4px;
+  }
+
+  .details-table td {
+    padding-top: 4px;
   }
 }

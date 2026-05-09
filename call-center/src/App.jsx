@@ -81,31 +81,31 @@ function App() {
             <table className="details-table">
               <tbody>
                 <tr>
-                  <td><strong>Direction:</strong></td>
+                  <th><strong>Direction:</strong></th>
                   <td>{selectedCall.direction}</td>
                 </tr>
                 <tr>
-                  <td><strong>From:</strong></td>
+                  <th><strong>From:</strong></th>
                   <td>{selectedCall.from}</td>
                 </tr>
                 <tr>
-                  <td><strong>To:</strong></td>
+                  <th><strong>To:</strong></th>
                   <td>{selectedCall.to}</td>
                 </tr>
                 <tr>
-                  <td><strong>Type:</strong></td>
+                  <th><strong>Type:</strong></th>
                   <td>{selectedCall.call_type}</td>
                 </tr>
                 <tr>
-                  <td><strong>Duration:</strong></td>
+                  <th><strong>Duration:</strong></th>
                   <td>{selectedCall.duration} seconds</td>
                 </tr>
                 <tr>
-                  <td><strong>Date:</strong></td>
+                  <th><strong>Date:</strong></th>
                   <td>{new Date(selectedCall.created_at).toLocaleString()}</td>
                 </tr>
                 <tr>
-                  <td><strong>Notes:</strong></td>
+                  <th><strong>Notes:</strong></th>
                   <td>
                     {selectedCall.notes && selectedCall.notes.length > 0 ? (
                     <ul className="details-notes">
