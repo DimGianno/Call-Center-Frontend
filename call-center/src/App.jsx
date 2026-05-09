@@ -19,6 +19,8 @@ function App() {
     return call.id === selectedCallId;
   });
 
+  const activeCalls = calls.filter((call) => !call.is_archived);
+
   function handleArchiveCall(callId) {
     setCalls((currentCalls) => {
       return currentCalls.map((call) => {
@@ -46,9 +48,8 @@ function App() {
       <main className="dashboard">
         <section className="call-feed">
           <h2>Call Feed</h2>
-          {calls
-            .filter((call) => call.is_archived === false)
-            .map((call) => {
+          {activeCalls.length > 0 ? (
+            activeCalls.map((call) => {
               return (
                 <CallItem 
                   key={call.id} 
@@ -57,11 +58,14 @@ function App() {
                   onArchiveCall={handleArchiveCall}
                 />
               );
-            })}
+            })
+          ) : (
+            <p>No active calls to display.</p>
+          )}
         </section>
       </main>
 
-      //Display the selected call details in a popup bubble
+      {/* Display the selected call details in a popup bubble */}
       {selectedCall && (
         <div className="popup-bubble">
           <button 
