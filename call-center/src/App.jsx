@@ -67,34 +67,63 @@ function App() {
 
       {/* Display the selected call details in a popup bubble */}
       {selectedCall && (
-        <div className="popup-bubble">
-          <button 
-            className="close-button"
-            onClick={() => setSelectedCallId(null)}
-          >
-            Close
-          </button>
-          <h2>Selected Call Info:</h2>
-          <p>Direction: {selectedCall.direction}</p>
-          <p>From: {selectedCall.from}</p>
-          <p>To: {selectedCall.to}</p>
-          <p>Type: {selectedCall.call_type}</p>
-          <p>Duration: {selectedCall.duration} seconds</p>
-          <p>Date: {new Date(selectedCall.created_at).toLocaleString()}</p>
-          <p>Notes:</p>
-          {selectedCall.notes && selectedCall.notes.length > 0 ? (
-            <ul>
-              {selectedCall.notes.map((note) => (
-                <li key={note.id}>{note.content}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>No notes available for this call.</p>
-          )}
+        <div className="modal-overlay">
+          <div className="call-details-modal">
+            <div className="modal-header">
+              <h2>Selected Call Info:</h2>
+              <button 
+                className="close-button"
+                onClick={() => setSelectedCallId(null)}
+              >
+                Close
+              </button>
+            </div>
+            <table className="details-table">
+              <tbody>
+                <tr>
+                  <td><strong>Direction:</strong></td>
+                  <td>{selectedCall.direction}</td>
+                </tr>
+                <tr>
+                  <td><strong>From:</strong></td>
+                  <td>{selectedCall.from}</td>
+                </tr>
+                <tr>
+                  <td><strong>To:</strong></td>
+                  <td>{selectedCall.to}</td>
+                </tr>
+                <tr>
+                  <td><strong>Type:</strong></td>
+                  <td>{selectedCall.call_type}</td>
+                </tr>
+                <tr>
+                  <td><strong>Duration:</strong></td>
+                  <td>{selectedCall.duration} seconds</td>
+                </tr>
+                <tr>
+                  <td><strong>Date:</strong></td>
+                  <td>{new Date(selectedCall.created_at).toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td><strong>Notes:</strong></td>
+                  <td>
+                    {selectedCall.notes && selectedCall.notes.length > 0 ? (
+                    <ul className="details-notes">
+                      {selectedCall.notes.map((note) => (
+                        <li key={note.id}>{note.content}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span>No notes available for this call.</span>
+                  )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+ 
+          </div>
         </div>
       )}
-
-
     </div>
   )
 }
