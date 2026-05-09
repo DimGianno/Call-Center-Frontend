@@ -34,6 +34,22 @@ const calls = [
                 "content": "Customer left a message about their invoice"
             }
         ]
+    },
+    {
+        "id": "4",
+        "direction": "inbound",
+        "from": "+33 7 55 44 33 22",
+        "to": "+33 1 23 45 67 89",
+        "call_type": "voicemail",
+        "duration": 45,
+        "is_archived": false,
+        "created_at": "2025-04-09T09:15:00Z",
+        "notes": [
+            {
+                "id": "note-1",
+                "content": "Customer left a message about their invoice"
+            }
+        ]
     }
 ];
 

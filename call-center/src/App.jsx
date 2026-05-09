@@ -38,11 +38,27 @@ function App() {
             );
           })}
 
+        //Display the selected call details in a popup bubble
         {selectedCall && (
           <div className="popup-bubble">
             <button onClick={() => setSelectedCallId(null)}>Close</button>
             <p>Selected Call Info:</p>
-            <strong>{selectedCall.from}</strong>
+            <p>Direction: {selectedCall.direction}</p>
+            <p>From: {selectedCall.from}</p>
+            <p>To: {selectedCall.to}</p>
+            <p>Type: {selectedCall.call_type}</p>
+            <p>Duration: {selectedCall.duration} seconds</p>
+            <p>Date: {new Date(selectedCall.created_at).toLocaleString()}</p>
+            <p>Notes:</p>
+            {selectedCall.notes && selectedCall.notes.length > 0 ? (
+              <ul>
+                {selectedCall.notes.map((note) => (
+                  <li key={note.id}>{note.content}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>No notes available for this call.</p>
+            )}
           </div>
         )}
       </div>
