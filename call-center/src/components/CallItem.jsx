@@ -1,17 +1,28 @@
 function CallItem({ call, onSelectCall, onArchiveCall }) {
   const formattedDate = new Date(call.created_at).toLocaleString()
+  const isInbound = call.direction === "inbound";
+
 
     return (
       <div className="call-card" onClick={() => onSelectCall(call.id)}>
-        <div className="call-card-main">
-          <p>direction: {call.direction}</p>
-          <p>from: {call.from}</p>
-          <p>to: {call.to}</p>
-          <p>call_type: {call.call_type}</p>
-          <p>duration: {call.duration} seconds</p>
-          <p>is_archived: {call.is_archived.toString()}</p>
-          <p>created_at: {formattedDate}</p>
-          <p>notes: {call.notes?.length > 0 ? call.notes[0].content : 'No notes'}</p>
+        <div className="call-meta">
+          <div className={isInbound ? "direction inbound" : "direction outbound"}>
+            {isInbound ? "↙ Inbound" : "↘ Outbound"}
+          </div>
+          <span className={`call-type ${call.call_type}`}>
+            {call.call_type}
+          </span>
+        </div>
+
+        <div className="call-route">
+          <span>{call.from}</span>
+          <span className="arrow">→</span>
+          <span>{call.to}</span>
+        </div>
+
+        <div className="call-time">
+          <div>{formattedDate}</div>
+          <div>{call.duration} sec</div>
         </div>
 
         <button

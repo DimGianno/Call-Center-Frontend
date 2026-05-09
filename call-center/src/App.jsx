@@ -41,7 +41,6 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>Call Center Dashboard</h1>
-        <h2>Selected Call ID: {selectedCallId}</h2>
       </header>
 
       <main className="dashboard">
