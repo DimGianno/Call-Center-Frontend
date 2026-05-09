@@ -10,9 +10,14 @@ import CallItem from './components/CallItem'
 function App() {
   const [calls, setCalls] = useState(mockCalls)
   const [selectedCallId, setSelectedCallId] = useState(null);
+  
   function handleSelectCall(callId) {
     setSelectedCallId(callId);
   }
+
+  const selectedCall = calls.find((call) => {
+    return call.id === selectedCallId;
+  });
 
   return (
     <>
@@ -24,8 +29,22 @@ function App() {
         {calls
           .filter((call) => call.is_archived === false)
           .map((call) => {
-            return <CallItem key={call.id} call={call} onSelectCall={handleSelectCall} />
+            return (
+              <CallItem 
+                key={call.id} 
+                call={call} 
+                onSelectCall={handleSelectCall} 
+              />
+            );
           })}
+
+        {selectedCall && (
+          <div className="popup-bubble">
+            <button onClick={() => setSelectedCallId(null)}>Close</button>
+            <p>Selected Call Info:</p>
+            <strong>{selectedCall.from}</strong>
+          </div>
+        )}
       </div>
     </>
   )
