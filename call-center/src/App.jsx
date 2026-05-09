@@ -31,6 +31,7 @@ function App() {
 
   const activeCalls = calls.filter((call) => !call.is_archived);
 
+  
   const selectedCall = calls.find((call) => {
     return call.id === selectedCallId;
   });
