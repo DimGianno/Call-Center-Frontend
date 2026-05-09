@@ -64,8 +64,13 @@ function App() {
       //Display the selected call details in a popup bubble
       {selectedCall && (
         <div className="popup-bubble">
-          <button onClick={() => setSelectedCallId(null)}>Close</button>
-          <p>Selected Call Info:</p>
+          <button 
+            className="close-button"
+            onClick={() => setSelectedCallId(null)}
+          >
+            Close
+          </button>
+          <h2>Selected Call Info:</h2>
           <p>Direction: {selectedCall.direction}</p>
           <p>From: {selectedCall.from}</p>
           <p>To: {selectedCall.to}</p>
