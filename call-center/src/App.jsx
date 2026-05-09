@@ -19,6 +19,24 @@ function App() {
     return call.id === selectedCallId;
   });
 
+  function handleArchiveCall(callId) {
+    setCalls((currentCalls) => {
+      return currentCalls.map((call) => {
+        if (call.id === callId) {
+          return { 
+            ...call, 
+            is_archived: true 
+          };
+        }
+        return call;
+      });
+    }); 
+
+    if (selectedCallId === callId) {
+      setSelectedCallId(null);
+    } 
+  }
+
   return (
     <>
       <div>
@@ -34,6 +52,7 @@ function App() {
                 key={call.id} 
                 call={call} 
                 onSelectCall={handleSelectCall} 
+                onArchiveCall={handleArchiveCall}
               />
             );
           })}

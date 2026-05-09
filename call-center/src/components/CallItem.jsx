@@ -1,4 +1,4 @@
-function CallItem({ call, onSelectCall }) {
+function CallItem({ call, onSelectCall, onArchiveCall }) {
   const formattedDate = new Date(call.created_at).toLocaleString()
 
     return (
@@ -11,6 +11,15 @@ function CallItem({ call, onSelectCall }) {
         <p>is_archived: {call.is_archived.toString()}</p>
         <p>created_at: {formattedDate}</p>
         <p>notes: {call.notes?.length > 0 ? call.notes[0].content : 'No notes'}</p>
+
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            onArchiveCall(call.id);
+          }}
+        >
+          Archive
+        </button>
       </div>
   );
 }
