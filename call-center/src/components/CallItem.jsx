@@ -1,8 +1,7 @@
+import {formatCallTime} from "../utils/formatters";
+
 function CallItem({ call, onSelectCall, actionLabel, onAction }) {
-  const formattedTime = new Date(call.created_at).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+  const formattedTime = formatCallTime(call.created_at);
   const isInbound = call.direction === "inbound";
 
 

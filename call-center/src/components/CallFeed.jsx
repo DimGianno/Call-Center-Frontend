@@ -2,46 +2,17 @@ import { useState, useEffect } from "react";
 import CallItem from "./CallItem";
 import FilterModal from "./FilterModal";
 import PaginationControls from "./PaginationControls";
+import { formatDateHeader } from "../utils/formatters";
+import {
+  defaultFilters,
+  filterCalls,
+  getActiveFilterCount,
+  groupCallsByDate,
+  paginateCalls,
+  sortCallsNewestFirst,
+} from "../utils/callUtils";
 
-const defaultFilters = {
-  callTypes: {
-    answered: true,
-    missed: true,
-    voicemail: true,
-  },
-  directions: {
-    inbound: true,
-    outbound: true,
-  },
-  dateFrom: "",
-  dateTo: "",
-};
 
-function getActiveFilterCount(filters) {
-  let count = 0;
-
-  Object.keys(defaultFilters.callTypes).forEach((callType) => {
-    if (filters.callTypes[callType] !== defaultFilters.callTypes[callType]) {
-      count += 1;
-    }
-  });
-
-  Object.keys(defaultFilters.directions).forEach((direction) => {
-    if (filters.directions[direction] !== defaultFilters.directions[direction]) {
-      count += 1;
-    }
-  });
-
-  if (filters.dateFrom !== defaultFilters.dateFrom) {
-    count += 1;
-  }
-
-  if (filters.dateTo !== defaultFilters.dateTo) {
-    count += 1;
-  }
-
-  return count;
-}
 
 function CallFeed({ 
   calls,
@@ -71,81 +42,35 @@ function CallFeed({
   const hasActiveFilters = activeFilterCount > 0;
 
   /* page handlers */
-  const [currentPage, setCurrentPage] = useState("1");
+  const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const filteredCalls = filterCalls(calls, appliedFilters);
 
-  const filteredCalls = calls.filter((call) => {
-    const matchesCallType = appliedFilters.callTypes[call.call_type];
-    const matchesDirection = appliedFilters.directions[call.direction];
-
-    const callDate = call.created_at.slice(0, 10);
-
-    const matchesDateFrom =
-      appliedFilters.dateFrom === "" || callDate >= appliedFilters.dateFrom;
-
-    const matchesDateTo =
-      appliedFilters.dateTo === "" || callDate <= appliedFilters.dateTo;
-
-    return (
-      matchesCallType &&
-      matchesDirection &&
-      matchesDateFrom &&
-      matchesDateTo
-    );
-  });
-
-  /* sort and group calls by date */
-  const sortedCalls = [...filteredCalls].sort((a, b) => {
-    return new Date(b.created_at) - new Date(a.created_at);
-  });
+  /* sort calls */
+  const sortedCalls = sortCallsNewestFirst(filteredCalls);
 
   /* paginate sorted calls */
-  const totalPages = Math.max(1, Math.ceil(sortedCalls.length / pageSize));
+  const {totalPages, startIndex, endIndex, currentPageCalls } = paginateCalls(sortedCalls, currentPage, pageSize);
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const currentPageCalls = sortedCalls.slice(startIndex, endIndex);
   const visibleStart = sortedCalls.length === 0 ? 0 : startIndex + 1;
   const visibleEnd = Math.min(endIndex, sortedCalls.length);
-
-  const groupedCalls = currentPageCalls.reduce((groups, call) => {
-    const dateKey = call.created_at.slice(0, 10);
-
-    if (!groups[dateKey]) {
-      groups[dateKey] = [];
-    }
-
-    groups[dateKey].push(call);
-
-    return groups;
-  }, {});
-
-  function formatDateHeader(dateKey) {
-    return new Date(`${dateKey}T00:00:00`).toLocaleDateString("en-GB", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  }
-
   function handlePreviousPage() {
     setCurrentPage((currentPage) => {
       return Math.max(currentPage - 1, 1);
     });
   }
-
   function handleNextPage() {
     setCurrentPage((currentPage) => {
       return Math.min(currentPage + 1, totalPages);
     });
   }
 
-
+  /* group calls for current page by date */
+  const groupedCalls = groupCallsByDate(currentPageCalls);
 
   return (
       <section className="call-feed">
@@ -155,7 +80,7 @@ function CallFeed({
             <p>
               {sortedCalls.length === 0
                 ? "No calls to display."
-                : `Showing ${visibleStart} - ${visibleEnd} of ${calls.length} calls. `}
+                : `Showing ${visibleStart} <-> ${visibleEnd} of ${sortedCalls.length} ${hasActiveFilters ? `filtered calls (${calls.length} total)` : "calls"}`}
             </p>
           </div>
 
@@ -178,6 +103,8 @@ function CallFeed({
             </label>
             <button
               className={hasActiveFilters ? "filter-button active" : "filter-button"}
+              title="Open filter options"
+              aria-label="Open filters"
               onClick={() => {
                 setDraftFilters(appliedFilters);
                 setIsFilterModalOpen(true);
@@ -189,6 +116,7 @@ function CallFeed({
               className="view-toggle"
               onClick={() => {
                 onCallViewChange(isActiveView ? "archived" : "active");
+                setCurrentPage(1);
               }}
             >
               {isActiveView ? "View Archived Calls" : "View Active Calls"}
@@ -253,9 +181,8 @@ function CallFeed({
             onReset={() => setDraftFilters(defaultFilters)}
             onClose={() => setIsFilterModalOpen(false)}
             onConfirm={() =>{
-              console.log("Confirm clicked");
-              console.log(draftFilters);
               setAppliedFilters(draftFilters);
+              setCurrentPage(1);
               setIsFilterModalOpen(false);
             }}
           />
@@ -265,21 +192,3 @@ function CallFeed({
 }
 
 export default CallFeed;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,7 @@
+import { formatCallDateTime } from "../utils/formatters";
+
 function CallDetails({ call, onClose }) {
-    const formattedDate = new Date(call.created_at).toLocaleString("en-GB");
+    const formattedDate = formatCallDateTime(call.created_at);
   
     return (             
         <div className="modal-overlay">

@@ -100,6 +100,8 @@ function App() {
         <h1>Call Center Dashboard</h1>
         <button
           className="theme-toggle"
+          title="Toggle light/dark theme"
+          aria-label="Toggle light/dark theme"
           onClick={handleToggleTheme}
         >
           {theme === "light" ? "🌙" : "☀️"}
