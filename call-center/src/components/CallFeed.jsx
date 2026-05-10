@@ -9,6 +9,7 @@ import {
   getActiveFilterCount,
   groupCallsByDate,
   paginateCalls,
+  searchCallsByPhoneNumber,
   sortCallsNewestFirst,
 } from "../utils/callUtils";
 
@@ -44,7 +45,13 @@ function CallFeed({
   /* page handlers */
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const filteredCalls = filterCalls(calls, appliedFilters);
+
+  /* search calls */
+  const [searchTerm, setSearchTerm] = useState("");
+  const searchedCalls = searchCallsByPhoneNumber(calls, searchTerm);
+
+  /* filter calls */
+  const filteredCalls = filterCalls(searchedCalls, appliedFilters);
 
   /* sort calls */
   const sortedCalls = sortCallsNewestFirst(filteredCalls);
@@ -72,6 +79,9 @@ function CallFeed({
   /* group calls for current page by date */
   const groupedCalls = groupCallsByDate(currentPageCalls);
 
+  const hasSearchTerm = searchTerm.trim() !== "";
+  const hasActiveSearchOrFilters = hasSearchTerm || hasActiveFilters;
+
   return (
       <section className="call-feed">
         <div className="feed-header">
@@ -80,16 +90,40 @@ function CallFeed({
             <p>
               {sortedCalls.length === 0
                 ? "No calls to display."
-                : `Showing ${visibleStart} <-> ${visibleEnd} of ${sortedCalls.length} ${hasActiveFilters ? `filtered calls (${calls.length} total)` : "calls"}`}
+                : `Showing ${visibleStart} <-> ${visibleEnd} of ${sortedCalls.length} ${hasActiveSearchOrFilters ? `matching calls (${calls.length} total)` : "calls"}`}
             </p>
           </div>
 
           <div className="feed-actions">
-            <label className="page-size-control">
-              Show
+            <label
+              className={
+                searchTerm.trim() !== ""
+                  ? "search-control has-value"
+                  : "search-control"
+              }
+              title="Search calls by phone number"
+            >
+              <span className="search-icon">🔎</span>
+
+              <input
+                type="search"
+                value={searchTerm}
+                placeholder="Phone number..."
+                aria-label="Search calls by phone number"
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </label>
+            <label
+              className="page-size-control"
+              title="Select how many calls to show per page"
+            >
+              <span className="page-size-icon">📄</span>
+
               <select
                 value={pageSize}
-                title="Select how many calls to show per page"
                 aria-label="Select how many calls to show per page"
                 onChange={(event) => {
                   setPageSize(Number(event.target.value));
@@ -104,7 +138,11 @@ function CallFeed({
               </select>
             </label>
             <button
-              className={hasActiveFilters ? "filter-button active" : "filter-button"}
+              className={
+                hasActiveFilters
+                  ? "icon-action-button active"
+                  : "icon-action-button"
+              }
               title="Open filters"
               aria-label="Open filters"
               onClick={() => {
@@ -112,10 +150,13 @@ function CallFeed({
                 setIsFilterModalOpen(true);
               }}
             >
-               {hasActiveFilters ? `☰  (${activeFilterCount})` : "☰ "}
+              <span className="icon-action-emoji">☰</span>
+              <span className="icon-action-label">
+                {hasActiveFilters ? `Filters (${activeFilterCount})` : "Filters"}
+              </span>
             </button>
             <button
-              className="view-toggle"
+              className="icon-action-button"
               title={isActiveView ? "View archived calls" : "View active calls"}
               aria-label={isActiveView ? "View archived calls" : "View active calls"}
               onClick={() => {
@@ -123,16 +164,22 @@ function CallFeed({
                 setCurrentPage(1);
               }}
             >
-              {isActiveView ? "View Archived Calls" : "View Active Calls"}
+              <span className="icon-action-emoji">🗂️</span>
+              <span className="icon-action-label">
+                {isActiveView ? "View Archived" : "View Active"}
+              </span>
             </button>
             <button
-              className="bulk-action-button"
+              className="icon-action-button"
               title={isActiveView ? "Archive all calls" : "Unarchive all calls"}
               aria-label={isActiveView ? "Archive all calls" : "Unarchive all calls"}
               onClick={bulkActionHandler}
               disabled={calls.length === 0}
             >
-              {bulkActionLabel}
+              <span className="icon-action-emoji">🗄️</span>
+              <span className="icon-action-label">
+                {isActiveView ? "Archive All" : "Unarchive All"}
+              </span>
             </button>
           </div>
         </div>
@@ -167,7 +214,7 @@ function CallFeed({
           })
         ) : (
           <div className="empty-state">
-            <p>{calls.length === 0 ? "No calls available." : "No calls match the current filters."}</p>
+            <p>{calls.length === 0 ? "No calls available." : "No calls match the current search or filters."}</p>
           </div>
         )}
 

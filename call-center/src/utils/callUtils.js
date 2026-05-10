@@ -95,3 +95,21 @@ export function groupCallsByDate(calls) {
     return groups;
   }, {});
 }
+
+export function searchCallsByPhoneNumber(calls, searchTerm) {
+  const normalizedSearchTerm = searchTerm.replace(/\D/g, "");
+
+  if (normalizedSearchTerm === "") {
+    return calls;
+  }
+
+  return calls.filter((call) => {
+    const normalizedFrom = call.from.replace(/\D/g, "");
+    const normalizedTo = call.to.replace(/\D/g, "");
+
+    return (
+      normalizedFrom.includes(normalizedSearchTerm) ||
+      normalizedTo.includes(normalizedSearchTerm)
+    );
+  });
+}

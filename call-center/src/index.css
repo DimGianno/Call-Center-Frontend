@@ -285,6 +285,7 @@ button {
   gap: 12px;
   padding-left: 24px;
   border-left: 1px solid var(--color-border);
+  flex-wrap: wrap;
 }
 
 .view-toggle {
@@ -378,6 +379,80 @@ button {
   background: var(--color-button-bg-hover);
   color: var(--color-button-text-hover);
   border-color: var(--color-border-hover);
+}
+
+.icon-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+
+  padding: 8px 12px;
+  min-width: 44px;
+  height: 42px;
+
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-button-bg);
+  color: var(--color-button-text);
+
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  overflow: hidden;
+  white-space: nowrap;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.icon-action-button:hover:not(:disabled) {
+  background: var(--color-button-bg-hover);
+  border-color: var(--color-border-hover);
+  color: var(--color-button-text-hover);
+}
+
+.icon-action-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.icon-action-button.active {
+  background: var(--color-header-bg);
+  color: var(--color-text-inverse);
+  border-color: var(--color-header-bg);
+}
+
+.icon-action-emoji {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.icon-action-label {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  margin-left: 0;
+
+  transition:
+    max-width 0.25s ease,
+    opacity 0.2s ease,
+    margin-left 0.25s ease;
+}
+
+.icon-action-button:hover .icon-action-label,
+.icon-action-button:focus-visible .icon-action-label {
+  max-width: 180px;
+  opacity: 1;
+  margin-left: 8px;
 }
 
 /* =========================
@@ -666,35 +741,159 @@ button {
   color: var(--color-text-muted);
 }
 
+/* =========================
+   Page size control styles
+   ========================= */
+
 .page-size-control {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 0;
 
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
+  height: 42px;
+  min-width: 44px;
+  max-width: 140px;
 
-.page-size-control select {
-  padding: 7px 10px;
+  padding: 0 12px;
+
   border: 1px solid var(--color-border);
   border-radius: 999px;
 
   background: var(--color-button-bg);
   color: var(--color-button-text);
 
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.page-size-control:hover,
+.page-size-control:focus-within {
+  background: var(--color-button-bg-hover);
+  border-color: var(--color-border-hover);
+  color: var(--color-button-text-hover);
+}
+
+.page-size-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.page-size-control select {
+  width: 0;
+  opacity: 0;
+  margin-left: 0;
+  padding: 0;
+
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text-main);
+
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+
+  transition:
+    width 0.25s ease,
+    opacity 0.2s ease,
+    margin-left 0.25s ease;
 }
 
-.page-size-control select:hover {
+.page-size-control:hover select,
+.page-size-control:focus-within select {
+  width: 62px;
+  opacity: 1;
+  margin-left: 8px;
+}
+
+/* =========================
+   Search input styles
+   ========================= */
+/* =========================
+   Search input styles
+   ========================= */
+
+.search-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+
+  height: 42px;
+  min-width: 44px;
+  max-width: 240px;
+
+  padding: 0 12px;
+
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+
+  background: var(--color-button-bg);
+  color: var(--color-button-text);
+
+  cursor: text;
+  overflow: hidden;
+  white-space: nowrap;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.search-control:hover,
+.search-control:focus-within,
+.search-control.has-value {
   background: var(--color-button-bg-hover);
   border-color: var(--color-border-hover);
   color: var(--color-button-text-hover);
+}
+
+.search-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.search-control input {
+  width: 0;
+  opacity: 0;
+  margin-left: 0;
+  padding: 0;
+
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text-main);
+
+  font-family: inherit;
+  font-size: 13px;
+
+  transition:
+    width 0.25s ease,
+    opacity 0.2s ease,
+    margin-left 0.25s ease;
+}
+
+.search-control:hover input,
+.search-control:focus-within input,
+.search-control.has-value input {
+  width: 170px;
+  opacity: 1;
+  margin-left: 8px;
+}
+
+.search-control input::placeholder {
+  color: var(--color-text-muted);
 }
 
 
@@ -760,11 +959,7 @@ button {
     align-items: stretch;
   }
 
-  .view-toggle {
-    width: 100%;
-  }
-  .bulk-action-button,
-  .view-toggle {
+  .icon-action-button {
     width: 100%;
   }
 
@@ -782,12 +977,31 @@ button {
   }
 
   .page-size-control {
-    justify-content: space-between;
     width: 100%;
+    max-width: none;
+    justify-content: flex-start;
   }
 
-  .page-size-control select {
+  .page-size-control select,
+  .page-size-control:hover select,
+  .page-size-control:focus-within select {
     width: 100%;
+    opacity: 1;
+    margin-left: 8px;
   }
 
+  .search-control {
+    width: 100%;
+    max-width: none;
+    justify-content: flex-start;
+  }
+
+  .search-control input,
+  .search-control:hover input,
+  .search-control:focus-within input,
+  .search-control.has-value input {
+    width: 100%;
+    opacity: 1;
+    margin-left: 8px;
+  }
 }
