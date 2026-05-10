@@ -1,5 +1,5 @@
 function CallItem({ call, onSelectCall, actionLabel, onAction }) {
-  const formattedDate = new Date(call.created_at).toLocaleString()
+  const formattedDate = new Date(call.created_at).toLocaleString("en-GB")
   const isInbound = call.direction === "inbound";
 
 

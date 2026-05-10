@@ -1,5 +1,5 @@
 function CallDetails({ call, onClose }) {
-    const formattedDate = new Date(call.created_at).toLocaleString();
+    const formattedDate = new Date(call.created_at).toLocaleString("en-GB");
   
     return (             
         <div className="modal-overlay">
