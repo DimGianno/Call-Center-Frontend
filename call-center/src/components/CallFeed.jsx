@@ -17,6 +17,32 @@ const defaultFilters = {
   dateTo: "",
 };
 
+function getActiveFilterCount(filters) {
+  let count = 0;
+
+  Object.keys(defaultFilters.callTypes).forEach((callType) => {
+    if (filters.callTypes[callType] !== defaultFilters.callTypes[callType]) {
+      count += 1;
+    }
+  });
+
+  Object.keys(defaultFilters.directions).forEach((direction) => {
+    if (filters.directions[direction] !== defaultFilters.directions[direction]) {
+      count += 1;
+    }
+  });
+
+  if (filters.dateFrom !== defaultFilters.dateFrom) {
+    count += 1;
+  }
+
+  if (filters.dateTo !== defaultFilters.dateTo) {
+    count += 1;
+  }
+
+  return count;
+}
+
 function CallFeed({ 
   calls,
   callView,
@@ -41,6 +67,8 @@ function CallFeed({
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState(defaultFilters);
   const [draftFilters, setDraftFilters] = useState(defaultFilters);
+  const activeFilterCount = getActiveFilterCount(appliedFilters);
+  const hasActiveFilters = activeFilterCount > 0;
 
   /* page handlers */
   const [currentPage, setCurrentPage] = useState("1");
@@ -145,13 +173,13 @@ function CallFeed({
               </select>
             </label>
             <button
-              className="filter-button"
+              className={hasActiveFilters ? "filter-button active" : "filter-button"}
               onClick={() => {
                 setDraftFilters(appliedFilters);
                 setIsFilterModalOpen(true);
               }}
             >
-              ☰ 
+               {hasActiveFilters ? `☰  (${activeFilterCount})` : "☰ "}
             </button>
             <button
               className="view-toggle"
