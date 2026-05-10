@@ -1,10 +1,41 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import mockCalls from './data/calls'
 import CallFeed from "./components/CallFeed";
 import CallDetails from "./components/CallDetails";
 
+const CALLS_STORAGE_KEY = "call_center_calls";
+
 function App() {
-  const [calls, setCalls] = useState(mockCalls)
+  const [calls, setCalls] = useState(() => {
+    const savedCalls = localStorage.getItem(CALLS_STORAGE_KEY);
+
+    if (savedCalls) {
+      return JSON.parse(savedCalls);
+    }
+    try {
+      return JSON.parse(savedCalls);
+    } catch {
+      return mockCalls;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(CALLS_STORAGE_KEY, JSON.stringify(calls));
+  }, [calls]);
+
+  function handleResetMockData() {
+    const confirmed = window.confirm(
+      "Are you sure you want to reset all calls to the original mock data?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setCalls(mockCalls);
+    setSelectedCallId(null);
+  }
+
   const [selectedCallId, setSelectedCallId] = useState(null);
   const [theme, setTheme] = useState("dark");
   const [callView, setCallView] = useState("active");
@@ -119,12 +150,15 @@ function App() {
       <header className="app-header">
         <h1>Call Center Dashboard</h1>
         <button
-          className="theme-toggle"
+          className="icon-action-button"
           title="Toggle light/dark theme"
           aria-label="Toggle light/dark theme"
           onClick={handleToggleTheme}
         >
-          {theme === "light" ? "🌙" : "☀️"}
+          <span className="icon-action-emoji">{theme === "light" ? "🌙" : "☀️"}</span>
+          <span className="icon-action-label">
+            {theme === "light" ? "Dark Mode" : "Light Mode"}
+          </span>
         </button>
       </header>
 
@@ -138,6 +172,7 @@ function App() {
           onUnarchiveCall={handleUnarchiveCall} 
           onArchiveAll={handleArchiveAll}
           onUnarchiveAll={handleUnarchiveAll}
+          onResetMockData={handleResetMockData}
         />
       </main>
 

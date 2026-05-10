@@ -23,7 +23,8 @@ function CallFeed({
   onArchiveCall,
   onUnarchiveCall,
   onArchiveAll,
-  onUnarchiveAll
+  onUnarchiveAll,
+  onResetMockData
 }) {
   const isActiveView = callView === "active";
 
@@ -138,11 +139,7 @@ function CallFeed({
               </select>
             </label>
             <button
-              className={
-                hasActiveFilters
-                  ? "icon-action-button active"
-                  : "icon-action-button"
-              }
+              className="icon-action-button"
               title="Open filters"
               aria-label="Open filters"
               onClick={() => {
@@ -150,7 +147,7 @@ function CallFeed({
                 setIsFilterModalOpen(true);
               }}
             >
-              <span className="icon-action-emoji">☰</span>
+              <span className="icon-action-emoji">{hasActiveFilters ? `☰ (${activeFilterCount})` : "☰"}</span>
               <span className="icon-action-label">
                 {hasActiveFilters ? `Filters (${activeFilterCount})` : "Filters"}
               </span>
@@ -226,6 +223,18 @@ function CallFeed({
           onPreviousPage={handlePreviousPage}
           onNextPage={handleNextPage}
         />
+
+        <div className="feed-footer">
+          <button
+            className="icon-action-button reset-data-button"
+            title="Reset mock data"
+            aria-label="Reset mock data"
+            onClick={onResetMockData}
+          >
+            <span className="icon-action-emoji">↺</span>
+            <span className="icon-action-label">Reset Data</span>
+          </button>
+        </div>
 
         {isFilterModalOpen && (
           <FilterModal

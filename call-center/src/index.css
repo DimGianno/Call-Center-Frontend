@@ -818,9 +818,6 @@ button {
 /* =========================
    Search input styles
    ========================= */
-/* =========================
-   Search input styles
-   ========================= */
 
 .search-control {
   display: inline-flex;
@@ -896,6 +893,25 @@ button {
   color: var(--color-text-muted);
 }
 
+/* =========================
+   Feed footer styles
+   ========================= */
+.feed-footer {
+  display: flex;
+  justify-content: center;
+
+  margin-top: 28px;
+  padding-top: 18px;
+
+  border-top: 1px solid var(--color-border);
+}
+.reset-data-button {
+  opacity: 0.75;
+}
+
+.reset-data-button:hover:not(:disabled) {
+  opacity: 1;
+}
 
 /* =========================
    Responsive layout
@@ -1003,5 +1019,13 @@ button {
     width: 100%;
     opacity: 1;
     margin-left: 8px;
+  }
+
+  .feed-footer {
+    justify-content: stretch;
+  }
+
+  .feed-footer .reset-data-button {
+    width: 100%;
   }
 }
