@@ -1,4 +1,4 @@
-function CallItem({ call, onSelectCall, onArchiveCall }) {
+function CallItem({ call, onSelectCall, actionLabel, onAction }) {
   const formattedDate = new Date(call.created_at).toLocaleString()
   const isInbound = call.direction === "inbound";
 
@@ -29,10 +29,10 @@ function CallItem({ call, onSelectCall, onArchiveCall }) {
           className="archive-button"
           onClick={(event) => {
             event.stopPropagation();
-            onArchiveCall(call.id);
+            onAction(call.id);
           }}
         >
-          Archive
+          {actionLabel}
         </button>
       </div>
   );
