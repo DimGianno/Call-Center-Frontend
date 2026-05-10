@@ -10,6 +10,8 @@ function CallDetails({ call, onClose }) {
               <h2>Selected Call Info:</h2>
               <button 
                 className="close-button"
+                title="Close call details"
+                aria-label="Close call details"
                 onClick={onClose}
               >
                 Close

@@ -38,7 +38,12 @@ function FilterModal({
                 <div className="modal-header">
                     <h2>Filter Calls</h2>
 
-                    <button className="close-button" onClick={onClose}>
+                    <button 
+                        className="close-button" 
+                        onClick={onClose}
+                        title="Close filter modal"
+                        aria-label="Close filter modal"
+                    >
                         Close
                     </button>
                 </div>
@@ -121,14 +126,29 @@ function FilterModal({
                 </div>
 
                 <div className="filter-actions">
-                    <button className="secondary-button" onClick={onReset}>
+                    <button 
+                        className="secondary-button" 
+                        onClick={onReset}
+                        title="Reset filters"
+                        aria-label="Reset filters"
+                    >
                         Reset filters
                     </button>
-                    <button className="secondary-button" onClick={onClose}>
+                    <button 
+                        className="secondary-button" 
+                        onClick={onClose}
+                        title="Cancel"
+                        aria-label="Cancel"
+                    >
                         Cancel
                     </button>
 
-                    <button className="primary-button" onClick={onConfirm}>
+                    <button 
+                        className="primary-button" 
+                        onClick={onConfirm}
+                        title="Confirm filters"
+                        aria-label="Confirm filters"
+                    >
                         Confirm filters
                     </button>
                 </div>

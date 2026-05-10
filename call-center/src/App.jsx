@@ -38,19 +38,29 @@ function App() {
   }
 
   function handleArchiveAll() {
+    const confirmed = window.confirm(
+      "Are you sure you want to archive all active calls?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     setCalls((currentCalls) => {
       return currentCalls.map((call) => {
         if (!call.is_archived) {
-          return { 
+          return {
             ...call,
-            is_archived: true
+            is_archived: true,
           };
         }
+
         return call;
       });
     });
+
     setSelectedCallId(null);
-  } 
+  }
 
   function handleUnarchiveCall(callId) {
     setCalls((currentCalls) => {
@@ -68,19 +78,29 @@ function App() {
   }
 
   function handleUnarchiveAll() {
+    const confirmed = window.confirm(
+      "Are you sure you want to unarchive all archived calls?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     setCalls((currentCalls) => {
       return currentCalls.map((call) => {
         if (call.is_archived) {
-          return { 
+          return {
             ...call,
-            is_archived: false
+            is_archived: false,
           };
         }
+
         return call;
       });
     });
+
     setSelectedCallId(null);
-  } 
+  }
 
 
   const visibleCalls  = calls.filter((call) => {

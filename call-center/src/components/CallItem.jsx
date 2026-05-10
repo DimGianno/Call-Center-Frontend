@@ -29,6 +29,8 @@ function CallItem({ call, onSelectCall, actionLabel, onAction }) {
 
         <button
           className="archive-button"
+          title={`${actionLabel} this call`}
+          aria-label={`${actionLabel} this call`}
           onClick={(event) => {
             event.stopPropagation();
             onAction(call.id);

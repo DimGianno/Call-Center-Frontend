@@ -89,6 +89,8 @@ function CallFeed({
               Show
               <select
                 value={pageSize}
+                title="Select how many calls to show per page"
+                aria-label="Select how many calls to show per page"
                 onChange={(event) => {
                   setPageSize(Number(event.target.value));
                   setCurrentPage(1);
@@ -103,7 +105,7 @@ function CallFeed({
             </label>
             <button
               className={hasActiveFilters ? "filter-button active" : "filter-button"}
-              title="Open filter options"
+              title="Open filters"
               aria-label="Open filters"
               onClick={() => {
                 setDraftFilters(appliedFilters);
@@ -114,6 +116,8 @@ function CallFeed({
             </button>
             <button
               className="view-toggle"
+              title={isActiveView ? "View archived calls" : "View active calls"}
+              aria-label={isActiveView ? "View archived calls" : "View active calls"}
               onClick={() => {
                 onCallViewChange(isActiveView ? "archived" : "active");
                 setCurrentPage(1);
@@ -123,6 +127,8 @@ function CallFeed({
             </button>
             <button
               className="bulk-action-button"
+              title={isActiveView ? "Archive all calls" : "Unarchive all calls"}
+              aria-label={isActiveView ? "Archive all calls" : "Unarchive all calls"}
               onClick={bulkActionHandler}
               disabled={calls.length === 0}
             >

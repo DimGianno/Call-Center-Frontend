@@ -12,6 +12,8 @@ function PaginationControls({
     <div className="pagination-controls">
       <button
         className="pagination-button"
+        title="Go to previous page"
+        aria-label="Go to previous page"
         onClick={onPreviousPage}
         disabled={currentPage === 1}
       >
@@ -24,6 +26,8 @@ function PaginationControls({
 
       <button
         className="pagination-button"
+        title="Go to next page"
+        aria-label="Go to next page"
         onClick={onNextPage}
         disabled={currentPage === totalPages}
       >
