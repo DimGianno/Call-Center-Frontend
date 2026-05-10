@@ -9,8 +9,8 @@ function App() {
   const [calls, setCalls] = useState(() => {
     const savedCalls = localStorage.getItem(CALLS_STORAGE_KEY);
 
-    if (savedCalls) {
-      return JSON.parse(savedCalls);
+    if (!savedCalls) {
+      return mockCalls;
     }
     try {
       return JSON.parse(savedCalls);
