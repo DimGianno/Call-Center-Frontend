@@ -601,6 +601,30 @@ button {
 }
 
 /* =========================
+   Grouping styles
+   ========================= */
+
+.call-date-group {
+  margin-bottom: 22px;
+}
+
+.date-group-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-group-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+/* =========================
    Responsive layout
    ========================= */
 

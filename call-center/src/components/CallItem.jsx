@@ -1,5 +1,8 @@
 function CallItem({ call, onSelectCall, actionLabel, onAction }) {
-  const formattedDate = new Date(call.created_at).toLocaleString("en-GB")
+  const formattedTime = new Date(call.created_at).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
   const isInbound = call.direction === "inbound";
 
 
@@ -21,7 +24,7 @@ function CallItem({ call, onSelectCall, actionLabel, onAction }) {
         </div>
 
         <div className="call-time">
-          <div>{formattedDate}</div>
+          <div>{formattedTime}</div>
           <div>{call.duration} sec</div>
         </div>
 

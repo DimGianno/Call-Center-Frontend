@@ -61,12 +61,38 @@ function CallFeed({
     );
   });
 
+  /* sort and group calls by date */
+  const sortedCalls = [...filteredCalls].sort((a, b) => {
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+
+  const groupedCalls = sortedCalls.reduce((groups, call) => {
+    const dateKey = call.created_at.slice(0, 10);
+
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+
+    groups[dateKey].push(call);
+
+    return groups;
+  }, {});
+
+  function formatDateHeader(dateKey) {
+    return new Date(`${dateKey}T00:00:00`).toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  }
+
   return (
       <section className="call-feed">
         <div className="feed-header">
           <div className="feed-title">
             <h2>{isActiveView ? "Active Calls" : "Archived Calls"}</h2>
-            <p>{filteredCalls.length} of {calls.length} calls shown</p>
+            <p>{sortedCalls.length} of {calls.length} calls shown</p>
           </div>
 
           <div className="feed-actions">
@@ -98,16 +124,23 @@ function CallFeed({
         </div>
 
 
-        {filteredCalls.length > 0 ? (
-          filteredCalls.map((call) => {
+        {sortedCalls.length > 0 ? (
+          Object.entries(groupedCalls).map(([dateKey, callsForDate]) => {
             return (
-              <CallItem 
-                key={call.id} 
-                call={call} 
-                onSelectCall={onSelectCall} 
-                actionLabel={actionLabel}
-                onAction={actionHandler}
-              />
+              <div className="call-date-group" key={dateKey}>
+                <h3 className="date-group-title">{formatDateHeader(dateKey)}</h3>
+                {callsForDate.map((call) => {
+                  return (
+                    <CallItem 
+                      key={call.id} 
+                      call={call} 
+                      onSelectCall={onSelectCall} 
+                      actionLabel={actionLabel}
+                      onAction={actionHandler}
+                    />
+                  );
+                })}
+              </div>
             );
           })
         ) : (
