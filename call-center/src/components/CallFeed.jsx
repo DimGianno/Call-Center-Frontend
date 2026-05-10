@@ -109,6 +109,8 @@ function CallFeed({
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const currentPageCalls = sortedCalls.slice(startIndex, endIndex);
+  const visibleStart = sortedCalls.length === 0 ? 0 : startIndex + 1;
+  const visibleEnd = Math.min(endIndex, sortedCalls.length);
 
   const groupedCalls = currentPageCalls.reduce((groups, call) => {
     const dateKey = call.created_at.slice(0, 10);
@@ -151,7 +153,9 @@ function CallFeed({
           <div className="feed-title">
             <h2>{isActiveView ? "Active Calls" : "Archived Calls"}</h2>
             <p>
-              {sortedCalls.length} of {calls.length} calls shown
+              {sortedCalls.length === 0
+                ? "No calls to display."
+                : `Showing ${visibleStart} - ${visibleEnd} of ${calls.length} calls. `}
             </p>
           </div>
 
