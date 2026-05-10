@@ -6,13 +6,18 @@ function CallFeed({
   onCallViewChange,
   onSelectCall,
   onArchiveCall,
-  onUnarchiveCall
+  onUnarchiveCall,
+  onArchiveAll,
+  onUnarchiveAll
 }) {
   const isActiveView = callView === "active";
 
   const actionLabel = isActiveView ? "Archive" : "Unarchive";
   const actionHandler = isActiveView ? onArchiveCall : onUnarchiveCall;
   
+  const bulkActionLabel = isActiveView ? "Archive All" : "Unarchive All";
+  const bulkActionHandler = isActiveView ? onArchiveAll : onUnarchiveAll;
+
   return (
       <section className="call-feed">
         <div className="feed-header">
@@ -29,6 +34,13 @@ function CallFeed({
               }}
             >
               {isActiveView ? "View Archived Calls" : "View Active Calls"}
+            </button>
+            <button
+              className="bulk-action-button"
+              onClick={bulkActionHandler}
+              disabled={calls.length === 0}
+            >
+              {bulkActionLabel}
             </button>
           </div>
         </div>
