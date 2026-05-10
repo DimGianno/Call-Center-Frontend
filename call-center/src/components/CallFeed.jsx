@@ -128,6 +128,22 @@ function CallFeed({
           </div>
 
           <div className="feed-actions">
+            <label className="page-size-control">
+              Show
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setCurrentPage(1);
+                }}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </label>
             <button
               className="filter-button"
               onClick={() => {

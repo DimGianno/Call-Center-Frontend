@@ -666,6 +666,38 @@ button {
   color: var(--color-text-muted);
 }
 
+.page-size-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.page-size-control select {
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+
+  background: var(--color-button-bg);
+  color: var(--color-button-text);
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.page-size-control select:hover {
+  background: var(--color-button-bg-hover);
+  border-color: var(--color-border-hover);
+  color: var(--color-button-text-hover);
+}
+
+
 /* =========================
    Responsive layout
    ========================= */
@@ -748,4 +780,14 @@ button {
   .primary-button {
     width: 100%;
   }
+
+  .page-size-control {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .page-size-control select {
+    width: 100%;
+  }
+
 }
