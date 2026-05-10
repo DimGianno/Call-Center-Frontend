@@ -1,6 +1,7 @@
-import { useState } from "react"
-import CallItem from './CallItem'
-import FilterModal from "./FilterModal"
+import { useState, useEffect } from "react";
+import CallItem from "./CallItem";
+import FilterModal from "./FilterModal";
+import PaginationControls from "./PaginationControls";
 
 const defaultFilters = {
   callTypes: {
@@ -41,6 +42,10 @@ function CallFeed({
   const [appliedFilters, setAppliedFilters] = useState(defaultFilters);
   const [draftFilters, setDraftFilters] = useState(defaultFilters);
 
+  /* page handlers */
+  const [currentPage, setCurrentPage] = useState("1");
+  const [pageSize, setPageSize] = useState(10);
+
   const filteredCalls = calls.filter((call) => {
     const matchesCallType = appliedFilters.callTypes[call.call_type];
     const matchesDirection = appliedFilters.directions[call.direction];
@@ -66,7 +71,18 @@ function CallFeed({
     return new Date(b.created_at) - new Date(a.created_at);
   });
 
-  const groupedCalls = sortedCalls.reduce((groups, call) => {
+  /* paginate sorted calls */
+  const totalPages = Math.max(1, Math.ceil(sortedCalls.length / pageSize));
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentPageCalls = sortedCalls.slice(startIndex, endIndex);
+
+  const groupedCalls = currentPageCalls.reduce((groups, call) => {
     const dateKey = call.created_at.slice(0, 10);
 
     if (!groups[dateKey]) {
@@ -87,12 +103,28 @@ function CallFeed({
     });
   }
 
+  function handlePreviousPage() {
+    setCurrentPage((currentPage) => {
+      return Math.max(currentPage - 1, 1);
+    });
+  }
+
+  function handleNextPage() {
+    setCurrentPage((currentPage) => {
+      return Math.min(currentPage + 1, totalPages);
+    });
+  }
+
+
+
   return (
       <section className="call-feed">
         <div className="feed-header">
           <div className="feed-title">
             <h2>{isActiveView ? "Active Calls" : "Archived Calls"}</h2>
-            <p>{sortedCalls.length} of {calls.length} calls shown</p>
+            <p>
+              {sortedCalls.length} of {calls.length} calls shown
+            </p>
           </div>
 
           <div className="feed-actions">
@@ -123,7 +155,15 @@ function CallFeed({
           </div>
         </div>
 
+        {/* top pagination controls */}
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPreviousPage={handlePreviousPage}
+          onNextPage={handleNextPage}
+        />
 
+        {/* call list */}
         {sortedCalls.length > 0 ? (
           Object.entries(groupedCalls).map(([dateKey, callsForDate]) => {
             return (
@@ -148,6 +188,15 @@ function CallFeed({
             <p>{calls.length === 0 ? "No calls available." : "No calls match the current filters."}</p>
           </div>
         )}
+
+
+        {/* bottom pagination controls */}
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPreviousPage={handlePreviousPage}
+          onNextPage={handleNextPage}
+        />
 
         {isFilterModalOpen && (
           <FilterModal
