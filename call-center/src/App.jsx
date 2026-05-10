@@ -37,6 +37,21 @@ function App() {
     } 
   }
 
+  function handleArchiveAll() {
+    setCalls((currentCalls) => {
+      return currentCalls.map((call) => {
+        if (!call.is_archived) {
+          return { 
+            ...call,
+            is_archived: true
+          };
+        }
+        return call;
+      });
+    });
+    setSelectedCallId(null);
+  } 
+
   function handleUnarchiveCall(callId) {
     setCalls((currentCalls) => {
       return currentCalls.map((call) => {
@@ -51,6 +66,22 @@ function App() {
       });
     });
   }
+
+  function handleUnarchiveAll() {
+    setCalls((currentCalls) => {
+      return currentCalls.map((call) => {
+        if (call.is_archived) {
+          return { 
+            ...call,
+            is_archived: false
+          };
+        }
+        return call;
+      });
+    });
+    setSelectedCallId(null);
+  } 
+
 
   const visibleCalls  = calls.filter((call) => {
     if (callView === "active") {
@@ -83,6 +114,8 @@ function App() {
           onSelectCall={handleSelectCall} 
           onArchiveCall={handleArchiveCall}
           onUnarchiveCall={handleUnarchiveCall} 
+          onArchiveAll={handleArchiveAll}
+          onUnarchiveAll={handleUnarchiveAll}
         />
       </main>
 
