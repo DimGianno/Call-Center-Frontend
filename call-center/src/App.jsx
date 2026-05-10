@@ -7,6 +7,7 @@ function App() {
   const [calls, setCalls] = useState(mockCalls)
   const [selectedCallId, setSelectedCallId] = useState(null);
   const [theme, setTheme] = useState("dark");
+  const [callView, setCallView] = useState("active");
   
   function handleToggleTheme() {
     setTheme((currentTheme) => {
@@ -36,9 +37,28 @@ function App() {
     } 
   }
 
-  const activeCalls = calls.filter((call) => !call.is_archived);
+  function handleUnarchiveCall(callId) {
+    setCalls((currentCalls) => {
+      return currentCalls.map((call) => {
+        if (call.id === callId) {
+          return {
+            ...call,
+            is_archived: false
+          };
+        }
 
-  
+        return call;
+      });
+    });
+  }
+
+  const visibleCalls  = calls.filter((call) => {
+    if (callView === "active") {
+      return !call.is_archived;
+    }
+    return call.is_archived;
+  });
+
   const selectedCall = calls.find((call) => {
     return call.id === selectedCallId;
   });
@@ -57,9 +77,12 @@ function App() {
 
       <main className="dashboard">
         <CallFeed 
-          calls={activeCalls} 
+          calls={visibleCalls} 
+          callView={callView}
+          onCallViewChange={setCallView}
           onSelectCall={handleSelectCall} 
-          onArchiveCall={handleArchiveCall} 
+          onArchiveCall={handleArchiveCall}
+          onUnarchiveCall={handleUnarchiveCall} 
         />
       </main>
 
