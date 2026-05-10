@@ -6,6 +6,13 @@ import CallDetails from "./components/CallDetails";
 function App() {
   const [calls, setCalls] = useState(mockCalls)
   const [selectedCallId, setSelectedCallId] = useState(null);
+  const [theme, setTheme] = useState("dark");
+  
+  function handleToggleTheme() {
+    setTheme((currentTheme) => {
+      return currentTheme === "dark" ? "light" : "dark";
+    });
+  }
   
   function handleSelectCall(callId) {
     setSelectedCallId(callId);
@@ -37,9 +44,15 @@ function App() {
   });
 
   return (
-    <div className="app">
+    <div className="app" data-theme={theme}>
       <header className="app-header">
         <h1>Call Center Dashboard</h1>
+        <button
+          className="theme-toggle"
+          onClick={handleToggleTheme}
+        >
+          {theme === "light" ? "🌙" : "☀️"}
+        </button>
       </header>
 
       <main className="dashboard">

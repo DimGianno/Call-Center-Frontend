@@ -45,9 +45,8 @@
   --radius-popup: 14px;
 }
 
-/* Future automatic dark mode support */
 @media (prefers-color-scheme: dark) {
-  :root {
+  .app[data-theme="dark"] {
     --color-page-bg: #111827;
     --color-surface: #1f2937;
     --color-header-bg: #0f172a;
@@ -105,12 +104,14 @@ button {
 .app {
   min-height: 100vh;
   background: var(--color-page-bg);
+  color: var(--color-text-main);
 }
 
 .app-header {
   height: var(--header-height);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 24px;
   background: var(--color-header-bg);
   color: var(--color-text-inverse);
@@ -290,6 +291,23 @@ button {
 .close-button:hover {
   background: var(--color-button-bg-hover);
   color: var(--color-button-text-hover);
+}
+
+.theme-toggle {
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-button-bg);
+  color: var(--color-button-text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.theme-toggle:hover {
+  background: var(--color-button-bg-hover);
+  color: var(--color-button-text-hover);
+  border-color: var(--color-border-hover);
 }
 
 /* =========================
