@@ -1,27 +1,58 @@
 import CallItem from './CallItem'
 
-function CallFeed({ calls, onSelectCall, onArchiveCall }) {
-    return (
-        <section className="call-feed">
-          <h2>Call Feed</h2>
-          {calls.length > 0 ? (
-            calls.map((call) => {
-              return (
-                <CallItem 
-                  key={call.id} 
-                  call={call} 
-                  onSelectCall={onSelectCall} 
-                  onArchiveCall={onArchiveCall}
-                />
-              );
-            })
-          ) : (
-            <div className="empty-state">
-              <p>No active calls to display.</p>
-            </div>
-          )}
-        </section>
-    );
+function CallFeed({ 
+  calls,
+  callView,
+  onCallViewChange,
+  onSelectCall,
+  onArchiveCall,
+  onUnarchiveCall
+}) {
+  const isActiveView = callView === "active";
+
+  const actionLabel = isActiveView ? "Archive" : "Unarchive";
+  const actionHandler = isActiveView ? onArchiveCall : onUnarchiveCall;
+  
+  return (
+      <section className="call-feed">
+        <div className="feed-header">
+          <div className="feed-title">
+            <h2>{isActiveView ? "Active Calls" : "Archived Calls"}</h2>
+            <p>{calls.length} calls shown</p>
+          </div>
+
+          <div className="feed-actions">
+            <button
+              className="view-toggle"
+              onClick={() => {
+                onCallViewChange(isActiveView ? "archived" : "active");
+              }}
+            >
+              {isActiveView ? "View Archived Calls" : "View Active Calls"}
+            </button>
+          </div>
+        </div>
+
+
+        {calls.length > 0 ? (
+          calls.map((call) => {
+            return (
+              <CallItem 
+                key={call.id} 
+                call={call} 
+                onSelectCall={onSelectCall} 
+                actionLabel={actionLabel}
+                onAction={actionHandler}
+              />
+            );
+          })
+        ) : (
+          <div className="empty-state">
+            <p>{isActiveView ? "No active calls." : "No archived calls."}</p>
+          </div>
+        )}
+      </section>
+  );
 }
 
 export default CallFeed;
