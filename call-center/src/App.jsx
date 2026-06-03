@@ -1,44 +1,65 @@
 import { useEffect, useState } from 'react'
-import mockCalls from './data/calls'
+import {
+  archiveAllCalls,
+  archiveCall,
+  fetchAllCalls,
+  fetchCall,
+  unarchiveAllCalls,
+  unarchiveCall,
+} from "./api/callsApi";
 import CallFeed from "./components/CallFeed";
 import CallDetails from "./components/CallDetails";
 
-const CALLS_STORAGE_KEY = "call_center_calls";
-
 function App() {
-  const [calls, setCalls] = useState(() => {
-    const savedCalls = localStorage.getItem(CALLS_STORAGE_KEY);
-
-    if (!savedCalls) {
-      return mockCalls;
-    }
-    try {
-      return JSON.parse(savedCalls);
-    } catch {
-      return mockCalls;
-    }
-  });
+  const [calls, setCalls] = useState([]);
+  const [selectedCallId, setSelectedCallId] = useState(null);
+  const [theme, setTheme] = useState("dark");
+  const [callView, setCallView] = useState("active");
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    localStorage.setItem(CALLS_STORAGE_KEY, JSON.stringify(calls));
-  }, [calls]);
+    loadCalls();
+  }, []);
 
-  function handleResetMockData() {
+  async function loadCalls() {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const apiCalls = await fetchAllCalls();
+      setCalls(apiCalls);
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function updateCallInState(updatedCall) {
+    setCalls((currentCalls) => {
+      return currentCalls.map((call) => {
+        if (call.id === updatedCall.id) {
+          return updatedCall;
+        }
+
+        return call;
+      });
+    });
+  }
+
+  async function handleResetMockData() {
     const confirmed = window.confirm(
-      "Are you sure you want to reset all calls to the original mock data?"
+      "Are you sure you want to reload calls from the backend?"
     );
 
     if (!confirmed) {
       return;
     }
 
-    setCalls(mockCalls);
     setSelectedCallId(null);
+    await loadCalls();
   }
-
-  const [selectedCallId, setSelectedCallId] = useState(null);
-  const [theme, setTheme] = useState("dark");
-  const [callView, setCallView] = useState("active");
   
   function handleToggleTheme() {
     setTheme((currentTheme) => {
@@ -46,29 +67,35 @@ function App() {
     });
   }
   
-  function handleSelectCall(callId) {
-    setSelectedCallId(callId);
+  async function handleSelectCall(callId) {
+    setErrorMessage("");
+
+    try {
+      const call = await fetchCall(callId);
+      updateCallInState(call);
+      setSelectedCallId(callId);
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
   }
 
-  function handleArchiveCall(callId) {
-    setCalls((currentCalls) => {
-      return currentCalls.map((call) => {
-        if (call.id === callId) {
-          return { 
-            ...call, 
-            is_archived: true 
-          };
-        }
-        return call;
-      });
-    }); 
+  async function handleArchiveCall(callId) {
+    setErrorMessage("");
+
+    try {
+      const archivedCall = await archiveCall(callId);
+      updateCallInState(archivedCall);
+    } catch (error) {
+      setErrorMessage(error.message);
+      return;
+    }
 
     if (selectedCallId === callId) {
       setSelectedCallId(null);
     } 
   }
 
-  function handleArchiveAll() {
+  async function handleArchiveAll() {
     const confirmed = window.confirm(
       "Are you sure you want to archive all active calls?"
     );
@@ -77,38 +104,29 @@ function App() {
       return;
     }
 
-    setCalls((currentCalls) => {
-      return currentCalls.map((call) => {
-        if (!call.is_archived) {
-          return {
-            ...call,
-            is_archived: true,
-          };
-        }
+    setErrorMessage("");
 
-        return call;
-      });
-    });
-
-    setSelectedCallId(null);
+    try {
+      await archiveAllCalls();
+      setSelectedCallId(null);
+      await loadCalls();
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
   }
 
-  function handleUnarchiveCall(callId) {
-    setCalls((currentCalls) => {
-      return currentCalls.map((call) => {
-        if (call.id === callId) {
-          return {
-            ...call,
-            is_archived: false
-          };
-        }
+  async function handleUnarchiveCall(callId) {
+    setErrorMessage("");
 
-        return call;
-      });
-    });
+    try {
+      const unarchivedCall = await unarchiveCall(callId);
+      updateCallInState(unarchivedCall);
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
   }
 
-  function handleUnarchiveAll() {
+  async function handleUnarchiveAll() {
     const confirmed = window.confirm(
       "Are you sure you want to unarchive all archived calls?"
     );
@@ -117,20 +135,15 @@ function App() {
       return;
     }
 
-    setCalls((currentCalls) => {
-      return currentCalls.map((call) => {
-        if (call.is_archived) {
-          return {
-            ...call,
-            is_archived: false,
-          };
-        }
+    setErrorMessage("");
 
-        return call;
-      });
-    });
-
-    setSelectedCallId(null);
+    try {
+      await unarchiveAllCalls();
+      setSelectedCallId(null);
+      await loadCalls();
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
   }
 
 
@@ -163,17 +176,29 @@ function App() {
       </header>
 
       <main className="dashboard">
-        <CallFeed 
-          calls={visibleCalls} 
-          callView={callView}
-          onCallViewChange={setCallView}
-          onSelectCall={handleSelectCall} 
-          onArchiveCall={handleArchiveCall}
-          onUnarchiveCall={handleUnarchiveCall} 
-          onArchiveAll={handleArchiveAll}
-          onUnarchiveAll={handleUnarchiveAll}
-          onResetMockData={handleResetMockData}
-        />
+        {errorMessage && (
+          <div className="empty-state">
+            <p>{errorMessage}</p>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="empty-state">
+            <p>Loading calls...</p>
+          </div>
+        ) : (
+          <CallFeed 
+            calls={visibleCalls} 
+            callView={callView}
+            onCallViewChange={setCallView}
+            onSelectCall={handleSelectCall} 
+            onArchiveCall={handleArchiveCall}
+            onUnarchiveCall={handleUnarchiveCall} 
+            onArchiveAll={handleArchiveAll}
+            onUnarchiveAll={handleUnarchiveAll}
+            onResetMockData={handleResetMockData}
+          />
+        )}
       </main>
 
       {/* Display the selected call details in a popup bubble */}
