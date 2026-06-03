@@ -384,7 +384,8 @@ select {
 .close-button,
 .pagination-button,
 .secondary-button,
-.primary-button {
+.primary-button,
+.danger-button {
   border: 1px solid var(--color-border);
   cursor: pointer;
   font-size: 13px;
@@ -423,7 +424,8 @@ select {
 
 .pagination-button,
 .secondary-button,
-.primary-button {
+.primary-button,
+.danger-button {
   padding: 8px 14px;
   border-radius: 999px;
   white-space: nowrap;
@@ -439,7 +441,21 @@ select {
   opacity: 0.9;
 }
 
-.pagination-button:disabled {
+.danger-button {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.pagination-button:disabled,
+.primary-button:disabled,
+.secondary-button:disabled,
+.danger-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -598,6 +614,47 @@ select {
   margin-bottom: 0;
 }
 
+.details-note-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.details-note-form label {
+  color: var(--color-text-heading);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.details-note-form textarea {
+  min-height: 96px;
+  resize: vertical;
+  padding: 12px;
+  background: var(--color-button-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-main);
+  font: inherit;
+}
+
+.details-note-form textarea:focus {
+  border-color: var(--color-border-hover);
+  outline: none;
+}
+
+.details-note-form .primary-button {
+  justify-self: start;
+}
+
+.details-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 .filter-section {
   padding: 18px 0;
   border-bottom: 1px solid var(--color-border);
@@ -711,6 +768,7 @@ select {
   .archive-button,
   .secondary-button,
   .primary-button,
+  .danger-button,
   .feed-footer .reset-data-button {
     width: 100%;
   }

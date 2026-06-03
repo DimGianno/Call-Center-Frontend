@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
+  addCallNote,
   archiveAllCalls,
   archiveCall,
+  deleteCall,
   fetchAllCalls,
   fetchCall,
   unarchiveAllCalls,
@@ -87,12 +89,51 @@ function App() {
       updateCallInState(archivedCall);
     } catch (error) {
       setErrorMessage(error.message);
-      return;
+      return false;
     }
 
     if (selectedCallId === callId) {
       setSelectedCallId(null);
     } 
+
+    return true;
+  }
+
+  async function handleAddNote(callId, content) {
+    setErrorMessage("");
+
+    try {
+      const updatedCall = await addCallNote(callId, content);
+      updateCallInState(updatedCall);
+      return true;
+    } catch (error) {
+      setErrorMessage(error.message);
+      return false;
+    }
+  }
+
+  async function handleDeleteCall(callId) {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this call?"
+    );
+
+    if (!confirmed) {
+      return false;
+    }
+
+    setErrorMessage("");
+
+    try {
+      await deleteCall(callId);
+      setCalls((currentCalls) => {
+        return currentCalls.filter((call) => call.id !== callId);
+      });
+      setSelectedCallId(null);
+      return true;
+    } catch (error) {
+      setErrorMessage(error.message);
+      return false;
+    }
   }
 
   async function handleArchiveAll() {
@@ -206,6 +247,9 @@ function App() {
         <CallDetails 
           call={selectedCall} 
           onClose={() => setSelectedCallId(null)} 
+          onAddNote={handleAddNote}
+          onArchiveCall={handleArchiveCall}
+          onDeleteCall={handleDeleteCall}
         />
       )}
     </div>

@@ -64,9 +64,22 @@ export function fetchCall(callId) {
   return apiRequest(`/calls/${callId}`);
 }
 
+export function addCallNote(callId, content) {
+  return apiRequest(`/calls/${callId}/notes`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+}
+
 export function archiveCall(callId) {
   return apiRequest(`/calls/${callId}/archive`, {
     method: "PATCH",
+  });
+}
+
+export function deleteCall(callId) {
+  return apiRequest(`/calls/${callId}`, {
+    method: "DELETE",
   });
 }
 
