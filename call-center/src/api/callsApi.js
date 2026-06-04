@@ -1,7 +1,10 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ?? "https://call-center-backend-7z8r.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 async function apiRequest(path, options = {}) {
+  if (!API_BASE_URL) {
+    throw new Error("Missing VITE_API_URL environment variable.");
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",

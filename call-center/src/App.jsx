@@ -11,6 +11,7 @@ import {
 } from "./api/callsApi";
 import CallFeed from "./components/CallFeed";
 import CallDetails from "./components/CallDetails";
+import ConfirmDialog from "./components/ConfirmDialog";
 
 function App() {
   const [calls, setCalls] = useState([]);
@@ -19,6 +20,8 @@ function App() {
   const [callView, setCallView] = useState("active");
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  const [isConfirmProcessing, setIsConfirmProcessing] = useState(false);
 
   useEffect(() => {
     loadCalls();
@@ -50,17 +53,41 @@ function App() {
     });
   }
 
-  async function handleResetMockData() {
-    const confirmed = window.confirm(
-      "Are you sure you want to reload calls from the backend?"
-    );
+  function openConfirmDialog(dialogConfig) {
+    setConfirmDialog(dialogConfig);
+  }
 
-    if (!confirmed) {
+  function closeConfirmDialog() {
+    if (!isConfirmProcessing) {
+      setConfirmDialog(null);
+    }
+  }
+
+  async function handleConfirmAction() {
+    if (!confirmDialog) {
       return;
     }
 
-    setSelectedCallId(null);
-    await loadCalls();
+    setIsConfirmProcessing(true);
+
+    try {
+      await confirmDialog.onConfirm();
+      setConfirmDialog(null);
+    } finally {
+      setIsConfirmProcessing(false);
+    }
+  }
+
+  function handleResetMockData() {
+    openConfirmDialog({
+      title: "Reload calls?",
+      message: "This will refresh the list from the backend and close any selected call.",
+      confirmLabel: "Reload calls",
+      onConfirm: async () => {
+        setSelectedCallId(null);
+        await loadCalls();
+      },
+    });
   }
   
   function handleToggleTheme() {
@@ -112,48 +139,47 @@ function App() {
     }
   }
 
-  async function handleDeleteCall(callId) {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this call?"
-    );
+  function handleDeleteCall(callId) {
+    openConfirmDialog({
+      title: "Delete this call?",
+      message: "This call will be permanently removed from the dashboard.",
+      confirmLabel: "Delete call",
+      isDanger: true,
+      onConfirm: async () => {
+        setErrorMessage("");
 
-    if (!confirmed) {
-      return false;
-    }
+        try {
+          await deleteCall(callId);
+          setCalls((currentCalls) => {
+            return currentCalls.filter((call) => call.id !== callId);
+          });
+          setSelectedCallId(null);
+        } catch (error) {
+          setErrorMessage(error.message);
+        }
+      },
+    });
 
-    setErrorMessage("");
-
-    try {
-      await deleteCall(callId);
-      setCalls((currentCalls) => {
-        return currentCalls.filter((call) => call.id !== callId);
-      });
-      setSelectedCallId(null);
-      return true;
-    } catch (error) {
-      setErrorMessage(error.message);
-      return false;
-    }
+    return false;
   }
 
-  async function handleArchiveAll() {
-    const confirmed = window.confirm(
-      "Are you sure you want to archive all active calls?"
-    );
+  function handleArchiveAll() {
+    openConfirmDialog({
+      title: "Archive all active calls?",
+      message: `This will archive ${activeCallCount} active calls.`,
+      confirmLabel: "Archive all",
+      onConfirm: async () => {
+        setErrorMessage("");
 
-    if (!confirmed) {
-      return;
-    }
-
-    setErrorMessage("");
-
-    try {
-      await archiveAllCalls();
-      setSelectedCallId(null);
-      await loadCalls();
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
+        try {
+          await archiveAllCalls();
+          setSelectedCallId(null);
+          await loadCalls();
+        } catch (error) {
+          setErrorMessage(error.message);
+        }
+      },
+    });
   }
 
   async function handleUnarchiveCall(callId) {
@@ -167,26 +193,32 @@ function App() {
     }
   }
 
-  async function handleUnarchiveAll() {
-    const confirmed = window.confirm(
-      "Are you sure you want to unarchive all archived calls?"
-    );
+  function handleUnarchiveAll() {
+    openConfirmDialog({
+      title: "Unarchive all archived calls?",
+      message: `This will move ${archivedCallCount} archived calls back to active calls.`,
+      confirmLabel: "Unarchive all",
+      onConfirm: async () => {
+        setErrorMessage("");
 
-    if (!confirmed) {
-      return;
-    }
-
-    setErrorMessage("");
-
-    try {
-      await unarchiveAllCalls();
-      setSelectedCallId(null);
-      await loadCalls();
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
+        try {
+          await unarchiveAllCalls();
+          setSelectedCallId(null);
+          await loadCalls();
+        } catch (error) {
+          setErrorMessage(error.message);
+        }
+      },
+    });
   }
 
+  const activeCallCount = calls.filter((call) => {
+    return !call.is_archived;
+  }).length;
+
+  const archivedCallCount = calls.filter((call) => {
+    return call.is_archived;
+  }).length;
 
   const visibleCalls  = calls.filter((call) => {
     if (callView === "active") {
@@ -250,6 +282,18 @@ function App() {
           onAddNote={handleAddNote}
           onArchiveCall={handleArchiveCall}
           onDeleteCall={handleDeleteCall}
+        />
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          isDanger={confirmDialog.isDanger}
+          isProcessing={isConfirmProcessing}
+          onCancel={closeConfirmDialog}
+          onConfirm={handleConfirmAction}
         />
       )}
     </div>
