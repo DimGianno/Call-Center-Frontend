@@ -12,6 +12,7 @@ import {
 import CallFeed from "./components/CallFeed";
 import CallDetails from "./components/CallDetails";
 import ConfirmDialog from "./components/ConfirmDialog";
+import Toast from "./components/Toast";
 
 function App() {
   const [calls, setCalls] = useState([]);
@@ -22,10 +23,23 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [isConfirmProcessing, setIsConfirmProcessing] = useState(false);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     loadCalls();
   }, []);
+
+  useEffect(() => {
+    if (!toast) {
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setToast(null);
+    }, 3500);
+
+    return () => clearTimeout(timeoutId);
+  }, [toast]);
 
   async function loadCalls() {
     setIsLoading(true);
@@ -50,6 +64,14 @@ function App() {
 
         return call;
       });
+    });
+  }
+
+  function showToast(message, type = "success") {
+    setToast({
+      id: Date.now(),
+      message,
+      type,
     });
   }
 
@@ -114,6 +136,7 @@ function App() {
     try {
       const archivedCall = await archiveCall(callId);
       updateCallInState(archivedCall);
+      showToast("Call archived successfully.");
     } catch (error) {
       setErrorMessage(error.message);
       return false;
@@ -132,6 +155,7 @@ function App() {
     try {
       const updatedCall = await addCallNote(callId, content);
       updateCallInState(updatedCall);
+      showToast("Note added successfully.");
       return true;
     } catch (error) {
       setErrorMessage(error.message);
@@ -154,6 +178,7 @@ function App() {
             return currentCalls.filter((call) => call.id !== callId);
           });
           setSelectedCallId(null);
+          showToast("Call deleted successfully.");
         } catch (error) {
           setErrorMessage(error.message);
         }
@@ -175,6 +200,7 @@ function App() {
           await archiveAllCalls();
           setSelectedCallId(null);
           await loadCalls();
+          showToast("All active calls archived successfully.");
         } catch (error) {
           setErrorMessage(error.message);
         }
@@ -188,8 +214,11 @@ function App() {
     try {
       const unarchivedCall = await unarchiveCall(callId);
       updateCallInState(unarchivedCall);
+      showToast("Call unarchived successfully.");
+      return true;
     } catch (error) {
       setErrorMessage(error.message);
+      return false;
     }
   }
 
@@ -205,6 +234,7 @@ function App() {
           await unarchiveAllCalls();
           setSelectedCallId(null);
           await loadCalls();
+          showToast("All archived calls unarchived successfully.");
         } catch (error) {
           setErrorMessage(error.message);
         }
@@ -294,6 +324,15 @@ function App() {
           isProcessing={isConfirmProcessing}
           onCancel={closeConfirmDialog}
           onConfirm={handleConfirmAction}
+        />
+      )}
+
+      {toast && (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast(null)}
         />
       )}
     </div>

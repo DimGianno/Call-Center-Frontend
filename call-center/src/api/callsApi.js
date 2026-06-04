@@ -1,25 +1,80 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL;
+const MAX_RETRY_ATTEMPTS = 2;
+const RETRY_DELAY_MS = 400;
 
 async function apiRequest(path, options = {}) {
   if (!API_BASE_URL) {
     throw new Error("Missing VITE_API_URL environment variable.");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    ...options,
-  });
+  let lastError;
 
-  const data = await response.json();
+  for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${path}`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...options.headers,
+        },
+        ...options,
+      });
 
-  if (!response.ok) {
-    throw new Error(data.error ?? "Something went wrong while contacting the API.");
+      const data = await parseJsonResponse(response);
+
+      if (response.ok) {
+        return data;
+      }
+
+      const errorMessage =
+        data?.error ?? "Something went wrong while contacting the API.";
+
+      if (!shouldRetryResponse(response) || attempt === MAX_RETRY_ATTEMPTS) {
+        throw createApiError(errorMessage, false);
+      }
+
+      lastError = new Error(errorMessage);
+    } catch (error) {
+      lastError = error;
+
+      if (error.shouldRetry === false || attempt === MAX_RETRY_ATTEMPTS) {
+        break;
+      }
+    }
+
+    await waitBeforeRetry(attempt);
   }
 
-  return data;
+  throw lastError;
+}
+
+async function parseJsonResponse(response) {
+  const text = await response.text();
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function shouldRetryResponse(response) {
+  return response.status >= 500;
+}
+
+function createApiError(message, shouldRetry) {
+  const error = new Error(message);
+  error.shouldRetry = shouldRetry;
+  return error;
+}
+
+function waitBeforeRetry(attempt) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, RETRY_DELAY_MS * (attempt + 1));
+  });
 }
 
 async function fetchCallsPage({ isArchived, page = 1, limit = 50 }) {
