@@ -982,7 +982,7 @@ select {
 
   .search-control,
   .page-size-control,
-  .icon-action-button {
+  .feed-actions .icon-action-button {
     width: 100%;
     max-width: none;
     justify-content: flex-start;
@@ -1012,9 +1012,15 @@ select {
   .archive-button,
   .secondary-button,
   .primary-button,
-  .danger-button,
-  .feed-footer .reset-data-button {
+  .danger-button {
     width: 100%;
+  }
+
+  .app-header .icon-action-button,
+  .feed-footer .reset-data-button {
+    width: auto;
+    max-width: max-content;
+    justify-content: center;
   }
 
   .modal-overlay {
@@ -1060,6 +1066,6 @@ select {
   }
 
   .feed-footer {
-    justify-content: stretch;
+    justify-content: center;
   }
 }
