@@ -66,8 +66,6 @@ function CallFeed({
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
-  const visibleStart = sortedCalls.length === 0 ? 0 : startIndex + 1;
-  const visibleEnd = Math.min(endIndex, sortedCalls.length);
   function handlePreviousPage() {
     setCurrentPage((currentPage) => {
       return Math.max(currentPage - 1, 1);
@@ -82,21 +80,9 @@ function CallFeed({
   /* group calls for current page by date */
   const groupedCalls = groupCallsByDate(currentPageCalls);
 
-  const hasSearchTerm = searchTerm.trim() !== "";
-  const hasActiveSearchOrFilters = hasSearchTerm || hasActiveFilters;
-
   return (
     <section className="call-feed">
       <div className="feed-header">
-        <div className="feed-title">
-          <h2>{isActiveView ? "Active Calls" : "Archived Calls"}</h2>
-          <p>
-            {sortedCalls.length === 0
-              ? "No calls to display."
-              : `Showing ${visibleStart} <-> ${visibleEnd} of ${sortedCalls.length} ${hasActiveSearchOrFilters ? `matching calls (${calls.length} total)` : "calls"}`}
-          </p>
-        </div>
-
         <div className="feed-actions">
           <label
             className={searchTerm.trim() !== "" ? "search-control has-value" : "search-control"}

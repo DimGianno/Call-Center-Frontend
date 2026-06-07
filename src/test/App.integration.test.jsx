@@ -97,7 +97,7 @@ describe("App API-backed user flows", () => {
 
     expect(fetchAllCalls).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("+1 555-0200")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Active Calls" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View archived calls" })).toBeInTheDocument();
   });
 
   it("shows an API error when calls fail to load", async () => {
@@ -218,7 +218,7 @@ describe("App API-backed user flows", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "View archived calls" }));
 
-    expect(screen.getByRole("heading", { name: "Archived Calls" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View active calls" })).toBeInTheDocument();
     const callCard = screen.getByText("+1 555-0200").closest(".call-card");
     await userEvent.click(within(callCard).getByRole("button", { name: "Unarchive this call" }));
 
