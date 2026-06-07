@@ -132,25 +132,60 @@ function App() {
 
   async function handleArchiveCall(callId) {
     setErrorMessage("");
+    const previousCalls = calls;
+    const previousSelectedCallId = selectedCallId;
+
+    setCalls((currentCalls) => {
+      return currentCalls.map((call) => {
+        if (call.id === callId) {
+          return {
+            ...call,
+            is_archived: true,
+          };
+        }
+
+        return call;
+      });
+    });
+
+    if (selectedCallId === callId) {
+      setSelectedCallId(null);
+    }
 
     try {
       const archivedCall = await archiveCall(callId);
       updateCallInState(archivedCall);
       showToast("Call archived successfully.");
     } catch (error) {
+      setCalls(previousCalls);
+      setSelectedCallId(previousSelectedCallId);
       setErrorMessage(error.message);
       return false;
     }
-
-    if (selectedCallId === callId) {
-      setSelectedCallId(null);
-    } 
 
     return true;
   }
 
   async function handleAddNote(callId, content) {
     setErrorMessage("");
+    const previousCalls = calls;
+    const temporaryNote = {
+      id: `temp-${Date.now()}`,
+      content,
+    };
+
+    setCalls((currentCalls) => {
+      return currentCalls.map((call) => {
+        if (call.id === callId) {
+          return {
+            ...call,
+            notes: [...(call.notes ?? []), temporaryNote],
+          };
+        }
+
+        return call;
+      });
+    });
 
     try {
       const updatedCall = await addCallNote(callId, content);
@@ -158,6 +193,7 @@ function App() {
       showToast("Note added successfully.");
       return true;
     } catch (error) {
+      setCalls(previousCalls);
       setErrorMessage(error.message);
       return false;
     }
@@ -171,15 +207,20 @@ function App() {
       isDanger: true,
       onConfirm: async () => {
         setErrorMessage("");
+        const previousCalls = calls;
+        const previousSelectedCallId = selectedCallId;
+
+        setCalls((currentCalls) => {
+          return currentCalls.filter((call) => call.id !== callId);
+        });
+        setSelectedCallId(null);
 
         try {
           await deleteCall(callId);
-          setCalls((currentCalls) => {
-            return currentCalls.filter((call) => call.id !== callId);
-          });
-          setSelectedCallId(null);
           showToast("Call deleted successfully.");
         } catch (error) {
+          setCalls(previousCalls);
+          setSelectedCallId(previousSelectedCallId);
           setErrorMessage(error.message);
         }
       },
@@ -210,6 +251,20 @@ function App() {
 
   async function handleUnarchiveCall(callId) {
     setErrorMessage("");
+    const previousCalls = calls;
+
+    setCalls((currentCalls) => {
+      return currentCalls.map((call) => {
+        if (call.id === callId) {
+          return {
+            ...call,
+            is_archived: false,
+          };
+        }
+
+        return call;
+      });
+    });
 
     try {
       const unarchivedCall = await unarchiveCall(callId);
@@ -217,6 +272,7 @@ function App() {
       showToast("Call unarchived successfully.");
       return true;
     } catch (error) {
+      setCalls(previousCalls);
       setErrorMessage(error.message);
       return false;
     }
