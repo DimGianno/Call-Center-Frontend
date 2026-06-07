@@ -76,6 +76,30 @@ Preview the production build:
 npm run preview
 ```
 
+Run tests:
+
+```bash
+npm test
+```
+
+Run tests in watch mode:
+
+```bash
+npm run test:watch
+```
+
+Check formatting:
+
+```bash
+npm run format:check
+```
+
+Format files:
+
+```bash
+npm run format
+```
+
 ---
 
 ## Current Features
@@ -232,6 +256,15 @@ src/
   utils/
     callUtils.js
     formatters.js
+
+  test/
+    App.integration.test.jsx
+    callsApi.test.js
+    setup.js
+
+.github/
+  workflows/
+    ci.yml
 ```
 
 ---
@@ -546,6 +579,97 @@ Example formatting responsibilities:
 
 ---
 
+## Testing
+
+The project uses **Vitest**, **React Testing Library**, **jest-dom**, and **jsdom**.
+
+Run the full test suite:
+
+```bash
+npm test
+```
+
+The current suite includes:
+
+- Integration tests for API-backed user flows in `App`
+- API service tests for pagination, retry behavior, request methods, request bodies, and missing API configuration
+
+The integration tests cover:
+
+- Initial call loading
+- API error states
+- Selecting call details
+- Adding notes
+- Optimistic note rollback on failure
+- Archiving and unarchiving calls
+- Optimistic archive rollback on failure
+- Bulk archive and unarchive confirmations
+- Reload confirmation
+- Delete confirmation
+- Search, filters, pagination, empty states, and theme toggling
+
+Test files live in:
+
+```txt
+src/test/
+```
+
+---
+
+## Code Quality
+
+The project uses **ESLint** for linting and **Prettier** for formatting.
+
+Run linting:
+
+```bash
+npm run lint
+```
+
+Check formatting without changing files:
+
+```bash
+npm run format:check
+```
+
+Apply formatting:
+
+```bash
+npm run format
+```
+
+Prettier is configured with:
+
+```txt
+.prettierrc
+.prettierignore
+```
+
+---
+
+## Continuous Integration
+
+GitHub Actions is configured in:
+
+```txt
+.github/workflows/ci.yml
+```
+
+The CI workflow runs automatically on:
+
+- Pushes
+- Pull requests
+
+The pipeline:
+
+- Installs dependencies with `npm ci`
+- Checks formatting with `npm run format:check`
+- Runs linting with `npm run lint`
+- Runs tests with `npm test`
+- Builds the project with `npm run build`
+
+---
+
 ## Main Data Flow
 
 ### Initial calls state
@@ -805,5 +929,5 @@ Possible future improvements:
 - Search inside notes
 - Backend-supported phone search
 - Backend-supported date range filtering
-- Add unit tests for utility functions
-- Add integration tests for API-backed user flows
+- Add more focused unit tests for utility edge cases
+- Add a deployment workflow after choosing a hosting target
