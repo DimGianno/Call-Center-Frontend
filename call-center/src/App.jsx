@@ -12,6 +12,7 @@ import {
 import CallFeed from "./components/CallFeed";
 import CallDetails from "./components/CallDetails";
 import ConfirmDialog from "./components/ConfirmDialog";
+import StatsCards from "./components/StatsCards";
 import Toast from "./components/Toast";
 
 function App() {
@@ -346,17 +347,20 @@ function App() {
             <p>Loading calls...</p>
           </div>
         ) : (
-          <CallFeed 
-            calls={visibleCalls} 
-            callView={callView}
-            onCallViewChange={setCallView}
-            onSelectCall={handleSelectCall} 
-            onArchiveCall={handleArchiveCall}
-            onUnarchiveCall={handleUnarchiveCall} 
-            onArchiveAll={handleArchiveAll}
-            onUnarchiveAll={handleUnarchiveAll}
-            onReloadCalls={handleReloadCalls}
-          />
+          <>
+            <StatsCards calls={visibleCalls} callView={callView} />
+            <CallFeed 
+              calls={visibleCalls} 
+              callView={callView}
+              onCallViewChange={setCallView}
+              onSelectCall={handleSelectCall} 
+              onArchiveCall={handleArchiveCall}
+              onUnarchiveCall={handleUnarchiveCall} 
+              onArchiveAll={handleArchiveAll}
+              onUnarchiveAll={handleUnarchiveAll}
+              onReloadCalls={handleReloadCalls}
+            />
+          </>
         )}
       </main>
 

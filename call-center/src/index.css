@@ -117,6 +117,78 @@ select {
   margin: 0 auto;
 }
 
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  max-width: var(--feed-width);
+  margin: 0 auto 18px;
+}
+
+.stat-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 8px;
+  min-height: 72px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.stat-card-icon {
+  grid-row: span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--color-header-bg);
+  color: var(--color-text-inverse);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-card-label {
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stat-card-value {
+  color: var(--color-text-heading);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.stat-card-inbound .stat-card-icon {
+  background: var(--color-inbound);
+}
+
+.stat-card-outbound .stat-card-icon {
+  background: var(--color-outbound);
+}
+
+.stat-card-answered .stat-card-icon {
+  background: var(--color-answered-bg);
+  color: var(--color-answered-text);
+}
+
+.stat-card-missed .stat-card-icon {
+  background: var(--color-missed-bg);
+  color: var(--color-missed-text);
+}
+
+.stat-card-voicemail .stat-card-icon {
+  background: var(--color-voicemail-bg);
+  color: var(--color-voicemail-text);
+}
+
 .feed-header {
   display: flex;
   align-items: center;
@@ -887,6 +959,10 @@ select {
   .feed-actions {
     padding-left: 0;
     border-left: none;
+  }
+
+  .stats-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .search-control,

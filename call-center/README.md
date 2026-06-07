@@ -85,6 +85,7 @@ npm run preview
 - Fetch calls from the backend API
 - View active calls in a call activity feed
 - View archived calls using the active/archived feed toggle
+- View compact statistics cards for the current active or archived feed view
 - Group calls by date
 - Sort calls newest first
 - Display call rows with:
@@ -95,6 +96,22 @@ npm run preview
   - time
   - duration
   - archive/unarchive action
+
+### Statistics Cards
+
+- Show 6 compact cards above the call feed
+- Count only the current feed view:
+  - active calls when viewing Active
+  - archived calls when viewing Archived
+- Display:
+  - current view total
+  - inbound calls
+  - outbound calls
+  - answered calls
+  - missed calls
+  - voicemail calls
+- Match the direction and call-type colors used in the feed
+- Stay independent from phone search, filters, sorting, and pagination
 
 ### Call Details
 
@@ -209,6 +226,7 @@ src/
     ConfirmDialog.jsx
     FilterModal.jsx
     PaginationControls.jsx
+    StatsCards.jsx
     Toast.jsx
 
   utils/
@@ -222,6 +240,7 @@ src/
 
 ```txt
 App
+  |-- StatsCards
   |-- CallFeed
   |   |-- FilterModal
   |   |-- PaginationControls
@@ -264,6 +283,7 @@ It is responsible for:
 - Running optimistic updates for single-call actions
 - Rolling back optimistic updates when API requests fail
 - Filtering calls by current view before passing them to `CallFeed`
+- Passing current-view calls to `StatsCards`
 
 Main state values:
 
@@ -343,6 +363,23 @@ The calls it receives from `App.jsx` are already filtered by view:
 Active view    -> non-archived calls
 Archived view  -> archived calls
 ```
+
+---
+
+### `StatsCards.jsx`
+
+`StatsCards.jsx` displays compact summary cards above the feed.
+
+It is responsible for:
+
+- Counting calls from the current active or archived view
+- Showing the current view total:
+  - Active Calls
+  - Archived Calls
+- Counting inbound and outbound calls
+- Counting answered, missed, and voicemail calls
+- Rendering direction and type accents that match the feed colors
+- Staying unaffected by search, filters, sorting, and pagination
 
 ---
 
@@ -541,6 +578,8 @@ all calls in App.jsx
   |
 filter by active/archived view
   |
+StatsCards
+  |
 CallFeed
   |
 search by phone number
@@ -557,6 +596,8 @@ render CallItem rows
 ```
 
 Phone search, date filtering, duration filtering, sorting, grouping, and UI pagination run on the frontend after calls are fetched.
+
+Statistics cards are calculated from the active/archived view before search, filtering, sorting, or pagination are applied.
 
 ---
 
@@ -764,11 +805,5 @@ Possible future improvements:
 - Search inside notes
 - Backend-supported phone search
 - Backend-supported date range filtering
-- Add statistics cards:
-  - total calls
-  - active calls
-  - archived calls
-  - missed calls
-  - voicemail calls
 - Add unit tests for utility functions
 - Add integration tests for API-backed user flows
