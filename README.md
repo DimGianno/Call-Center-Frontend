@@ -4,6 +4,12 @@ A frontend call management dashboard built with **React**, **JavaScript**, and a
 
 The app displays a call activity feed where users can view active and archived calls, inspect call details, add notes, archive or unarchive calls, delete calls, filter/search calls, group calls by date, paginate large call lists, and receive success/error feedback for API-backed actions.
 
+Live frontend:
+
+```txt
+https://call-center-frontend-fawn.vercel.app/
+```
+
 ---
 
 ## Backend API
@@ -647,7 +653,7 @@ Prettier is configured with:
 
 ---
 
-## Continuous Integration
+## Continuous Integration / Deployment
 
 GitHub Actions is configured in:
 
@@ -667,6 +673,16 @@ The pipeline:
 - Runs linting with `npm run lint`
 - Runs tests with `npm test`
 - Builds the project with `npm run build`
+
+Continuous deployment is handled by **Vercel**:
+
+```txt
+https://call-center-frontend-fawn.vercel.app/
+```
+
+Vercel is connected to the frontend repository and deploys the Vite app automatically when changes are pushed to the production branch.
+
+Branch protection is also configured so protected merges require CI to pass before code is merged into `main`.
 
 ---
 
@@ -930,4 +946,3 @@ Possible future improvements:
 - Backend-supported phone search
 - Backend-supported date range filtering
 - Add more focused unit tests for utility edge cases
-- Add a deployment workflow after choosing a hosting target
