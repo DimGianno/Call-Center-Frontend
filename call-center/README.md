@@ -136,10 +136,11 @@ npm run preview
   - inbound
   - outbound
 - Filter by date range using native date inputs
+- Filter by duration using a double slider from `0 sec` to `500+ sec`
 - Reset filters inside the filter modal
 - Cancel filter changes without affecting the feed
 - Show active filter count on the filter button
-- Date filtering is handled on the frontend after calls are fetched
+- Date and duration filtering are handled on the frontend after calls are fetched
 
 ### Search
 
@@ -435,6 +436,7 @@ It is responsible for:
 - Displaying call type filter checkboxes
 - Displaying direction filter checkboxes
 - Displaying date range inputs
+- Displaying the duration double slider
 - Updating draft filter values
 - Resetting draft filters
 - Cancelling without applying changes
@@ -478,7 +480,7 @@ It is responsible for:
 - Default filter settings
 - Counting active filters
 - Searching calls by phone number
-- Filtering calls by type, direction, and date range
+- Filtering calls by type, direction, date range, and duration range
 - Sorting calls newest first
 - Paginating calls
 - Grouping calls by date
@@ -554,7 +556,7 @@ group current page by date
 render CallItem rows
 ```
 
-Phone search, date filtering, sorting, grouping, and UI pagination run on the frontend after calls are fetched.
+Phone search, date filtering, duration filtering, sorting, grouping, and UI pagination run on the frontend after calls are fetched.
 
 ---
 
@@ -759,9 +761,7 @@ Examples:
 
 Possible future improvements:
 
-- Better keyboard accessibility for clickable call rows
 - Search inside notes
-- Filter by duration
 - Backend-supported phone search
 - Backend-supported date range filtering
 - Add statistics cards:

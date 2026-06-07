@@ -5,6 +5,12 @@ function FilterModal({
     onClose,
     onConfirm,
  }) {
+    const durationSliderMax = 500;
+    const durationMin = draftFilters.durationMin === "" ? 0 : Number(draftFilters.durationMin);
+    const durationMax = draftFilters.durationMax === "" ? durationSliderMax : Number(draftFilters.durationMax);
+    const durationMinPercent = (durationMin / durationSliderMax) * 100;
+    const durationMaxPercent = (durationMax / durationSliderMax) * 100;
+
     function handleCallTypeChange(callType, checked) {
         onDraftFiltersChange({
         ...draftFilters,
@@ -30,6 +36,32 @@ function FilterModal({
         ...draftFilters,
         [fieldName]: value,
         });
+    }
+
+    function handleDurationMinChange(value) {
+        const nextMin = Math.min(Number(value), durationMax);
+
+        onDraftFiltersChange({
+        ...draftFilters,
+        durationMin: nextMin === 0 ? "" : String(nextMin),
+        });
+    }
+
+    function handleDurationMaxChange(value) {
+        const nextMax = Math.max(Number(value), durationMin);
+
+        onDraftFiltersChange({
+        ...draftFilters,
+        durationMax: nextMax === durationSliderMax ? "" : String(nextMax),
+        });
+    }
+
+    function formatDurationLabel(value, isMaxValue = false) {
+        if (isMaxValue && value === durationSliderMax) {
+            return `${durationSliderMax}+ sec`;
+        }
+
+        return `${value} sec`;
     }
 
     return (
@@ -104,7 +136,7 @@ function FilterModal({
                 <div className="filter-section">
                     <h3>Date Range</h3>
 
-                    <div className="date-filter-grid">
+                    <div className="range-filter-grid">
                         <label>
                         From
                         <input 
@@ -122,6 +154,44 @@ function FilterModal({
                             onChange={(event) => handleDateChange("dateTo", event.target.value)}
                         />
                         </label>
+                    </div>
+                </div>
+
+                <div className="filter-section">
+                    <h3>Duration</h3>
+
+                    <div className="duration-slider">
+                        <div className="duration-slider-values">
+                            <span>{formatDurationLabel(durationMin)}</span>
+                            <span>{formatDurationLabel(durationMax, true)}</span>
+                        </div>
+
+                        <div 
+                            className="duration-slider-track"
+                            style={{
+                                "--duration-min": `${durationMinPercent}%`,
+                                "--duration-max": `${durationMaxPercent}%`,
+                            }}
+                        >
+                            <input
+                                type="range"
+                                min="0"
+                                max={durationSliderMax}
+                                step="5"
+                                value={durationMin}
+                                aria-label="Minimum call duration in seconds"
+                                onChange={(event) => handleDurationMinChange(event.target.value)}
+                            />
+                            <input
+                                type="range"
+                                min="0"
+                                max={durationSliderMax}
+                                step="5"
+                                value={durationMax}
+                                aria-label="Maximum call duration in seconds"
+                                onChange={(event) => handleDurationMaxChange(event.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 

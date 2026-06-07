@@ -754,13 +754,13 @@ select {
   cursor: pointer;
 }
 
-.date-filter-grid {
+.range-filter-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
 
-.date-filter-grid label {
+.range-filter-grid label {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -769,13 +769,99 @@ select {
   font-weight: 700;
 }
 
-.date-filter-grid input {
+.range-filter-grid input {
   padding: 9px 10px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 7px;
   color: var(--color-text-main);
   font-size: 14px;
+}
+
+.duration-slider {
+  display: grid;
+  gap: 14px;
+}
+
+.duration-slider-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.duration-slider-track {
+  position: relative;
+  height: 32px;
+}
+
+.duration-slider-track::before,
+.duration-slider-track::after {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 6px;
+  border-radius: 999px;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.duration-slider-track::before {
+  background: var(--color-border);
+}
+
+.duration-slider-track::after {
+  right: calc(100% - var(--duration-max));
+  left: var(--duration-min);
+  background: var(--color-header-bg);
+}
+
+.duration-slider-track input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  appearance: none;
+  background: transparent;
+}
+
+.duration-slider-track input::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-header-bg);
+  border-radius: 50%;
+  background: var(--color-surface);
+  cursor: pointer;
+  pointer-events: auto;
+  appearance: none;
+}
+
+.duration-slider-track input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-header-bg);
+  border-radius: 50%;
+  background: var(--color-surface);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.duration-slider-track input::-webkit-slider-runnable-track {
+  height: 6px;
+  background: transparent;
+}
+
+.duration-slider-track input::-moz-range-track {
+  height: 6px;
+  background: transparent;
 }
 
 .filter-actions {
@@ -878,7 +964,7 @@ select {
     padding-top: 4px;
   }
 
-  .date-filter-grid {
+  .range-filter-grid {
     grid-template-columns: 1fr;
   }
 
