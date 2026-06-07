@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 import {
   addCallNote,
   archiveAllCalls,
@@ -112,13 +112,13 @@ function App() {
       },
     });
   }
-  
+
   function handleToggleTheme() {
     setTheme((currentTheme) => {
       return currentTheme === "dark" ? "light" : "dark";
     });
   }
-  
+
   async function handleSelectCall(callId) {
     setErrorMessage("");
 
@@ -307,7 +307,7 @@ function App() {
     return call.is_archived;
   }).length;
 
-  const visibleCalls  = calls.filter((call) => {
+  const visibleCalls = calls.filter((call) => {
     if (callView === "active") {
       return !call.is_archived;
     }
@@ -349,13 +349,13 @@ function App() {
         ) : (
           <>
             <StatsCards calls={visibleCalls} callView={callView} />
-            <CallFeed 
-              calls={visibleCalls} 
+            <CallFeed
+              calls={visibleCalls}
               callView={callView}
               onCallViewChange={setCallView}
-              onSelectCall={handleSelectCall} 
+              onSelectCall={handleSelectCall}
               onArchiveCall={handleArchiveCall}
-              onUnarchiveCall={handleUnarchiveCall} 
+              onUnarchiveCall={handleUnarchiveCall}
               onArchiveAll={handleArchiveAll}
               onUnarchiveAll={handleUnarchiveAll}
               onReloadCalls={handleReloadCalls}
@@ -366,9 +366,9 @@ function App() {
 
       {/* Display the selected call details in a popup bubble */}
       {selectedCall && (
-        <CallDetails 
-          call={selectedCall} 
-          onClose={() => setSelectedCallId(null)} 
+        <CallDetails
+          call={selectedCall}
+          onClose={() => setSelectedCallId(null)}
           onAddNote={handleAddNote}
           onArchiveCall={handleArchiveCall}
           onUnarchiveCall={handleUnarchiveCall}
@@ -397,7 +397,7 @@ function App() {
         />
       )}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

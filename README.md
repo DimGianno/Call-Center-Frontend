@@ -404,8 +404,8 @@ It is responsible for:
 Instead, it receives:
 
 ```jsx
-actionLabel
-onAction
+actionLabel;
+onAction;
 ```
 
 This makes it reusable for both active and archived calls.

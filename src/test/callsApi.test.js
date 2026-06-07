@@ -46,18 +46,24 @@ describe("callsApi", () => {
     const { fetchAllCalls } = await importCallsApi();
 
     fetch
-      .mockResolvedValueOnce(jsonResponse({
-        calls: [{ id: "active-1" }],
-        pagination: { totalPages: 2 },
-      }))
-      .mockResolvedValueOnce(jsonResponse({
-        calls: [{ id: "archived-1" }],
-        pagination: { totalPages: 1 },
-      }))
-      .mockResolvedValueOnce(jsonResponse({
-        calls: [{ id: "active-2" }],
-        pagination: { totalPages: 2 },
-      }));
+      .mockResolvedValueOnce(
+        jsonResponse({
+          calls: [{ id: "active-1" }],
+          pagination: { totalPages: 2 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          calls: [{ id: "archived-1" }],
+          pagination: { totalPages: 1 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          calls: [{ id: "active-2" }],
+          pagination: { totalPages: 2 },
+        }),
+      );
 
     await expect(fetchAllCalls()).resolves.toEqual([
       { id: "active-1" },
@@ -151,9 +157,7 @@ describe("callsApi", () => {
   it("throws a helpful error when the API URL is missing", async () => {
     const { fetchCall } = await importCallsApi({ apiUrl: "" });
 
-    await expect(fetchCall("call-1")).rejects.toThrow(
-      "Missing VITE_API_URL environment variable.",
-    );
+    await expect(fetchCall("call-1")).rejects.toThrow("Missing VITE_API_URL environment variable.");
     expect(fetch).not.toHaveBeenCalled();
   });
 });

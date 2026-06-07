@@ -13,9 +13,7 @@ import {
   sortCallsNewestFirst,
 } from "../utils/callUtils";
 
-
-
-function CallFeed({ 
+function CallFeed({
   calls,
   callView,
   onCallViewChange,
@@ -24,14 +22,14 @@ function CallFeed({
   onUnarchiveCall,
   onArchiveAll,
   onUnarchiveAll,
-  onReloadCalls
+  onReloadCalls,
 }) {
   const isActiveView = callView === "active";
 
   /* Determine action label and handler based on current view */
   const actionLabel = isActiveView ? "Archive" : "Unarchive";
   const actionHandler = isActiveView ? onArchiveCall : onUnarchiveCall;
-  
+
   /* archive all / unarchive all handlers */
   const bulkActionLabel = isActiveView ? "Archive All" : "Unarchive All";
   const bulkActionHandler = isActiveView ? onArchiveAll : onUnarchiveAll;
@@ -58,7 +56,11 @@ function CallFeed({
   const sortedCalls = sortCallsNewestFirst(filteredCalls);
 
   /* paginate sorted calls */
-  const {totalPages, startIndex, endIndex, currentPageCalls } = paginateCalls(sortedCalls, currentPage, pageSize);
+  const { totalPages, startIndex, endIndex, currentPageCalls } = paginateCalls(
+    sortedCalls,
+    currentPage,
+    pageSize,
+  );
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -84,171 +86,169 @@ function CallFeed({
   const hasActiveSearchOrFilters = hasSearchTerm || hasActiveFilters;
 
   return (
-      <section className="call-feed">
-        <div className="feed-header">
-          <div className="feed-title">
-            <h2>{isActiveView ? "Active Calls" : "Archived Calls"}</h2>
-            <p>
-              {sortedCalls.length === 0
-                ? "No calls to display."
-                : `Showing ${visibleStart} <-> ${visibleEnd} of ${sortedCalls.length} ${hasActiveSearchOrFilters ? `matching calls (${calls.length} total)` : "calls"}`}
-            </p>
-          </div>
+    <section className="call-feed">
+      <div className="feed-header">
+        <div className="feed-title">
+          <h2>{isActiveView ? "Active Calls" : "Archived Calls"}</h2>
+          <p>
+            {sortedCalls.length === 0
+              ? "No calls to display."
+              : `Showing ${visibleStart} <-> ${visibleEnd} of ${sortedCalls.length} ${hasActiveSearchOrFilters ? `matching calls (${calls.length} total)` : "calls"}`}
+          </p>
+        </div>
 
-          <div className="feed-actions">
-            <label
-              className={
-                searchTerm.trim() !== ""
-                  ? "search-control has-value"
-                  : "search-control"
-              }
-              title="Search calls by phone number"
-            >
-              <span className="search-icon">🔎</span>
+        <div className="feed-actions">
+          <label
+            className={searchTerm.trim() !== "" ? "search-control has-value" : "search-control"}
+            title="Search calls by phone number"
+          >
+            <span className="search-icon">🔎</span>
 
-              <input
-                type="search"
-                value={searchTerm}
-                placeholder="Phone number..."
-                aria-label="Search calls by phone number"
-                onChange={(event) => {
-                  setSearchTerm(event.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </label>
-            <label
-              className="page-size-control"
-              title="Select how many calls to show per page"
-            >
-              <span className="page-size-icon">📄</span>
-
-              <select
-                value={pageSize}
-                aria-label="Select how many calls to show per page"
-                onChange={(event) => {
-                  setPageSize(Number(event.target.value));
-                  setCurrentPage(1);
-                }}
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-            </label>
-            <button
-              className="icon-action-button"
-              title="Open filters"
-              aria-label="Open filters"
-              onClick={() => {
-                setDraftFilters(appliedFilters);
-                setIsFilterModalOpen(true);
+            <input
+              type="search"
+              value={searchTerm}
+              placeholder="Phone number..."
+              aria-label="Search calls by phone number"
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setCurrentPage(1);
               }}
-            >
-              <span className="icon-action-emoji">{hasActiveFilters ? `☰ (${activeFilterCount})` : "☰"}</span>
-              <span className="icon-action-label">
-                {hasActiveFilters ? `Filters (${activeFilterCount})` : "Filters"}
-              </span>
-            </button>
-            <button
-              className="icon-action-button"
-              title={isActiveView ? "View archived calls" : "View active calls"}
-              aria-label={isActiveView ? "View archived calls" : "View active calls"}
-              onClick={() => {
-                onCallViewChange(isActiveView ? "archived" : "active");
+            />
+          </label>
+          <label className="page-size-control" title="Select how many calls to show per page">
+            <span className="page-size-icon">📄</span>
+
+            <select
+              value={pageSize}
+              aria-label="Select how many calls to show per page"
+              onChange={(event) => {
+                setPageSize(Number(event.target.value));
                 setCurrentPage(1);
               }}
             >
-              <span className="icon-action-emoji">🗂️</span>
-              <span className="icon-action-label">
-                {isActiveView ? "View Archived" : "View Active"}
-              </span>
-            </button>
-            <button
-              className="icon-action-button"
-              title={isActiveView ? "Archive all calls" : "Unarchive all calls"}
-              aria-label={isActiveView ? "Archive all calls" : "Unarchive all calls"}
-              onClick={bulkActionHandler}
-              disabled={calls.length === 0}
-            >
-              <span className="icon-action-emoji">🗄️</span>
-              <span className="icon-action-label">
-                {isActiveView ? "Archive All" : "Unarchive All"}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* top pagination controls */}
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPreviousPage={handlePreviousPage}
-          onNextPage={handleNextPage}
-        />
-
-        {/* call list */}
-        {sortedCalls.length > 0 ? (
-          Object.entries(groupedCalls).map(([dateKey, callsForDate]) => {
-            return (
-              <div className="call-date-group" key={dateKey}>
-                <h3 className="date-group-title">{formatDateHeader(dateKey)}</h3>
-                {callsForDate.map((call) => {
-                  return (
-                    <CallItem 
-                      key={call.id} 
-                      call={call} 
-                      onSelectCall={onSelectCall} 
-                      actionLabel={actionLabel}
-                      onAction={actionHandler}
-                    />
-                  );
-                })}
-              </div>
-            );
-          })
-        ) : (
-          <div className="empty-state">
-            <p>{calls.length === 0 ? "No calls available." : "No calls match the current search or filters."}</p>
-          </div>
-        )}
-
-
-        {/* bottom pagination controls */}
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPreviousPage={handlePreviousPage}
-          onNextPage={handleNextPage}
-        />
-
-        <div className="feed-footer">
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </label>
           <button
-            className="icon-action-button reset-data-button"
-            title="Reload calls from the backend"
-            aria-label="Reload calls from the backend"
-            onClick={onReloadCalls}
+            className="icon-action-button"
+            title="Open filters"
+            aria-label="Open filters"
+            onClick={() => {
+              setDraftFilters(appliedFilters);
+              setIsFilterModalOpen(true);
+            }}
           >
-            <span className="icon-action-emoji">↺</span>
-            <span className="icon-action-label">Reload Data</span>
+            <span className="icon-action-emoji">
+              {hasActiveFilters ? `☰ (${activeFilterCount})` : "☰"}
+            </span>
+            <span className="icon-action-label">
+              {hasActiveFilters ? `Filters (${activeFilterCount})` : "Filters"}
+            </span>
+          </button>
+          <button
+            className="icon-action-button"
+            title={isActiveView ? "View archived calls" : "View active calls"}
+            aria-label={isActiveView ? "View archived calls" : "View active calls"}
+            onClick={() => {
+              onCallViewChange(isActiveView ? "archived" : "active");
+              setCurrentPage(1);
+            }}
+          >
+            <span className="icon-action-emoji">🗂️</span>
+            <span className="icon-action-label">
+              {isActiveView ? "View Archived" : "View Active"}
+            </span>
+          </button>
+          <button
+            className="icon-action-button"
+            title={isActiveView ? "Archive all calls" : "Unarchive all calls"}
+            aria-label={isActiveView ? "Archive all calls" : "Unarchive all calls"}
+            onClick={bulkActionHandler}
+            disabled={calls.length === 0}
+          >
+            <span className="icon-action-emoji">🗄️</span>
+            <span className="icon-action-label">
+              {isActiveView ? "Archive All" : "Unarchive All"}
+            </span>
           </button>
         </div>
+      </div>
 
-        {isFilterModalOpen && (
-          <FilterModal
-            draftFilters={draftFilters}
-            onDraftFiltersChange={setDraftFilters}
-            onReset={() => setDraftFilters(defaultFilters)}
-            onClose={() => setIsFilterModalOpen(false)}
-            onConfirm={() =>{
-              setAppliedFilters(draftFilters);
-              setCurrentPage(1);
-              setIsFilterModalOpen(false);
-            }}
-          />
-        )}
-      </section>
+      {/* top pagination controls */}
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+      />
+
+      {/* call list */}
+      {sortedCalls.length > 0 ? (
+        Object.entries(groupedCalls).map(([dateKey, callsForDate]) => {
+          return (
+            <div className="call-date-group" key={dateKey}>
+              <h3 className="date-group-title">{formatDateHeader(dateKey)}</h3>
+              {callsForDate.map((call) => {
+                return (
+                  <CallItem
+                    key={call.id}
+                    call={call}
+                    onSelectCall={onSelectCall}
+                    actionLabel={actionLabel}
+                    onAction={actionHandler}
+                  />
+                );
+              })}
+            </div>
+          );
+        })
+      ) : (
+        <div className="empty-state">
+          <p>
+            {calls.length === 0
+              ? "No calls available."
+              : "No calls match the current search or filters."}
+          </p>
+        </div>
+      )}
+
+      {/* bottom pagination controls */}
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+      />
+
+      <div className="feed-footer">
+        <button
+          className="icon-action-button reset-data-button"
+          title="Reload calls from the backend"
+          aria-label="Reload calls from the backend"
+          onClick={onReloadCalls}
+        >
+          <span className="icon-action-emoji">↺</span>
+          <span className="icon-action-label">Reload Data</span>
+        </button>
+      </div>
+
+      {isFilterModalOpen && (
+        <FilterModal
+          draftFilters={draftFilters}
+          onDraftFiltersChange={setDraftFilters}
+          onReset={() => setDraftFilters(defaultFilters)}
+          onClose={() => setIsFilterModalOpen(false)}
+          onConfirm={() => {
+            setAppliedFilters(draftFilters);
+            setCurrentPage(1);
+            setIsFilterModalOpen(false);
+          }}
+        />
+      )}
+    </section>
   );
 }
 

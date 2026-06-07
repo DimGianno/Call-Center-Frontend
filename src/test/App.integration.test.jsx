@@ -284,9 +284,7 @@ describe("App API-backed user flows", () => {
       from: "+1 555-0300",
       to: "+1 555-0330",
     });
-    fetchAllCalls
-      .mockResolvedValueOnce([activeCall])
-      .mockResolvedValueOnce([reloadedCall]);
+    fetchAllCalls.mockResolvedValueOnce([activeCall]).mockResolvedValueOnce([reloadedCall]);
 
     renderApp();
 

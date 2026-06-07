@@ -55,20 +55,16 @@ export function filterCalls(calls, filters) {
 
     const callDate = call.created_at.slice(0, 10);
 
-    const matchesDateFrom =
-      filters.dateFrom === "" || callDate >= filters.dateFrom;
+    const matchesDateFrom = filters.dateFrom === "" || callDate >= filters.dateFrom;
 
-    const matchesDateTo =
-      filters.dateTo === "" || callDate <= filters.dateTo;
+    const matchesDateTo = filters.dateTo === "" || callDate <= filters.dateTo;
 
     const durationMin = Number(filters.durationMin);
     const durationMax = Number(filters.durationMax);
 
-    const matchesDurationMin =
-      filters.durationMin === "" || call.duration >= durationMin;
+    const matchesDurationMin = filters.durationMin === "" || call.duration >= durationMin;
 
-    const matchesDurationMax =
-      filters.durationMax === "" || call.duration <= durationMax;
+    const matchesDurationMax = filters.durationMax === "" || call.duration <= durationMax;
 
     return (
       matchesCallType &&
@@ -129,8 +125,7 @@ export function searchCallsByPhoneNumber(calls, searchTerm) {
     const normalizedTo = call.to.replace(/\D/g, "");
 
     return (
-      normalizedFrom.includes(normalizedSearchTerm) ||
-      normalizedTo.includes(normalizedSearchTerm)
+      normalizedFrom.includes(normalizedSearchTerm) || normalizedTo.includes(normalizedSearchTerm)
     );
   });
 }

@@ -25,8 +25,7 @@ async function apiRequest(path, options = {}) {
         return data;
       }
 
-      const errorMessage =
-        data?.error ?? "Something went wrong while contacting the API.";
+      const errorMessage = data?.error ?? "Something went wrong while contacting the API.";
 
       if (!shouldRetryResponse(response) || attempt === MAX_RETRY_ATTEMPTS) {
         throw createApiError(errorMessage, false);
@@ -103,10 +102,7 @@ async function fetchCallsByArchiveStatus(isArchived) {
 
   const remainingPages = await Promise.all(remainingPageRequests);
 
-  return [
-    ...firstPage.calls,
-    ...remainingPages.flatMap((pageData) => pageData.calls),
-  ];
+  return [...firstPage.calls, ...remainingPages.flatMap((pageData) => pageData.calls)];
 }
 
 export async function fetchAllCalls() {
