@@ -100,7 +100,7 @@ function App() {
     }
   }
 
-  function handleResetMockData() {
+  function handleReloadCalls() {
     openConfirmDialog({
       title: "Reload calls?",
       message: "This will refresh the list from the backend and close any selected call.",
@@ -355,7 +355,7 @@ function App() {
             onUnarchiveCall={handleUnarchiveCall} 
             onArchiveAll={handleArchiveAll}
             onUnarchiveAll={handleUnarchiveAll}
-            onResetMockData={handleResetMockData}
+            onReloadCalls={handleReloadCalls}
           />
         )}
       </main>

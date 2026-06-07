@@ -20,6 +20,10 @@ API documentation:
 https://call-center-backend-7z8r.onrender.com/api-docs/
 ```
 
+Backend GitHub project:
+
+[DimGianno/Call-Center-BackEnd](https://github.com/DimGianno/Call-Center-BackEnd)
+
 The frontend API service is centralized in:
 
 ```txt
@@ -153,7 +157,7 @@ npm run preview
   - 10
   - 25
   - 50
-  - 100
+- The page-size selector is capped at 50 to match the backend API limit
 - Show pagination controls at the top and bottom of the feed
 - Reset to page 1 when filters, search, page size, or feed view change
 

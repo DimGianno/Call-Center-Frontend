@@ -24,7 +24,7 @@ function CallFeed({
   onUnarchiveCall,
   onArchiveAll,
   onUnarchiveAll,
-  onResetMockData
+  onReloadCalls
 }) {
   const isActiveView = callView === "active";
 
@@ -226,12 +226,12 @@ function CallFeed({
         <div className="feed-footer">
           <button
             className="icon-action-button reset-data-button"
-            title="Reset mock data"
-            aria-label="Reset mock data"
-            onClick={onResetMockData}
+            title="Reload calls from the backend"
+            aria-label="Reload calls from the backend"
+            onClick={onReloadCalls}
           >
             <span className="icon-action-emoji">↺</span>
-            <span className="icon-action-label">Reset Data</span>
+            <span className="icon-action-label">Reload Data</span>
           </button>
         </div>
 
