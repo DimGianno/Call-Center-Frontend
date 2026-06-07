@@ -367,6 +367,7 @@ function App() {
           onClose={() => setSelectedCallId(null)} 
           onAddNote={handleAddNote}
           onArchiveCall={handleArchiveCall}
+          onUnarchiveCall={handleUnarchiveCall}
           onDeleteCall={handleDeleteCall}
         />
       )}

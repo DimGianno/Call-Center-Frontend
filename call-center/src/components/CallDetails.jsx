@@ -6,13 +6,14 @@ function CallDetails({
   onClose, 
   onAddNote, 
   onArchiveCall, 
+  onUnarchiveCall,
   onDeleteCall 
 }) {
     const [noteContent, setNoteContent] = useState("");
     const [pendingAction, setPendingAction] = useState("");
     const formattedDate = formatCallDateTime(call.created_at);
     const isSubmittingNote = pendingAction === "note";
-    const isArchiving = pendingAction === "archive";
+    const isArchiveActionPending = pendingAction === "archive";
     const isDeleting = pendingAction === "delete";
     const isBusy = pendingAction !== "";
 
@@ -34,11 +35,13 @@ function CallDetails({
       }
     }
 
-    async function handleArchiveCall() {
+    async function handleArchiveToggle() {
       setPendingAction("archive");
-      const wasArchived = await onArchiveCall(call.id);
+      const wasUpdated = call.is_archived
+        ? await onUnarchiveCall(call.id)
+        : await onArchiveCall(call.id);
 
-      if (!wasArchived) {
+      if (!wasUpdated) {
         setPendingAction("");
       }
     }
@@ -132,10 +135,12 @@ function CallDetails({
             <button
               className="secondary-button"
               type="button"
-              disabled={isBusy || call.is_archived}
-              onClick={handleArchiveCall}
+              disabled={isBusy}
+              onClick={handleArchiveToggle}
             >
-              {isArchiving ? "Archiving..." : call.is_archived ? "Archived" : "Archive call"}
+              {isArchiveActionPending
+                ? call.is_archived ? "Unarchiving..." : "Archiving..."
+                : call.is_archived ? "Unarchive call" : "Archive call"}
             </button>
             <button
               className="danger-button"
