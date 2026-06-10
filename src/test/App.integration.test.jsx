@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
+import { clearActiveSession, signUpDemoUser } from "../utils/authStorage";
 import {
   addCallNote,
   archiveAllCalls,
@@ -81,12 +82,198 @@ function createCalls(count) {
   });
 }
 
-function renderApp() {
+function seedAuthenticatedSession(overrides = {}) {
+  window.localStorage.setItem(
+    "call-center-demo-session",
+    JSON.stringify({
+      name: "Test Agent",
+      email: "agent@example.com",
+      startedAt: Date.now(),
+      ...overrides,
+    }),
+  );
+}
+
+function renderApp(route = "/dashboard") {
+  window.history.pushState({}, "Test page", route);
   return render(<App />);
 }
 
+afterEach(() => {
+  window.localStorage.clear();
+  vi.useRealTimers();
+});
+
+describe("App auth gate", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.clearAllMocks();
+    fetchAllCalls.mockResolvedValue([activeCall, archivedCall]);
+  });
+
+  it("renders the home page at the root route", async () => {
+    renderApp("/");
+
+    expect(screen.getByRole("heading", { name: "Call Center Dashboard" })).toBeInTheDocument();
+    expect(screen.getByText(/Track active and archived calls/i)).toBeInTheDocument();
+    expect(fetchAllCalls).not.toHaveBeenCalled();
+  });
+
+  it("navigates from the home page to login and signup routes", async () => {
+    renderApp("/");
+
+    await userEvent.click(screen.getAllByRole("link", { name: "Login" })[0]);
+
+    expect(window.location.pathname).toBe("/login");
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Sign up" }));
+
+    expect(window.location.pathname).toBe("/signup");
+    expect(screen.getByLabelText("Name")).toBeInTheDocument();
+  });
+
+  it("redirects unauthenticated dashboard visits to login without fetching calls", async () => {
+    renderApp("/dashboard");
+
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/login");
+    expect(fetchAllCalls).not.toHaveBeenCalled();
+  });
+
+  it("shows the auth screen and does not fetch calls before login", async () => {
+    renderApp("/login");
+
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Login" })).toHaveAttribute("aria-selected", "true");
+    expect(fetchAllCalls).not.toHaveBeenCalled();
+  });
+
+  it("signs up a demo user, enters the dashboard, and starts the timer", async () => {
+    renderApp("/signup");
+
+    await userEvent.type(await screen.findByLabelText("Name"), "Alex Agent");
+    await userEvent.type(screen.getByLabelText("Email"), "alex@example.com");
+    await userEvent.type(screen.getByLabelText("Password"), "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/dashboard");
+    expect(fetchAllCalls).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Signed in as Alex Agent")).toBeInTheDocument();
+    expect(screen.getByRole("timer", { name: "Session time remaining" })).toHaveTextContent(
+      "10:00",
+    );
+  });
+
+  it("logs in with a stored demo user", async () => {
+    signUpDemoUser({
+      name: "Stored Agent",
+      email: "stored@example.com",
+      password: "password123",
+    });
+    clearActiveSession();
+
+    renderApp("/login");
+
+    await userEvent.type(await screen.findByLabelText("Email"), "stored@example.com");
+    await userEvent.type(screen.getByLabelText("Password"), "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/dashboard");
+    expect(screen.getByText("Signed in as Stored Agent")).toBeInTheDocument();
+  });
+
+  it("redirects logged-in users away from public auth routes", async () => {
+    seedAuthenticatedSession();
+
+    renderApp("/login");
+
+    expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/dashboard");
+  });
+
+  it("shows validation and login errors without entering the dashboard", async () => {
+    renderApp("/login");
+
+    await userEvent.type(await screen.findByLabelText("Email"), "missing@example.com");
+    await userEvent.type(screen.getByLabelText("Password"), "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Email or password is incorrect.");
+    expect(fetchAllCalls).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Sign up" }));
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(window.location.pathname).toBe("/signup");
+    expect(screen.getByRole("alert")).toHaveTextContent("Name is required.");
+    expect(fetchAllCalls).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the countdown timer back to ten minutes", async () => {
+    vi.useFakeTimers();
+    seedAuthenticatedSession();
+
+    renderApp("/dashboard");
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+
+    expect(screen.getByRole("timer", { name: "Session time remaining" })).toHaveTextContent(
+      "09:55",
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Refresh session timer" }));
+      await Promise.resolve();
+    });
+
+    expect(screen.getByRole("timer", { name: "Session time remaining" })).toHaveTextContent(
+      "10:00",
+    );
+  });
+
+  it("logs out automatically when the countdown expires", async () => {
+    vi.useFakeTimers();
+    seedAuthenticatedSession();
+
+    renderApp("/dashboard");
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600000);
+    });
+
+    expect(screen.getByText("Your session expired. Please log in again.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/login");
+  });
+});
+
 describe("App API-backed user flows", () => {
   beforeEach(() => {
+    window.localStorage.clear();
+    seedAuthenticatedSession();
     vi.clearAllMocks();
     fetchAllCalls.mockResolvedValue([activeCall, archivedCall]);
   });
@@ -94,7 +281,6 @@ describe("App API-backed user flows", () => {
   it("loads calls from the API and renders the active call feed", async () => {
     const { container } = renderApp();
 
-    expect(screen.getByText("Loading calls...")).toBeInTheDocument();
     expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
 
     expect(fetchAllCalls).toHaveBeenCalledTimes(1);
