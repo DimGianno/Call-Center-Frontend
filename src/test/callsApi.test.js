@@ -123,16 +123,24 @@ describe("callsApi", () => {
   });
 
   it("sends request methods and JSON bodies for mutations", async () => {
-    const { addCallNote, archiveCall, deleteCall } = await importCallsApi();
+    const { addCallNote, archiveCall, deleteCall, resetCalls } = await importCallsApi();
 
     fetch
       .mockResolvedValueOnce(jsonResponse({ id: "call-1", notes: [{ content: "Hello" }] }))
       .mockResolvedValueOnce(jsonResponse({ id: "call-1", is_archived: true }))
-      .mockResolvedValueOnce(emptyResponse());
+      .mockResolvedValueOnce(emptyResponse())
+      .mockResolvedValueOnce(
+        jsonResponse({
+          message: "Calls reset successfully",
+          deletedCount: 4,
+          insertedCount: 150,
+        }),
+      );
 
     await addCallNote("call-1", "Hello");
     await archiveCall("call-1");
     await deleteCall("call-1");
+    await resetCalls();
 
     expect(fetch).toHaveBeenNthCalledWith(
       1,
@@ -151,6 +159,11 @@ describe("callsApi", () => {
       3,
       `${API_URL}/calls/call-1`,
       expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      4,
+      `${API_URL}/calls/reset`,
+      expect.objectContaining({ method: "POST" }),
     );
   });
 
