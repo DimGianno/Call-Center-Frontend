@@ -331,7 +331,7 @@ function App() {
   return (
     <div className="app" data-theme={theme}>
       <header className="app-header">
-        <h1>Call Center Dashboard - Staging</h1>
+        <h1>Call Center Dashboard</h1>
         <button
           className="icon-action-button"
           title="Toggle light/dark theme"
