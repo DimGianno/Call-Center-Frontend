@@ -946,4 +946,3 @@ Possible future improvements:
 - Backend-supported phone search
 - Backend-supported date range filtering
 - Add more focused unit tests for utility edge cases
-- Reset calls
