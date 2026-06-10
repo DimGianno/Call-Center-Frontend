@@ -10,6 +10,8 @@ export const defaultFilters = {
   },
   dateFrom: "",
   dateTo: "",
+  durationMin: "",
+  durationMax: "",
 };
 
 export function getActiveFilterCount(filters) {
@@ -35,6 +37,14 @@ export function getActiveFilterCount(filters) {
     count += 1;
   }
 
+  if (filters.durationMin !== defaultFilters.durationMin) {
+    count += 1;
+  }
+
+  if (filters.durationMax !== defaultFilters.durationMax) {
+    count += 1;
+  }
+
   return count;
 }
 
@@ -45,17 +55,24 @@ export function filterCalls(calls, filters) {
 
     const callDate = call.created_at.slice(0, 10);
 
-    const matchesDateFrom =
-      filters.dateFrom === "" || callDate >= filters.dateFrom;
+    const matchesDateFrom = filters.dateFrom === "" || callDate >= filters.dateFrom;
 
-    const matchesDateTo =
-      filters.dateTo === "" || callDate <= filters.dateTo;
+    const matchesDateTo = filters.dateTo === "" || callDate <= filters.dateTo;
+
+    const durationMin = Number(filters.durationMin);
+    const durationMax = Number(filters.durationMax);
+
+    const matchesDurationMin = filters.durationMin === "" || call.duration >= durationMin;
+
+    const matchesDurationMax = filters.durationMax === "" || call.duration <= durationMax;
 
     return (
       matchesCallType &&
       matchesDirection &&
       matchesDateFrom &&
-      matchesDateTo
+      matchesDateTo &&
+      matchesDurationMin &&
+      matchesDurationMax
     );
   });
 }
@@ -108,8 +125,7 @@ export function searchCallsByPhoneNumber(calls, searchTerm) {
     const normalizedTo = call.to.replace(/\D/g, "");
 
     return (
-      normalizedFrom.includes(normalizedSearchTerm) ||
-      normalizedTo.includes(normalizedSearchTerm)
+      normalizedFrom.includes(normalizedSearchTerm) || normalizedTo.includes(normalizedSearchTerm)
     );
   });
 }

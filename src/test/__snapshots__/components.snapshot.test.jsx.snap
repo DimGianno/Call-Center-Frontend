@@ -1,0 +1,341 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`component snapshots > matches the call item snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="call-card"
+  >
+    <div
+      class="call-meta"
+    >
+      <div
+        class="direction inbound"
+      >
+        ↙ Inbound
+      </div>
+      <span
+        class="call-type answered"
+      >
+        answered
+      </span>
+    </div>
+    <div
+      class="call-route"
+    >
+      <span>
+        +1 555-0100
+      </span>
+      <span
+        class="arrow"
+      >
+        →
+      </span>
+      <span>
+        +1 555-0110
+      </span>
+    </div>
+    <div
+      class="call-time"
+    >
+      <div>
+        08:30
+      </div>
+      <div>
+        120 sec
+      </div>
+    </div>
+    <button
+      aria-label="Archive this call"
+      class="archive-button"
+      title="Archive this call"
+    >
+      Archive
+    </button>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`component snapshots > matches the danger processing confirmation dialog snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="modal-overlay"
+  >
+    <div
+      aria-modal="true"
+      class="confirm-dialog"
+      role="dialog"
+    >
+      <div
+        class="modal-header"
+      >
+        <h2>
+          Delete this call?
+        </h2>
+        <button
+          aria-label="Cancel"
+          class="close-button"
+          disabled=""
+          title="Cancel"
+          type="button"
+        >
+          Close
+        </button>
+      </div>
+      <p
+        class="confirm-message"
+      >
+        This call will be permanently removed from the dashboard.
+      </p>
+      <div
+        class="confirm-actions"
+      >
+        <button
+          class="secondary-button"
+          disabled=""
+          type="button"
+        >
+          Cancel
+        </button>
+        <button
+          class="danger-button"
+          disabled=""
+          type="button"
+        >
+          Working...
+        </button>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`component snapshots > matches the normal confirmation dialog snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="modal-overlay"
+  >
+    <div
+      aria-modal="true"
+      class="confirm-dialog"
+      role="dialog"
+    >
+      <div
+        class="modal-header"
+      >
+        <h2>
+          Reload calls?
+        </h2>
+        <button
+          aria-label="Cancel"
+          class="close-button"
+          title="Cancel"
+          type="button"
+        >
+          Close
+        </button>
+      </div>
+      <p
+        class="confirm-message"
+      >
+        This will refresh the list from the backend and close any selected call.
+      </p>
+      <div
+        class="confirm-actions"
+      >
+        <button
+          class="secondary-button"
+          type="button"
+        >
+          Cancel
+        </button>
+        <button
+          class="primary-button"
+          type="button"
+        >
+          Reload calls
+        </button>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`component snapshots > matches the pagination controls snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="pagination-controls"
+  >
+    <button
+      aria-label="Go to previous page"
+      class="pagination-button"
+      title="Go to previous page"
+    >
+      Previous
+    </button>
+    <span
+      class="pagination-status"
+    >
+      Page 2 of 5
+    </span>
+    <button
+      aria-label="Go to next page"
+      class="pagination-button"
+      title="Go to next page"
+    >
+      Next
+    </button>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`component snapshots > matches the stats cards snapshot 1`] = `
+<DocumentFragment>
+  <section
+    aria-label="Call statistics"
+    class="stats-cards"
+  >
+    <article
+      class="stat-card stat-card-total"
+    >
+      <span
+        aria-hidden="true"
+        class="stat-card-icon"
+      >
+        #
+      </span>
+      <span
+        class="stat-card-label"
+      >
+        Active Calls
+      </span>
+      <strong
+        class="stat-card-value"
+      >
+        3
+      </strong>
+    </article>
+    <article
+      class="stat-card stat-card-inbound"
+    >
+      <span
+        aria-hidden="true"
+        class="stat-card-icon"
+      >
+        ↙
+      </span>
+      <span
+        class="stat-card-label"
+      >
+        Inbound
+      </span>
+      <strong
+        class="stat-card-value"
+      >
+        2
+      </strong>
+    </article>
+    <article
+      class="stat-card stat-card-outbound"
+    >
+      <span
+        aria-hidden="true"
+        class="stat-card-icon"
+      >
+        ↘
+      </span>
+      <span
+        class="stat-card-label"
+      >
+        Outbound
+      </span>
+      <strong
+        class="stat-card-value"
+      >
+        1
+      </strong>
+    </article>
+    <article
+      class="stat-card stat-card-answered"
+    >
+      <span
+        aria-hidden="true"
+        class="stat-card-icon"
+      >
+        ✓
+      </span>
+      <span
+        class="stat-card-label"
+      >
+        Answered
+      </span>
+      <strong
+        class="stat-card-value"
+      >
+        1
+      </strong>
+    </article>
+    <article
+      class="stat-card stat-card-missed"
+    >
+      <span
+        aria-hidden="true"
+        class="stat-card-icon"
+      >
+        !
+      </span>
+      <span
+        class="stat-card-label"
+      >
+        Missed
+      </span>
+      <strong
+        class="stat-card-value"
+      >
+        1
+      </strong>
+    </article>
+    <article
+      class="stat-card stat-card-voicemail"
+    >
+      <span
+        aria-hidden="true"
+        class="stat-card-icon"
+      >
+        VM
+      </span>
+      <span
+        class="stat-card-label"
+      >
+        Voicemail
+      </span>
+      <strong
+        class="stat-card-value"
+      >
+        1
+      </strong>
+    </article>
+  </section>
+</DocumentFragment>
+`;
+
+exports[`component snapshots > matches the success toast snapshot 1`] = `
+<DocumentFragment>
+  <div
+    aria-live="polite"
+    class="toast toast-success"
+    role="status"
+  >
+    <p>
+      Call archived successfully.
+    </p>
+    <button
+      aria-label="Dismiss notification"
+      class="toast-dismiss"
+      title="Dismiss notification"
+      type="button"
+    >
+      Close
+    </button>
+  </div>
+</DocumentFragment>
+`;

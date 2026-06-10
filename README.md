@@ -1,8 +1,110 @@
-# DevReady Week 2 Task — Call Center Dashboard
+# Call Center Dashboard
 
-A frontend call management dashboard built with **React**, **JavaScript**, and **mock call data**.
+A frontend call management dashboard built with **React**, **JavaScript**, and a deployed backend API.
 
-The app displays a call activity feed where users can view active calls, inspect call details, archive and unarchive calls, filter/search calls, group calls by date, paginate large call lists, and persist call state locally.
+The app displays a call activity feed where users can view active and archived calls, inspect call details, add notes, archive or unarchive calls, delete calls, filter/search calls, group calls by date, paginate large call lists, and receive success/error feedback for API-backed actions.
+
+Live frontend:
+
+```txt
+https://call-center-frontend-fawn.vercel.app/
+```
+
+---
+
+## Backend API
+
+The frontend connects to the deployed backend through a Vite environment variable:
+
+```env
+VITE_API_URL=https://call-center-backend-7z8r.onrender.com
+```
+
+API documentation:
+
+```txt
+https://call-center-backend-7z8r.onrender.com/api-docs/
+```
+
+Backend GitHub project:
+
+[DimGianno/Call-Center-BackEnd](https://github.com/DimGianno/Call-Center-BackEnd)
+
+The frontend API service is centralized in:
+
+```txt
+src/api/callsApi.js
+```
+
+It handles:
+
+- API base URL configuration through `VITE_API_URL`
+- Fetching active and archived calls
+- Fetching a single selected call
+- Adding notes
+- Archiving and unarchiving calls
+- Deleting calls
+- Bulk archive and unarchive actions
+- Retry logic for network failures and server errors
+- Clear API error messages for the UI
+
+---
+
+## Setup
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Create a `.env` file in the project root:
+
+```env
+VITE_API_URL=https://call-center-backend-7z8r.onrender.com
+```
+
+Run the development server:
+
+```bash
+npm run dev
+```
+
+Build the app:
+
+```bash
+npm run build
+```
+
+Preview the production build:
+
+```bash
+npm run preview
+```
+
+Run tests:
+
+```bash
+npm test
+```
+
+Run tests in watch mode:
+
+```bash
+npm run test:watch
+```
+
+Check formatting:
+
+```bash
+npm run format:check
+```
+
+Format files:
+
+```bash
+npm run format
+```
 
 ---
 
@@ -10,8 +112,10 @@ The app displays a call activity feed where users can view active calls, inspect
 
 ### Call Feed
 
+- Fetch calls from the backend API
 - View active calls in a call activity feed
 - View archived calls using the active/archived feed toggle
+- View compact statistics cards for the current active or archived feed view
 - Group calls by date
 - Sort calls newest first
 - Display call rows with:
@@ -23,20 +127,50 @@ The app displays a call activity feed where users can view active calls, inspect
   - duration
   - archive/unarchive action
 
+### Statistics Cards
+
+- Show 6 compact cards above the call feed
+- Count only the current feed view:
+  - active calls when viewing Active
+  - archived calls when viewing Archived
+- Display:
+  - current view total
+  - inbound calls
+  - outbound calls
+  - answered calls
+  - missed calls
+  - voicemail calls
+- Match the direction and call-type colors used in the feed
+- Stay independent from phone search, filters, sorting, and pagination
+
 ### Call Details
 
 - View full call details in a centered modal
+- Fetch the selected call from the backend so details can include notes
 - Display call details in a table layout
 - Display notes when a call has notes
 - Show a fallback message when no notes exist
+- Add a note to the selected call
+- Archive an active call from the details modal
+- Unarchive an archived call from the details modal
+- Delete the selected call from the details modal
 
-### Archive / Unarchive
+### Archive / Unarchive / Delete
 
 - Archive a single active call
 - Unarchive a single archived call
 - Archive all active calls
 - Unarchive all archived calls
-- Ask for confirmation before bulk archive/unarchive actions
+- Delete a single call
+- Confirm destructive or bulk actions using an in-app confirmation dialog
+- Show toast notifications after successful actions
+
+### Notes
+
+- Add a note from the call details modal
+- Submit note content to the backend
+- Display the updated note list after the backend confirms the change
+- Use optimistic UI updates so the note appears immediately while the request is pending
 
 ### Filtering
 
@@ -49,9 +183,11 @@ The app displays a call activity feed where users can view active calls, inspect
   - inbound
   - outbound
 - Filter by date range using native date inputs
+- Filter by duration using a double slider from `0 sec` to `500+ sec`
 - Reset filters inside the filter modal
 - Cancel filter changes without affecting the feed
 - Show active filter count on the filter button
+- Date and duration filtering are handled on the frontend after calls are fetched
 
 ### Search
 
@@ -59,16 +195,17 @@ The app displays a call activity feed where users can view active calls, inspect
 - Search checks both `from` and `to` numbers
 - Search works together with filters, pagination, and active/archived views
 - Phone search ignores spaces and symbols, so searches like `612`, `+33 6 12`, and `33 612` can match the same number
+- Phone search is handled on the frontend after calls are fetched
 
 ### Pagination
 
-- Paginate large call lists
+- Paginate large call lists in the UI
 - Choose how many calls to show per page:
   - 5
   - 10
   - 25
   - 50
-  - 100
+- The page-size selector is capped at 50 to match the backend API limit
 - Show pagination controls at the top and bottom of the feed
 - Reset to page 1 when filters, search, page size, or feed view change
 
@@ -78,17 +215,26 @@ The app displays a call activity feed where users can view active calls, inspect
 - Compact icon-style feed controls
 - Expanding icon buttons on hover
 - Hover titles and `aria-label`s for clearer button meaning
+- Loading indicator while calls are being fetched
 - Empty states for:
   - no active calls
   - no archived calls
   - no calls matching search or filters
-- Reset mock data from the feed footer
+- Graceful error messages when API requests fail
+- In-app confirmation dialog for reload, bulk actions, and delete
+- Toast notifications for successful actions
 
-### State / Persistence
+### Bonus Features
 
-- Uses React state for all interactive data
-- Uses `localStorage` so archive/unarchive changes survive page refresh
-- Provides a reset action to restore the original mock data
+- Centralized API service in `src/api/callsApi.js`
+- API base URL stored in `VITE_API_URL`
+- Retry logic for network failures and server errors
+- Toast notifications for action success messages
+- Optimistic updates for:
+  - archive single call
+  - unarchive single call
+  - delete single call
+  - add note
 
 ---
 
@@ -100,19 +246,31 @@ src/
   main.jsx
   index.css
 
-  data/
-    calls.js
+  api/
+    callsApi.js
 
   components/
     CallFeed.jsx
     CallItem.jsx
     CallDetails.jsx
+    ConfirmDialog.jsx
     FilterModal.jsx
     PaginationControls.jsx
+    StatsCards.jsx
+    Toast.jsx
 
   utils/
     callUtils.js
     formatters.js
+
+  test/
+    App.integration.test.jsx
+    callsApi.test.js
+    setup.js
+
+.github/
+  workflows/
+    ci.yml
 ```
 
 ---
@@ -121,11 +279,14 @@ src/
 
 ```txt
 App
- ├── CallFeed
- │    ├── FilterModal
- │    ├── PaginationControls
- │    └── CallItem
- └── CallDetails
+  |-- StatsCards
+  |-- CallFeed
+  |   |-- FilterModal
+  |   |-- PaginationControls
+  |   `-- CallItem
+  |-- CallDetails
+  |-- ConfirmDialog
+  `-- Toast
 ```
 
 ---
@@ -138,9 +299,8 @@ App
 
 It is responsible for:
 
+- Loading calls from the backend API
 - Storing the full calls state
-- Loading calls from `localStorage` when available
-- Saving calls to `localStorage` when call state changes
 - Storing the selected call ID
 - Storing the current call view:
   - active calls
@@ -148,23 +308,61 @@ It is responsible for:
 - Storing the current theme:
   - light
   - dark
-- Selecting a call
+- Storing loading and error state
+- Storing confirmation dialog state
+- Storing toast notification state
+- Selecting a call and fetching its full details
 - Finding the selected call
 - Archiving a single call
 - Unarchiving a single call
+- Deleting a single call
+- Adding a note to a call
 - Archiving all active calls
 - Unarchiving all archived calls
-- Asking for confirmation before bulk archive/unarchive actions
-- Resetting the app back to the original mock data
+- Running optimistic updates for single-call actions
+- Rolling back optimistic updates when API requests fail
 - Filtering calls by current view before passing them to `CallFeed`
+- Passing current-view calls to `StatsCards`
 
 Main state values:
 
 ```jsx
-const [calls, setCalls] = useState(...);
+const [calls, setCalls] = useState([]);
 const [selectedCallId, setSelectedCallId] = useState(null);
 const [callView, setCallView] = useState("active");
-const [theme, setTheme] = useState("light");
+const [theme, setTheme] = useState("dark");
+const [isLoading, setIsLoading] = useState(true);
+const [errorMessage, setErrorMessage] = useState("");
+const [confirmDialog, setConfirmDialog] = useState(null);
+const [toast, setToast] = useState(null);
+```
+
+---
+
+### `callsApi.js`
+
+`callsApi.js` is the centralized API service for backend communication.
+
+It is responsible for:
+
+- Reading `VITE_API_URL`
+- Building API requests
+- Parsing JSON responses safely
+- Retrying network and server failures
+- Returning backend data to the UI
+- Throwing readable errors for failed requests
+
+Backend actions include:
+
+```txt
+GET    /calls
+GET    /calls/:callId
+POST   /calls/:callId/notes
+PATCH  /calls/:callId/archive
+PATCH  /calls/:callId/unarchive
+DELETE /calls/:callId
+PATCH  /calls/archive-all
+PATCH  /calls/unarchive-all
 ```
 
 ---
@@ -195,15 +393,32 @@ It is responsible for:
 - Showing the correct bulk action:
   - Archive All
   - Unarchive All
-- Rendering the reset mock data button in the feed footer
+- Rendering the reload button in the feed footer
 - Passing each call to `CallItem`
 
 The calls it receives from `App.jsx` are already filtered by view:
 
 ```txt
-Active view    → non-archived calls
-Archived view  → archived calls
+Active view    -> non-archived calls
+Archived view  -> archived calls
 ```
+
+---
+
+### `StatsCards.jsx`
+
+`StatsCards.jsx` displays compact summary cards above the feed.
+
+It is responsible for:
+
+- Counting calls from the current active or archived view
+- Showing the current view total:
+  - Active Calls
+  - Archived Calls
+- Counting inbound and outbound calls
+- Counting answered, missed, and voicemail calls
+- Rendering direction and type accents that match the feed colors
+- Staying unaffected by search, filters, sorting, and pagination
 
 ---
 
@@ -228,8 +443,8 @@ It is responsible for:
 Instead, it receives:
 
 ```jsx
-actionLabel
-onAction
+actionLabel;
+onAction;
 ```
 
 This makes it reusable for both active and archived calls.
@@ -251,10 +466,40 @@ It is responsible for:
   - Type
   - Duration
   - Date
-  - Archived status
   - Notes
 - Displaying a fallback message when no notes exist
+- Adding a note
+- Archiving an active selected call
+- Unarchiving an archived selected call
+- Deleting the selected call
 - Closing the modal
+
+---
+
+### `ConfirmDialog.jsx`
+
+`ConfirmDialog.jsx` displays the reusable confirmation modal.
+
+It is responsible for:
+
+- Showing a title and message
+- Providing a cancel action
+- Providing a confirm action
+- Supporting danger styling for destructive actions
+- Disabling actions while the confirmed request is processing
+
+---
+
+### `Toast.jsx`
+
+`Toast.jsx` displays short success notifications.
+
+It is responsible for:
+
+- Showing a toast message
+- Supporting success and error styles
+- Providing a dismiss button
+- Working with the auto-dismiss timer in `App.jsx`
 
 ---
 
@@ -267,6 +512,7 @@ It is responsible for:
 - Displaying call type filter checkboxes
 - Displaying direction filter checkboxes
 - Displaying date range inputs
+- Displaying the duration double slider
 - Updating draft filter values
 - Resetting draft filters
 - Cancelling without applying changes
@@ -299,37 +545,6 @@ Bottom of feed
 
 ---
 
-### `calls.js`
-
-`calls.js` contains the mock call data used by the app.
-
-Each call object can include:
-
-```js
-{
-  id: "1",
-  direction: "inbound",
-  from: "+33 6 12 34 56 78",
-  to: "+33 1 23 45 67 89",
-  call_type: "answered",
-  duration: 120,
-  is_archived: false,
-  created_at: "2025-04-10T14:32:00Z",
-  notes: [
-    {
-      id: "note-1",
-      content: "Customer left a message about their invoice."
-    }
-  ]
-}
-```
-
-The `notes` property is optional.
-
-The app safely checks whether notes exist before displaying them.
-
----
-
 ## Utility Files
 
 ### `callUtils.js`
@@ -341,7 +556,7 @@ It is responsible for:
 - Default filter settings
 - Counting active filters
 - Searching calls by phone number
-- Filtering calls by type, direction, and date range
+- Filtering calls by type, direction, date range, and duration range
 - Sorting calls newest first
 - Paginating calls
 - Grouping calls by date
@@ -363,10 +578,111 @@ It is responsible for:
 Example formatting responsibilities:
 
 ```txt
-2025-04-10              → Thursday, 10 April 2025
-2025-04-10T14:32:00Z    → 17:32
-2025-04-10T14:32:00Z    → 10/04/2025, 17:32
+2025-04-10              -> Thursday, 10 April 2025
+2025-04-10T14:32:00Z    -> 17:32
+2025-04-10T14:32:00Z    -> 10/04/2025, 17:32
 ```
+
+---
+
+## Testing
+
+The project uses **Vitest**, **React Testing Library**, **jest-dom**, and **jsdom**.
+
+Run the full test suite:
+
+```bash
+npm test
+```
+
+The current suite includes:
+
+- Integration tests for API-backed user flows in `App`
+- API service tests for pagination, retry behavior, request methods, request bodies, and missing API configuration
+
+The integration tests cover:
+
+- Initial call loading
+- API error states
+- Selecting call details
+- Adding notes
+- Optimistic note rollback on failure
+- Archiving and unarchiving calls
+- Optimistic archive rollback on failure
+- Bulk archive and unarchive confirmations
+- Reload confirmation
+- Delete confirmation
+- Search, filters, pagination, empty states, and theme toggling
+
+Test files live in:
+
+```txt
+src/test/
+```
+
+---
+
+## Code Quality
+
+The project uses **ESLint** for linting and **Prettier** for formatting.
+
+Run linting:
+
+```bash
+npm run lint
+```
+
+Check formatting without changing files:
+
+```bash
+npm run format:check
+```
+
+Apply formatting:
+
+```bash
+npm run format
+```
+
+Prettier is configured with:
+
+```txt
+.prettierrc
+.prettierignore
+```
+
+---
+
+## Continuous Integration / Deployment
+
+GitHub Actions is configured in:
+
+```txt
+.github/workflows/ci.yml
+```
+
+The CI workflow runs automatically on:
+
+- Pushes
+- Pull requests
+
+The pipeline:
+
+- Installs dependencies with `npm ci`
+- Checks formatting with `npm run format:check`
+- Runs linting with `npm run lint`
+- Runs tests with `npm test`
+- Builds the project with `npm run build`
+
+Continuous deployment is handled by **Vercel**:
+
+```txt
+https://call-center-frontend-fawn.vercel.app/
+```
+
+Vercel is connected to the frontend repository and deploys the Vite app automatically when changes are pushed to the production branch.
+
+Branch protection is also configured so protected merges require CI to pass before code is merged into `main`.
 
 ---
 
@@ -375,21 +691,22 @@ Example formatting responsibilities:
 ### Initial calls state
 
 ```txt
-calls.js mock data
-  ↓
+Backend GET /calls?is_archived=false
+Backend GET /calls?is_archived=true
+  |
 App.jsx state
-  ↓
-localStorage persistence
+  |
+CallFeed
 ```
 
 When the app loads:
 
 ```txt
-If saved calls exist in localStorage:
-  use saved calls
-
-Otherwise:
-  use calls.js mock data
+App requests active calls and archived calls
+  |
+API service combines the results
+  |
+App stores calls in React state
 ```
 
 ---
@@ -398,23 +715,29 @@ Otherwise:
 
 ```txt
 all calls in App.jsx
-  ↓
+  |
 filter by active/archived view
-  ↓
+  |
+StatsCards
+  |
 CallFeed
-  ↓
+  |
 search by phone number
-  ↓
+  |
 filter by modal filters
-  ↓
+  |
 sort newest first
-  ↓
+  |
 paginate
-  ↓
+  |
 group current page by date
-  ↓
+  |
 render CallItem rows
 ```
+
+Phone search, date filtering, duration filtering, sorting, grouping, and UI pagination run on the frontend after calls are fetched.
+
+Statistics cards are calculated from the active/archived view before search, filtering, sorting, or pagination are applied.
 
 ---
 
@@ -422,11 +745,13 @@ render CallItem rows
 
 ```txt
 User clicks CallItem
-  ↓
+  |
+App requests GET /calls/:callId
+  |
 selectedCallId is updated
-  ↓
+  |
 App finds selectedCall
-  ↓
+  |
 CallDetails modal opens
 ```
 
@@ -436,16 +761,22 @@ CallDetails modal opens
 
 ```txt
 User clicks Archive
-  ↓
-CallItem calls onAction(call.id)
-  ↓
-App updates calls state
-  ↓
-Call disappears from Active Calls
-  ↓
-Call appears in Archived Calls
-  ↓
-Updated calls are saved to localStorage
+  |
+App optimistically marks the call as archived
+  |
+PATCH /calls/:callId/archive
+  |
+Backend response confirms the call state
+  |
+Toast confirms success
+```
+
+If the request fails:
+
+```txt
+Previous calls state is restored
+  |
+Error message is displayed
 ```
 
 ---
@@ -454,17 +785,91 @@ Updated calls are saved to localStorage
 
 ```txt
 User clicks Unarchive
-  ↓
-CallItem calls onAction(call.id)
-  ↓
-App updates calls state
-  ↓
-Call disappears from Archived Calls
-  ↓
-Call appears in Active Calls
-  ↓
-Updated calls are saved to localStorage
+  |
+App optimistically marks the call as active
+  |
+PATCH /calls/:callId/unarchive
+  |
+Backend response confirms the call state
+  |
+Toast confirms success
 ```
+
+If the request fails:
+
+```txt
+Previous calls state is restored
+  |
+Error message is displayed
+```
+
+---
+
+### Delete flow
+
+```txt
+User clicks Delete call
+  |
+ConfirmDialog asks for confirmation
+  |
+App optimistically removes the call
+  |
+DELETE /calls/:callId
+  |
+Toast confirms success
+```
+
+If the request fails:
+
+```txt
+Previous calls state is restored
+  |
+Selected call is restored
+  |
+Error message is displayed
+```
+
+---
+
+### Add note flow
+
+```txt
+User writes a note
+  |
+App optimistically adds a temporary note
+  |
+POST /calls/:callId/notes
+  |
+Backend response replaces the call with the confirmed version
+  |
+Toast confirms success
+```
+
+If the request fails:
+
+```txt
+Previous calls state is restored
+  |
+Error message is displayed
+```
+
+---
+
+### Bulk action flow
+
+```txt
+User clicks Archive All or Unarchive All
+  |
+ConfirmDialog asks for confirmation
+  |
+Backend bulk endpoint runs
+  |
+App reloads calls from the backend
+  |
+Toast confirms success
+```
+
+Bulk actions reload backend data after completion to avoid mismatches if many records change at once.
 
 ---
 
@@ -472,13 +877,13 @@ Updated calls are saved to localStorage
 
 ```txt
 User opens FilterModal
-  ↓
+  |
 draftFilters are edited
-  ↓
+  |
 Cancel closes modal without applying changes
-  ↓
+  |
 Confirm copies draftFilters into appliedFilters
-  ↓
+  |
 CallFeed recalculates visible calls
 ```
 
@@ -509,19 +914,27 @@ The app supports a manual light/dark mode toggle by changing the `data-theme` va
 
 The feed controls use compact icon-style buttons that expand on hover.
 
+The modal and toast styles are shared across:
+
+- call details
+- filters
+- confirmation dialogs
+- success notifications
+
 ---
 
-## Notes About `localStorage`
+## Error Handling
 
-Because the app uses `localStorage`, changes to archive/unarchive state remain after a browser refresh.
+The app handles API failures gracefully.
 
-If the mock data in `calls.js` is changed later, the app may still load the saved `localStorage` version first.
+Examples:
 
-To reload the original mock data:
-
-```txt
-Use the Reset Data button in the feed footer.
-```
+- Initial call loading failures show an inline error state
+- Failed single-call optimistic updates roll back to the previous state
+- Failed note creation removes the temporary note
+- Failed delete restores the deleted call
+- Failed API requests surface readable error messages
+- Server/network failures are retried before the final error is shown
 
 ---
 
@@ -529,15 +942,7 @@ Use the Reset Data button in the feed footer.
 
 Possible future improvements:
 
-- Better mobile/responsive polish
-- Custom confirmation modal instead of `window.confirm`
-- Better keyboard accessibility for clickable call rows
 - Search inside notes
-- Filter by duration
-- Add statistics cards:
-  - total calls
-  - active calls
-  - archived calls
-  - missed calls
-  - voicemail calls
-- Add unit tests for utility functions
+- Backend-supported phone search
+- Backend-supported date range filtering
+- Add more focused unit tests for utility edge cases

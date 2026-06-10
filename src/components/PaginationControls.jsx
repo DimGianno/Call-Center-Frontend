@@ -1,9 +1,4 @@
-function PaginationControls({
-  currentPage,
-  totalPages,
-  onPreviousPage,
-  onNextPage,
-}) {
+function PaginationControls({ currentPage, totalPages, onPreviousPage, onNextPage }) {
   if (totalPages <= 1) {
     return null;
   }
