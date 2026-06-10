@@ -6,6 +6,7 @@ import {
   deleteCall,
   fetchAllCalls,
   fetchCall,
+  resetCalls,
   unarchiveAllCalls,
   unarchiveCall,
 } from "./api/callsApi";
@@ -101,14 +102,23 @@ function App() {
     }
   }
 
-  function handleReloadCalls() {
+  function handleResetCalls() {
     openConfirmDialog({
-      title: "Reload calls?",
-      message: "This will refresh the list from the backend and close any selected call.",
-      confirmLabel: "Reload calls",
+      title: "Reset calls?",
+      message:
+        "This will delete all calls, restore the sample call data, and close any selected call.",
+      confirmLabel: "Reset calls",
       onConfirm: async () => {
-        setSelectedCallId(null);
-        await loadCalls();
+        setErrorMessage("");
+
+        try {
+          const resetResult = await resetCalls();
+          setSelectedCallId(null);
+          await loadCalls();
+          showToast(resetResult?.message ?? "Calls reset successfully.");
+        } catch (error) {
+          setErrorMessage(error.message);
+        }
       },
     });
   }
@@ -358,7 +368,7 @@ function App() {
               onUnarchiveCall={handleUnarchiveCall}
               onArchiveAll={handleArchiveAll}
               onUnarchiveAll={handleUnarchiveAll}
-              onReloadCalls={handleReloadCalls}
+              onResetCalls={handleResetCalls}
             />
           </>
         )}

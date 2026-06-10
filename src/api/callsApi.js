@@ -154,3 +154,9 @@ export function unarchiveAllCalls() {
     method: "PATCH",
   });
 }
+
+export function resetCalls() {
+  return apiRequest("/calls/reset", {
+    method: "POST",
+  });
+}

@@ -9,6 +9,7 @@ import {
   deleteCall,
   fetchAllCalls,
   fetchCall,
+  resetCalls,
   unarchiveAllCalls,
   unarchiveCall,
 } from "../api/callsApi";
@@ -21,6 +22,7 @@ vi.mock("../api/callsApi", () => {
     deleteCall: vi.fn(),
     fetchAllCalls: vi.fn(),
     fetchCall: vi.fn(),
+    resetCalls: vi.fn(),
     unarchiveAllCalls: vi.fn(),
     unarchiveCall: vi.fn(),
   };
@@ -278,23 +280,32 @@ describe("App API-backed user flows", () => {
     expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
   });
 
-  it("reloads calls after confirmation", async () => {
-    const reloadedCall = createCall({
+  it("resets calls after confirmation", async () => {
+    const resetCall = createCall({
       id: "call-3",
       from: "+1 555-0300",
       to: "+1 555-0330",
     });
-    fetchAllCalls.mockResolvedValueOnce([activeCall]).mockResolvedValueOnce([reloadedCall]);
+    resetCalls.mockResolvedValue({
+      message: "Calls reset successfully",
+      deletedCount: 4,
+      insertedCount: 150,
+    });
+    fetchAllCalls.mockResolvedValueOnce([activeCall]).mockResolvedValueOnce([resetCall]);
 
     renderApp();
 
     await screen.findByText("+1 555-0100");
-    await userEvent.click(screen.getByRole("button", { name: "Reload calls from the backend" }));
-    await userEvent.click(screen.getByRole("button", { name: "Reload calls" }));
+    await userEvent.click(screen.getByRole("button", { name: "Reset calls to sample data" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Reset calls?");
 
+    await userEvent.click(screen.getByRole("button", { name: "Reset calls" }));
+
+    expect(resetCalls).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(fetchAllCalls).toHaveBeenCalledTimes(2));
     expect(screen.getByText("+1 555-0300")).toBeInTheDocument();
     expect(screen.queryByText("+1 555-0100")).not.toBeInTheDocument();
+    expect(screen.getByText("Calls reset successfully")).toBeInTheDocument();
   });
 
   it("deletes a selected call after confirmation", async () => {
