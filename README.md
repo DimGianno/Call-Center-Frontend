@@ -1,4 +1,4 @@
-# DevReady Week 2 Task - Call Center Dashboard
+# Call Center Dashboard
 
 A frontend call management dashboard built with **React**, **JavaScript**, and a deployed backend API.
 
