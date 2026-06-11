@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-function HomePage({ session }) {
+function HomePage({ onToggleTheme, session, theme }) {
   return (
     <main className="home-page">
       <header className="home-nav">
@@ -22,6 +22,20 @@ function HomePage({ session }) {
               </Link>
             </>
           )}
+          <button
+            className="theme-toggle-button"
+            type="button"
+            title="Toggle light/dark theme"
+            aria-label="Toggle light/dark theme"
+            onClick={onToggleTheme}
+          >
+            <span className="theme-toggle-icon" aria-hidden="true">
+              {theme === "light" ? "🌙" : "☀️"}
+            </span>
+            <span className="theme-toggle-label">
+              {theme === "light" ? "Dark Mode" : "Light Mode"}
+            </span>
+          </button>
         </nav>
       </header>
 

@@ -13,6 +13,8 @@ import {
   sortCallsNewestFirst,
 } from "../utils/callUtils";
 
+const pageSizeOptions = [5, 10, 25, 50];
+
 function CallFeed({
   calls,
   callView,
@@ -101,23 +103,38 @@ function CallFeed({
               }}
             />
           </label>
-          <label className="page-size-control" title="Select how many calls to show per page">
+          <div
+            className="page-size-control"
+            role="group"
+            aria-label="Select how many calls to show per page"
+            title="Select how many calls to show per page"
+          >
             <span className="page-size-icon">📄</span>
 
-            <select
-              value={pageSize}
-              aria-label="Select how many calls to show per page"
-              onChange={(event) => {
-                setPageSize(Number(event.target.value));
-                setCurrentPage(1);
-              }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-          </label>
+            <div className="page-size-segments">
+              {pageSizeOptions.map((pageSizeOption) => {
+                return (
+                  <button
+                    key={pageSizeOption}
+                    className={
+                      pageSize === pageSizeOption
+                        ? "page-size-segment is-active"
+                        : "page-size-segment"
+                    }
+                    type="button"
+                    aria-label={`Show ${pageSizeOption} calls per page`}
+                    aria-pressed={pageSize === pageSizeOption}
+                    onClick={() => {
+                      setPageSize(pageSizeOption);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {pageSizeOption}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <button
             className="icon-action-button"
             title="Open filters"

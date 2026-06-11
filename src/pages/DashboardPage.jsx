@@ -1,3 +1,5 @@
+import { useState } from "react";
+import AccountDrawer from "../components/AccountDrawer";
 import CallDetails from "../components/CallDetails";
 import CallFeed from "../components/CallFeed";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -15,6 +17,7 @@ function DashboardPage({
   session,
   theme,
 }) {
+  const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false);
   const { toast, showToast, dismissToast } = useToast();
   const {
     closeConfirmDialog,
@@ -33,32 +36,40 @@ function DashboardPage({
         <div className="session-control" role="timer" aria-label="Session time remaining">
           <span className="session-time">{formattedRemainingSessionTime}</span>
           <button
-            className="header-button"
+            className="session-refresh-button"
             type="button"
             title="Refresh session timer"
             aria-label="Refresh session timer"
             onClick={onRefreshSessionTimer}
           >
-            Refresh
+            <span aria-hidden="true">↻</span>
           </button>
         </div>
 
         <div className="header-actions">
-          <span className="signed-in-user">Signed in as {session.name}</span>
-          <button className="header-button" type="button" onClick={() => onLogout()}>
-            Logout
-          </button>
           <button
-            className="header-button"
+            className="account-menu-button"
             type="button"
-            title="Toggle light/dark theme"
-            aria-label="Toggle light/dark theme"
-            onClick={onToggleTheme}
+            aria-label="Open account settings"
+            aria-expanded={isAccountDrawerOpen}
+            onClick={() => setIsAccountDrawerOpen(true)}
           >
-            {theme === "light" ? "Dark Mode" : "Light Mode"}
+            <span className="account-menu-avatar" aria-hidden="true">
+              {session.name.charAt(0).toUpperCase()}
+            </span>
+            <span className="account-menu-label">Account</span>
           </button>
         </div>
       </header>
+
+      <AccountDrawer
+        isOpen={isAccountDrawerOpen}
+        onClose={() => setIsAccountDrawerOpen(false)}
+        onLogout={onLogout}
+        onToggleTheme={onToggleTheme}
+        session={session}
+        theme={theme}
+      />
 
       <main className="dashboard">
         {calls.errorMessage && (

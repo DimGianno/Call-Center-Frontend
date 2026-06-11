@@ -29,7 +29,12 @@ function AppRoutes() {
   return (
     <div className="app" data-theme={theme}>
       <Routes>
-        <Route path="/" element={<HomePage session={auth.session} />} />
+        <Route
+          path="/"
+          element={
+            <HomePage onToggleTheme={handleToggleTheme} session={auth.session} theme={theme} />
+          }
+        />
         <Route
           path="/login"
           element={
@@ -38,7 +43,9 @@ function AppRoutes() {
                 mode="login"
                 notice={auth.authNotice}
                 onLogin={auth.handleLogin}
+                onToggleTheme={handleToggleTheme}
                 onSignup={auth.handleSignup}
+                theme={theme}
               />
             </PublicOnlyRoute>
           }
@@ -51,7 +58,9 @@ function AppRoutes() {
                 mode="signup"
                 notice={auth.authNotice}
                 onLogin={auth.handleLogin}
+                onToggleTheme={handleToggleTheme}
                 onSignup={auth.handleSignup}
+                theme={theme}
               />
             </PublicOnlyRoute>
           }

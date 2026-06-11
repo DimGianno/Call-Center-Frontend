@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import AuthScreen from "../components/AuthScreen";
 
-function AuthPage({ mode, notice, onLogin, onSignup }) {
+function AuthPage({ mode, notice, onLogin, onSignup, onToggleTheme, theme }) {
   const navigate = useNavigate();
 
   function handleModeChange(nextMode) {
@@ -15,6 +15,8 @@ function AuthPage({ mode, notice, onLogin, onSignup }) {
       onLogin={onLogin}
       onModeChange={handleModeChange}
       onSignup={onSignup}
+      onToggleTheme={onToggleTheme}
+      theme={theme}
     />
   );
 }

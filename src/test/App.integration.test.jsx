@@ -160,7 +160,9 @@ describe("App auth gate", () => {
     expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/dashboard");
     expect(fetchAllCalls).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Signed in as Alex Agent")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    expect(screen.getByRole("dialog", { name: "Alex Agent" })).toBeInTheDocument();
+    expect(screen.getByText("alex@example.com")).toBeInTheDocument();
     expect(screen.getByRole("timer", { name: "Session time remaining" })).toHaveTextContent(
       "10:00",
     );
@@ -182,7 +184,8 @@ describe("App auth gate", () => {
 
     expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/dashboard");
-    expect(screen.getByText("Signed in as Stored Agent")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    expect(screen.getByRole("dialog", { name: "Stored Agent" })).toBeInTheDocument();
   });
 
   it("redirects logged-in users away from public auth routes", async () => {
@@ -266,6 +269,45 @@ describe("App auth gate", () => {
 
     expect(screen.getByText("Your session expired. Please log in again.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/login");
+  });
+
+  it("opens and closes the account drawer from the dashboard header", async () => {
+    seedAuthenticatedSession();
+
+    renderApp("/dashboard");
+
+    await screen.findByText("+1 555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+
+    expect(screen.getByRole("dialog", { name: "Test Agent" })).toBeInTheDocument();
+    expect(screen.getByText("agent@example.com")).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog", { name: "Test Agent" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    await userEvent.click(screen.getByRole("button", { name: "Dismiss account settings" }));
+
+    expect(screen.queryByRole("dialog", { name: "Test Agent" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    await userEvent.click(screen.getByRole("button", { name: "Close account settings" }));
+
+    expect(screen.queryByRole("dialog", { name: "Test Agent" })).not.toBeInTheDocument();
+  });
+
+  it("logs out from the account drawer", async () => {
+    seedAuthenticatedSession();
+
+    renderApp("/dashboard");
+
+    await screen.findByText("+1 555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    await userEvent.click(screen.getByRole("button", { name: "Logout" }));
+
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/login");
   });
 });
@@ -560,10 +602,7 @@ describe("App API-backed user flows", () => {
     expect(await screen.findByText("+1 555-1001")).toBeInTheDocument();
     expect(screen.queryByText("+1 555-1012")).not.toBeInTheDocument();
 
-    await userEvent.selectOptions(
-      screen.getByLabelText("Select how many calls to show per page"),
-      "5",
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Show 5 calls per page" }));
 
     expect(screen.getAllByText("Page 1 of 3")).toHaveLength(2);
     await userEvent.click(screen.getAllByRole("button", { name: "Go to next page" })[0]);
@@ -578,6 +617,7 @@ describe("App API-backed user flows", () => {
     await screen.findByText("+1 555-0100");
     expect(container.firstChild).toHaveAttribute("data-theme", "dark");
 
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
     await userEvent.click(screen.getByRole("button", { name: "Toggle light/dark theme" }));
 
     expect(container.firstChild).toHaveAttribute("data-theme", "light");

@@ -6,7 +6,15 @@ const AUTH_MODES = {
   signup: "signup",
 };
 
-function AuthScreen({ mode = AUTH_MODES.login, notice, onLogin, onModeChange, onSignup }) {
+function AuthScreen({
+  mode = AUTH_MODES.login,
+  notice,
+  onLogin,
+  onModeChange,
+  onSignup,
+  onToggleTheme,
+  theme,
+}) {
   const [authMode, setAuthMode] = useState(mode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -61,6 +69,19 @@ function AuthScreen({ mode = AUTH_MODES.login, notice, onLogin, onModeChange, on
 
   return (
     <main className="auth-page">
+      <button
+        className="theme-toggle-button auth-theme-toggle"
+        type="button"
+        title="Toggle light/dark theme"
+        aria-label="Toggle light/dark theme"
+        onClick={onToggleTheme}
+      >
+        <span className="theme-toggle-icon" aria-hidden="true">
+          {theme === "light" ? "🌙" : "☀️"}
+        </span>
+        <span className="theme-toggle-label">{theme === "light" ? "Dark Mode" : "Light Mode"}</span>
+      </button>
+
       <section className="auth-panel" aria-labelledby="auth-title">
         <div className="auth-heading">
           <p className="auth-kicker">Call Center</p>
