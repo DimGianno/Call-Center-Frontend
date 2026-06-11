@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import type { Theme } from "./types";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import HomePage from "./pages/HomePage";
@@ -16,7 +17,7 @@ function App() {
 }
 
 function AppRoutes() {
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState<Theme>("dark");
   const auth = useAuthSession();
   const formattedRemainingSessionTime = formatSessionTime(auth.remainingSessionSeconds);
 
@@ -74,7 +75,7 @@ function AppRoutes() {
                 onLogout={auth.handleLogout}
                 onRefreshSessionTimer={auth.handleRefreshSessionTimer}
                 onToggleTheme={handleToggleTheme}
-                session={auth.session}
+                session={auth.session!}
                 theme={theme}
               />
             </ProtectedRoute>
@@ -86,7 +87,7 @@ function AppRoutes() {
   );
 }
 
-function formatSessionTime(totalSeconds) {
+function formatSessionTime(totalSeconds: number) {
   const safeTotalSeconds = Math.max(totalSeconds, 0);
   const minutes = Math.floor(safeTotalSeconds / 60);
   const seconds = safeTotalSeconds % 60;

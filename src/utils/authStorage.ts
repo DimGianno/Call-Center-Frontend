@@ -1,9 +1,11 @@
+import type { AuthSession, DemoUser, LoginCredentials, SignupCredentials } from "../types";
+
 const DEMO_USERS_STORAGE_KEY = "call-center-demo-users";
 const ACTIVE_SESSION_STORAGE_KEY = "call-center-demo-session";
 
 export const SESSION_DURATION_SECONDS = 10 * 60;
 
-function readJson(key, fallbackValue) {
+function readJson<T>(key: string, fallbackValue: T): T {
   try {
     const storedValue = window.localStorage.getItem(key);
 
@@ -11,21 +13,45 @@ function readJson(key, fallbackValue) {
       return fallbackValue;
     }
 
-    return JSON.parse(storedValue);
+    return JSON.parse(storedValue) as T;
   } catch {
     return fallbackValue;
   }
 }
 
-function writeJson(key, value) {
+function writeJson(key: string, value: unknown) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-function normalizeEmail(email) {
+function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-function buildSession(user) {
+function isDemoUser(value: unknown): value is DemoUser {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const user = value as Record<string, unknown>;
+
+  return (
+    typeof user.name === "string" &&
+    typeof user.email === "string" &&
+    typeof user.password === "string"
+  );
+}
+
+function isSessionCandidate(value: unknown): value is Pick<AuthSession, "name" | "email"> {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const session = value as Record<string, unknown>;
+
+  return typeof session.name === "string" && typeof session.email === "string";
+}
+
+function buildSession(user: Pick<AuthSession, "name" | "email">): AuthSession {
   return {
     name: user.name,
     email: user.email,
@@ -33,11 +59,21 @@ function buildSession(user) {
   };
 }
 
-export function isValidEmail(email) {
+export function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-export function validateAuthForm({ name = "", email, password, isSignup }) {
+export function validateAuthForm({
+  name = "",
+  email,
+  password,
+  isSignup,
+}: {
+  name?: string;
+  email: string;
+  password: string;
+  isSignup: boolean;
+}) {
   if (isSignup && name.trim() === "") {
     return "Name is required.";
   }
@@ -53,17 +89,17 @@ export function validateAuthForm({ name = "", email, password, isSignup }) {
   return "";
 }
 
-export function getDemoUsers() {
-  const users = readJson(DEMO_USERS_STORAGE_KEY, []);
+export function getDemoUsers(): DemoUser[] {
+  const users = readJson<unknown>(DEMO_USERS_STORAGE_KEY, []);
 
   if (!Array.isArray(users)) {
     return [];
   }
 
-  return users;
+  return users.filter(isDemoUser);
 }
 
-export function signUpDemoUser({ name, email, password }) {
+export function signUpDemoUser({ name, email, password }: SignupCredentials): AuthSession {
   const normalizedEmail = normalizeEmail(email);
   const users = getDemoUsers();
   const existingUser = users.find((user) => user.email === normalizedEmail);
@@ -72,7 +108,7 @@ export function signUpDemoUser({ name, email, password }) {
     throw new Error("An account with this email already exists.");
   }
 
-  const user = {
+  const user: DemoUser = {
     name: name.trim(),
     email: normalizedEmail,
     password,
@@ -85,7 +121,7 @@ export function signUpDemoUser({ name, email, password }) {
   return session;
 }
 
-export function signInDemoUser({ email, password }) {
+export function signInDemoUser({ email, password }: LoginCredentials): AuthSession {
   const normalizedEmail = normalizeEmail(email);
   const user = getDemoUsers().find((storedUser) => {
     return storedUser.email === normalizedEmail && storedUser.password === password;
@@ -101,17 +137,17 @@ export function signInDemoUser({ email, password }) {
   return session;
 }
 
-export function getActiveSession() {
-  const session = readJson(ACTIVE_SESSION_STORAGE_KEY, null);
+export function getActiveSession(): AuthSession | null {
+  const session = readJson<unknown>(ACTIVE_SESSION_STORAGE_KEY, null);
 
-  if (!session || !session.name || !session.email) {
+  if (!isSessionCandidate(session)) {
     return null;
   }
 
   return buildSession(session);
 }
 
-export function refreshActiveSession(session) {
+export function refreshActiveSession(session: AuthSession): AuthSession {
   const refreshedSession = buildSession(session);
   writeJson(ACTIVE_SESSION_STORAGE_KEY, refreshedSession);
   return refreshedSession;

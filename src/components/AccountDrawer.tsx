@@ -1,12 +1,29 @@
 import { useEffect } from "react";
+import type { AuthSession, Theme } from "../types";
 
-function AccountDrawer({ isOpen, onClose, onLogout, onToggleTheme, session, theme }) {
+interface AccountDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onLogout: () => void | Promise<void>;
+  onToggleTheme: () => void;
+  session: AuthSession;
+  theme: Theme;
+}
+
+function AccountDrawer({
+  isOpen,
+  onClose,
+  onLogout,
+  onToggleTheme,
+  session,
+  theme,
+}: AccountDrawerProps) {
   useEffect(() => {
     if (!isOpen) {
       return undefined;
     }
 
-    function handleKeyDown(event) {
+    function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
       }

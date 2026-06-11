@@ -1,4 +1,11 @@
-function StatsCards({ calls, callView }) {
+import type { Call, CallView } from "../types";
+
+interface StatsCardsProps {
+  calls: Call[];
+  callView: CallView;
+}
+
+function StatsCards({ calls, callView }: StatsCardsProps) {
   const stats = {
     total: calls.length,
     inbound: calls.filter((call) => call.direction === "inbound").length,

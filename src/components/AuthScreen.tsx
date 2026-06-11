@@ -1,10 +1,22 @@
+import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
+import type { AuthMode, LoginCredentials, SignupCredentials, Theme } from "../types";
 import { validateAuthForm } from "../utils/authStorage";
 
 const AUTH_MODES = {
   login: "login",
   signup: "signup",
-};
+} as const;
+
+interface AuthScreenProps {
+  mode?: AuthMode;
+  notice: string;
+  onLogin: (credentials: LoginCredentials) => Promise<void>;
+  onModeChange?: (nextMode: AuthMode) => void;
+  onSignup: (credentials: SignupCredentials) => Promise<void>;
+  onToggleTheme: () => void;
+  theme: Theme;
+}
 
 function AuthScreen({
   mode = AUTH_MODES.login,
@@ -14,7 +26,7 @@ function AuthScreen({
   onSignup,
   onToggleTheme,
   theme,
-}) {
+}: AuthScreenProps) {
   const [authMode, setAuthMode] = useState(mode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,7 +40,7 @@ function AuthScreen({
     setFormError("");
   }, [mode]);
 
-  function handleModeChange(nextMode) {
+  function handleModeChange(nextMode: AuthMode) {
     setAuthMode(nextMode);
     setFormError("");
 
@@ -37,7 +49,7 @@ function AuthScreen({
     }
   }
 
-  async function handleSubmit(event) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const validationMessage = validateAuthForm({
@@ -61,7 +73,7 @@ function AuthScreen({
         await onLogin({ email, password });
       }
     } catch (error) {
-      setFormError(error.message);
+      setFormError(error instanceof Error ? error.message : "Something went wrong.");
     } finally {
       setIsSubmitting(false);
     }

@@ -33,7 +33,7 @@ Backend GitHub project:
 The frontend API service is centralized in:
 
 ```txt
-src/api/callsApi.js
+src/api/callsApi.ts
 ```
 
 It handles:
@@ -226,7 +226,7 @@ npm run format
 
 ### Bonus Features
 
-- Centralized API service in `src/api/callsApi.js`
+- Centralized API service in `src/api/callsApi.ts`
 - API base URL stored in `VITE_API_URL`
 - Retry logic for network failures and server errors
 - Toast notifications for action success messages
@@ -242,31 +242,31 @@ npm run format
 
 ```txt
 src/
-  App.jsx
-  main.jsx
+  App.tsx
+  main.tsx
   index.css
 
   api/
-    callsApi.js
+    callsApi.ts
 
   components/
-    CallFeed.jsx
-    CallItem.jsx
-    CallDetails.jsx
-    ConfirmDialog.jsx
-    FilterModal.jsx
-    PaginationControls.jsx
-    StatsCards.jsx
-    Toast.jsx
+    CallFeed.tsx
+    CallItem.tsx
+    CallDetails.tsx
+    ConfirmDialog.tsx
+    FilterModal.tsx
+    PaginationControls.tsx
+    StatsCards.tsx
+    Toast.tsx
 
   utils/
-    callUtils.js
-    formatters.js
+    callUtils.ts
+    formatters.ts
 
   test/
-    App.integration.test.jsx
-    callsApi.test.js
-    setup.js
+    App.integration.test.tsx
+    callsApi.test.ts
+    setup.ts
 
 .github/
   workflows/
@@ -293,9 +293,9 @@ App
 
 ## File Responsibilities
 
-### `App.jsx`
+### `App.tsx`
 
-`App.jsx` is the main container of the application.
+`App.tsx` is the main container of the application.
 
 It is responsible for:
 
@@ -339,9 +339,9 @@ const [toast, setToast] = useState(null);
 
 ---
 
-### `callsApi.js`
+### `callsApi.ts`
 
-`callsApi.js` is the centralized API service for backend communication.
+`callsApi.ts` is the centralized API service for backend communication.
 
 It is responsible for:
 
@@ -367,9 +367,9 @@ PATCH  /calls/unarchive-all
 
 ---
 
-### `CallFeed.jsx`
+### `CallFeed.tsx`
 
-`CallFeed.jsx` displays the current call feed.
+`CallFeed.tsx` displays the current call feed.
 
 It is responsible for:
 
@@ -396,7 +396,7 @@ It is responsible for:
 - Rendering the reload button in the feed footer
 - Passing each call to `CallItem`
 
-The calls it receives from `App.jsx` are already filtered by view:
+The calls it receives from `App.tsx` are already filtered by view:
 
 ```txt
 Active view    -> non-archived calls
@@ -405,9 +405,9 @@ Archived view  -> archived calls
 
 ---
 
-### `StatsCards.jsx`
+### `StatsCards.tsx`
 
-`StatsCards.jsx` displays compact summary cards above the feed.
+`StatsCards.tsx` displays compact summary cards above the feed.
 
 It is responsible for:
 
@@ -422,9 +422,9 @@ It is responsible for:
 
 ---
 
-### `CallItem.jsx`
+### `CallItem.tsx`
 
-`CallItem.jsx` displays one call row inside the feed.
+`CallItem.tsx` displays one call row inside the feed.
 
 It is responsible for:
 
@@ -451,9 +451,9 @@ This makes it reusable for both active and archived calls.
 
 ---
 
-### `CallDetails.jsx`
+### `CallDetails.tsx`
 
-`CallDetails.jsx` displays the selected call inside a centered modal.
+`CallDetails.tsx` displays the selected call inside a centered modal.
 
 It is responsible for:
 
@@ -476,9 +476,9 @@ It is responsible for:
 
 ---
 
-### `ConfirmDialog.jsx`
+### `ConfirmDialog.tsx`
 
-`ConfirmDialog.jsx` displays the reusable confirmation modal.
+`ConfirmDialog.tsx` displays the reusable confirmation modal.
 
 It is responsible for:
 
@@ -490,22 +490,22 @@ It is responsible for:
 
 ---
 
-### `Toast.jsx`
+### `Toast.tsx`
 
-`Toast.jsx` displays short success notifications.
+`Toast.tsx` displays short success notifications.
 
 It is responsible for:
 
 - Showing a toast message
 - Supporting success and error styles
 - Providing a dismiss button
-- Working with the auto-dismiss timer in `App.jsx`
+- Working with the auto-dismiss timer in `App.tsx`
 
 ---
 
-### `FilterModal.jsx`
+### `FilterModal.tsx`
 
-`FilterModal.jsx` displays the filtering interface inside a centered modal.
+`FilterModal.tsx` displays the filtering interface inside a centered modal.
 
 It is responsible for:
 
@@ -524,9 +524,9 @@ The feed only changes when the user confirms the filters.
 
 ---
 
-### `PaginationControls.jsx`
+### `PaginationControls.tsx`
 
-`PaginationControls.jsx` displays reusable pagination controls.
+`PaginationControls.tsx` displays reusable pagination controls.
 
 It is responsible for:
 
@@ -547,9 +547,9 @@ Bottom of feed
 
 ## Utility Files
 
-### `callUtils.js`
+### `callUtils.ts`
 
-`callUtils.js` contains reusable call-data logic.
+`callUtils.ts` contains reusable call-data logic.
 
 It is responsible for:
 
@@ -565,9 +565,9 @@ This keeps the main feed component cleaner.
 
 ---
 
-### `formatters.js`
+### `formatters.ts`
 
-`formatters.js` contains reusable formatting helpers.
+`formatters.ts` contains reusable formatting helpers.
 
 It is responsible for:
 
@@ -694,7 +694,7 @@ Branch protection is also configured so protected merges require CI to pass befo
 Backend GET /calls?is_archived=false
 Backend GET /calls?is_archived=true
   |
-App.jsx state
+App.tsx state
   |
 CallFeed
 ```
@@ -714,7 +714,7 @@ App stores calls in React state
 ### Feed data flow
 
 ```txt
-all calls in App.jsx
+all calls in App.tsx
   |
 filter by active/archived view
   |

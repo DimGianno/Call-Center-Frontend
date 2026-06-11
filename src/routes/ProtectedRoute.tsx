@@ -1,6 +1,14 @@
+import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import type { AuthSession } from "../types";
 
-function ProtectedRoute({ children, isAuthReady, session }) {
+interface ProtectedRouteProps {
+  children: ReactNode;
+  isAuthReady: boolean;
+  session: AuthSession | null;
+}
+
+function ProtectedRoute({ children, isAuthReady, session }: ProtectedRouteProps) {
   const location = useLocation();
 
   if (!isAuthReady) {

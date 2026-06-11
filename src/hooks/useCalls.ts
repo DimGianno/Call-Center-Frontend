@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   addCallNote,
   archiveAllCalls,
@@ -10,19 +10,26 @@ import {
   unarchiveAllCalls,
   unarchiveCall,
 } from "../api/callsApi";
+import type { Call, CallView, OpenConfirmDialog, ShowToast } from "../types";
 
-function useCalls({ showToast, openConfirmDialog }) {
-  const [calls, setCalls] = useState([]);
-  const [selectedCallId, setSelectedCallId] = useState(null);
-  const [callView, setCallView] = useState("active");
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong.";
+}
+
+function useCalls({
+  showToast,
+  openConfirmDialog,
+}: {
+  showToast: ShowToast;
+  openConfirmDialog: OpenConfirmDialog;
+}) {
+  const [calls, setCalls] = useState<Call[]>([]);
+  const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+  const [callView, setCallView] = useState<CallView>("active");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
-    loadCalls();
-  }, []);
-
-  async function loadCalls() {
+  const loadCalls = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage("");
 
@@ -30,13 +37,17 @@ function useCalls({ showToast, openConfirmDialog }) {
       const apiCalls = await fetchAllCalls();
       setCalls(apiCalls);
     } catch (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  function updateCallInState(updatedCall) {
+  useEffect(() => {
+    loadCalls();
+  }, [loadCalls]);
+
+  function updateCallInState(updatedCall: Call) {
     setCalls((currentCalls) => {
       return currentCalls.map((call) => {
         if (call.id === updatedCall.id) {
@@ -63,13 +74,13 @@ function useCalls({ showToast, openConfirmDialog }) {
           await loadCalls();
           showToast(resetResult?.message ?? "Calls reset successfully.");
         } catch (error) {
-          setErrorMessage(error.message);
+          setErrorMessage(getErrorMessage(error));
         }
       },
     });
   }
 
-  async function handleSelectCall(callId) {
+  async function handleSelectCall(callId: string) {
     setErrorMessage("");
 
     try {
@@ -77,11 +88,11 @@ function useCalls({ showToast, openConfirmDialog }) {
       updateCallInState(call);
       setSelectedCallId(callId);
     } catch (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(getErrorMessage(error));
     }
   }
 
-  async function handleArchiveCall(callId) {
+  async function handleArchiveCall(callId: string) {
     setErrorMessage("");
     const previousCalls = calls;
     const previousSelectedCallId = selectedCallId;
@@ -110,14 +121,14 @@ function useCalls({ showToast, openConfirmDialog }) {
     } catch (error) {
       setCalls(previousCalls);
       setSelectedCallId(previousSelectedCallId);
-      setErrorMessage(error.message);
+      setErrorMessage(getErrorMessage(error));
       return false;
     }
 
     return true;
   }
 
-  async function handleAddNote(callId, content) {
+  async function handleAddNote(callId: string, content: string) {
     setErrorMessage("");
     const previousCalls = calls;
     const temporaryNote = {
@@ -145,12 +156,12 @@ function useCalls({ showToast, openConfirmDialog }) {
       return true;
     } catch (error) {
       setCalls(previousCalls);
-      setErrorMessage(error.message);
+      setErrorMessage(getErrorMessage(error));
       return false;
     }
   }
 
-  function handleDeleteCall(callId) {
+  function handleDeleteCall(callId: string) {
     openConfirmDialog({
       title: "Delete this call?",
       message: "This call will be permanently removed from the dashboard.",
@@ -172,7 +183,7 @@ function useCalls({ showToast, openConfirmDialog }) {
         } catch (error) {
           setCalls(previousCalls);
           setSelectedCallId(previousSelectedCallId);
-          setErrorMessage(error.message);
+          setErrorMessage(getErrorMessage(error));
         }
       },
     });
@@ -194,13 +205,13 @@ function useCalls({ showToast, openConfirmDialog }) {
           await loadCalls();
           showToast("All active calls archived successfully.");
         } catch (error) {
-          setErrorMessage(error.message);
+          setErrorMessage(getErrorMessage(error));
         }
       },
     });
   }
 
-  async function handleUnarchiveCall(callId) {
+  async function handleUnarchiveCall(callId: string) {
     setErrorMessage("");
     const previousCalls = calls;
 
@@ -224,7 +235,7 @@ function useCalls({ showToast, openConfirmDialog }) {
       return true;
     } catch (error) {
       setCalls(previousCalls);
-      setErrorMessage(error.message);
+      setErrorMessage(getErrorMessage(error));
       return false;
     }
   }
@@ -243,7 +254,7 @@ function useCalls({ showToast, openConfirmDialog }) {
           await loadCalls();
           showToast("All archived calls unarchived successfully.");
         } catch (error) {
-          setErrorMessage(error.message);
+          setErrorMessage(getErrorMessage(error));
         }
       },
     });

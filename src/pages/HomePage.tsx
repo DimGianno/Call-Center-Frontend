@@ -1,6 +1,13 @@
 import { Link } from "react-router-dom";
+import type { AuthSession, Theme } from "../types";
 
-function HomePage({ onToggleTheme, session, theme }) {
+interface HomePageProps {
+  onToggleTheme: () => void;
+  session: AuthSession | null;
+  theme: Theme;
+}
+
+function HomePage({ onToggleTheme, session, theme }: HomePageProps) {
   return (
     <main className="home-page">
       <header className="home-nav">

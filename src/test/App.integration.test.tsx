@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
+import type { AuthSession, Call } from "../types";
 import { clearActiveSession, signUpDemoUser } from "../utils/authStorage";
 import {
   addCallNote,
@@ -29,7 +30,17 @@ vi.mock("../api/callsApi", () => {
   };
 });
 
-const activeCall = {
+const addCallNoteMock = vi.mocked(addCallNote);
+const archiveAllCallsMock = vi.mocked(archiveAllCalls);
+const archiveCallMock = vi.mocked(archiveCall);
+const deleteCallMock = vi.mocked(deleteCall);
+const fetchAllCallsMock = vi.mocked(fetchAllCalls);
+const fetchCallMock = vi.mocked(fetchCall);
+const resetCallsMock = vi.mocked(resetCalls);
+const unarchiveAllCallsMock = vi.mocked(unarchiveAllCalls);
+const unarchiveCallMock = vi.mocked(unarchiveCall);
+
+const activeCall: Call = {
   id: "call-1",
   direction: "inbound",
   from: "+1 555-0100",
@@ -41,7 +52,7 @@ const activeCall = {
   notes: [],
 };
 
-const archivedCall = {
+const archivedCall: Call = {
   id: "call-2",
   direction: "outbound",
   from: "+1 555-0200",
@@ -53,7 +64,7 @@ const archivedCall = {
   notes: [],
 };
 
-function createCall(overrides) {
+function createCall(overrides: Partial<Call> = {}): Call {
   return {
     id: "call",
     direction: "inbound",
@@ -68,7 +79,7 @@ function createCall(overrides) {
   };
 }
 
-function createCalls(count) {
+function createCalls(count: number) {
   return Array.from({ length: count }, (_, index) => {
     const callNumber = String(index + 1).padStart(2, "0");
 
@@ -82,7 +93,7 @@ function createCalls(count) {
   });
 }
 
-function seedAuthenticatedSession(overrides = {}) {
+function seedAuthenticatedSession(overrides: Partial<AuthSession> = {}) {
   window.localStorage.setItem(
     "call-center-demo-session",
     JSON.stringify({
@@ -108,7 +119,7 @@ describe("App auth gate", () => {
   beforeEach(() => {
     window.localStorage.clear();
     vi.clearAllMocks();
-    fetchAllCalls.mockResolvedValue([activeCall, archivedCall]);
+    fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
   });
 
   it("renders the home page at the root route", async () => {
@@ -317,11 +328,11 @@ describe("App API-backed user flows", () => {
     window.localStorage.clear();
     seedAuthenticatedSession();
     vi.clearAllMocks();
-    fetchAllCalls.mockResolvedValue([activeCall, archivedCall]);
+    fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
   });
 
   it("loads calls from the API and renders the active call feed", async () => {
-    const { container } = renderApp();
+    renderApp();
 
     expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
 
@@ -331,16 +342,16 @@ describe("App API-backed user flows", () => {
   });
 
   it("shows an API error when calls fail to load", async () => {
-    fetchAllCalls.mockRejectedValue(new Error("Unable to load calls."));
+    fetchAllCallsMock.mockRejectedValue(new Error("Unable to load calls."));
 
-    const { container } = renderApp();
+    renderApp();
 
     expect(await screen.findByText("Unable to load calls.")).toBeInTheDocument();
     expect(screen.getByText("No calls available.")).toBeInTheDocument();
   });
 
   it("shows an API error when selected call details fail to load", async () => {
-    fetchCall.mockRejectedValue(new Error("Unable to load call details."));
+    fetchCallMock.mockRejectedValue(new Error("Unable to load call details."));
 
     renderApp();
 
@@ -357,7 +368,7 @@ describe("App API-backed user flows", () => {
       duration: 180,
       notes: [{ id: "note-1", content: "Customer asked for a callback." }],
     };
-    fetchCall.mockResolvedValue(refreshedCall);
+    fetchCallMock.mockResolvedValue(refreshedCall);
 
     renderApp();
 
@@ -370,8 +381,8 @@ describe("App API-backed user flows", () => {
   });
 
   it("adds a note through the API and updates the selected call details", async () => {
-    fetchCall.mockResolvedValue(activeCall);
-    addCallNote.mockResolvedValue({
+    fetchCallMock.mockResolvedValue(activeCall);
+    addCallNoteMock.mockResolvedValue({
       ...activeCall,
       notes: [{ id: "note-2", content: "Escalated to billing." }],
     });
@@ -390,8 +401,8 @@ describe("App API-backed user flows", () => {
   });
 
   it("rolls back an optimistic note when adding the note fails", async () => {
-    fetchCall.mockResolvedValue(activeCall);
-    addCallNote.mockRejectedValue(new Error("Note was rejected."));
+    fetchCallMock.mockResolvedValue(activeCall);
+    addCallNoteMock.mockRejectedValue(new Error("Note was rejected."));
 
     const { container } = renderApp();
 
@@ -404,20 +415,22 @@ describe("App API-backed user flows", () => {
     expect(addCallNote).toHaveBeenCalledWith("call-1", "This should roll back.");
     expect(await screen.findByText("Note was rejected.")).toBeInTheDocument();
     expect(
-      within(container.querySelector(".details-table")).queryByText("This should roll back."),
+      within(container.querySelector(".details-table") as HTMLElement).queryByText(
+        "This should roll back.",
+      ),
     ).not.toBeInTheDocument();
     expect(screen.getByText("No notes available for this call.")).toBeInTheDocument();
   });
 
   it("archives an active call through the API and removes it from the active feed", async () => {
-    archiveCall.mockResolvedValue({
+    archiveCallMock.mockResolvedValue({
       ...activeCall,
       is_archived: true,
     });
 
     renderApp();
 
-    const callCard = (await screen.findByText("+1 555-0100")).closest(".call-card");
+    const callCard = (await screen.findByText("+1 555-0100")).closest(".call-card") as HTMLElement;
     await userEvent.click(within(callCard).getByRole("button", { name: "Archive this call" }));
 
     expect(archiveCall).toHaveBeenCalledWith("call-1");
@@ -426,11 +439,11 @@ describe("App API-backed user flows", () => {
   });
 
   it("rolls back an optimistic archive when archiving fails", async () => {
-    archiveCall.mockRejectedValue(new Error("Archive failed."));
+    archiveCallMock.mockRejectedValue(new Error("Archive failed."));
 
     renderApp();
 
-    const callCard = (await screen.findByText("+1 555-0100")).closest(".call-card");
+    const callCard = (await screen.findByText("+1 555-0100")).closest(".call-card") as HTMLElement;
     await userEvent.click(within(callCard).getByRole("button", { name: "Archive this call" }));
 
     expect(archiveCall).toHaveBeenCalledWith("call-1");
@@ -439,7 +452,7 @@ describe("App API-backed user flows", () => {
   });
 
   it("switches to archived calls and unarchives one call through the API", async () => {
-    unarchiveCall.mockResolvedValue({
+    unarchiveCallMock.mockResolvedValue({
       ...archivedCall,
       is_archived: false,
     });
@@ -449,7 +462,7 @@ describe("App API-backed user flows", () => {
     await userEvent.click(await screen.findByRole("button", { name: "View archived calls" }));
 
     expect(screen.getByRole("button", { name: "View active calls" })).toBeInTheDocument();
-    const callCard = screen.getByText("+1 555-0200").closest(".call-card");
+    const callCard = screen.getByText("+1 555-0200").closest(".call-card") as HTMLElement;
     await userEvent.click(within(callCard).getByRole("button", { name: "Unarchive this call" }));
 
     expect(unarchiveCall).toHaveBeenCalledWith("call-2");
@@ -458,8 +471,8 @@ describe("App API-backed user flows", () => {
   });
 
   it("unarchives all archived calls after confirmation", async () => {
-    unarchiveAllCalls.mockResolvedValue(null);
-    fetchAllCalls
+    unarchiveAllCallsMock.mockResolvedValue(null);
+    fetchAllCallsMock
       .mockResolvedValueOnce([activeCall, archivedCall])
       .mockResolvedValueOnce([activeCall, { ...archivedCall, is_archived: false }]);
 
@@ -477,8 +490,8 @@ describe("App API-backed user flows", () => {
   });
 
   it("archives all active calls after confirmation", async () => {
-    archiveAllCalls.mockResolvedValue(null);
-    fetchAllCalls
+    archiveAllCallsMock.mockResolvedValue(null);
+    fetchAllCallsMock
       .mockResolvedValueOnce([activeCall, archivedCall])
       .mockResolvedValueOnce([{ ...activeCall, is_archived: true }, archivedCall]);
 
@@ -514,12 +527,12 @@ describe("App API-backed user flows", () => {
       from: "+1 555-0300",
       to: "+1 555-0330",
     });
-    resetCalls.mockResolvedValue({
+    resetCallsMock.mockResolvedValue({
       message: "Calls reset successfully",
       deletedCount: 4,
       insertedCount: 150,
     });
-    fetchAllCalls.mockResolvedValueOnce([activeCall]).mockResolvedValueOnce([resetCall]);
+    fetchAllCallsMock.mockResolvedValueOnce([activeCall]).mockResolvedValueOnce([resetCall]);
 
     renderApp();
 
@@ -537,8 +550,8 @@ describe("App API-backed user flows", () => {
   });
 
   it("deletes a selected call after confirmation", async () => {
-    fetchCall.mockResolvedValue(activeCall);
-    deleteCall.mockResolvedValue(null);
+    fetchCallMock.mockResolvedValue(activeCall);
+    deleteCallMock.mockResolvedValue(null);
 
     renderApp();
 
@@ -563,7 +576,7 @@ describe("App API-backed user flows", () => {
       from: "+1 555-0300",
       to: "+1 555-0330",
     });
-    fetchAllCalls.mockResolvedValue([activeCall, secondActiveCall]);
+    fetchAllCallsMock.mockResolvedValue([activeCall, secondActiveCall]);
 
     renderApp();
 
@@ -581,7 +594,7 @@ describe("App API-backed user flows", () => {
       from: "+1 555-0300",
       to: "+1 555-0330",
     });
-    fetchAllCalls.mockResolvedValue([activeCall, missedActiveCall]);
+    fetchAllCallsMock.mockResolvedValue([activeCall, missedActiveCall]);
 
     renderApp();
 
@@ -595,7 +608,7 @@ describe("App API-backed user flows", () => {
   });
 
   it("changes page size and navigates through paginated calls", async () => {
-    fetchAllCalls.mockResolvedValue(createCalls(12));
+    fetchAllCallsMock.mockResolvedValue(createCalls(12));
 
     renderApp();
 
@@ -624,7 +637,7 @@ describe("App API-backed user flows", () => {
   });
 
   it("shows an empty state when the API returns no calls", async () => {
-    fetchAllCalls.mockResolvedValue([]);
+    fetchAllCallsMock.mockResolvedValue([]);
 
     renderApp();
 
@@ -647,7 +660,7 @@ describe("App API-backed user flows", () => {
       from: "+1 555-0300",
       to: "+1 555-0330",
     });
-    fetchAllCalls.mockResolvedValue([activeCall, longCall]);
+    fetchAllCallsMock.mockResolvedValue([activeCall, longCall]);
 
     renderApp();
 

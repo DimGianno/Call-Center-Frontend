@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import type { ToastMessage, ToastType } from "../types";
 
 function useToast(autoDismissMs = 3500) {
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
   useEffect(() => {
     if (!toast) {
@@ -15,7 +16,7 @@ function useToast(autoDismissMs = 3500) {
     return () => clearTimeout(timeoutId);
   }, [autoDismissMs, toast]);
 
-  function showToast(message, type = "success") {
+  function showToast(message: string, type: ToastType = "success") {
     setToast({
       id: Date.now(),
       message,

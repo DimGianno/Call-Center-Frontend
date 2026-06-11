@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { AuthSession, Theme } from "../types";
 import AccountDrawer from "../components/AccountDrawer";
 import CallDetails from "../components/CallDetails";
 import CallFeed from "../components/CallFeed";
@@ -9,6 +10,15 @@ import useCalls from "../hooks/useCalls";
 import useConfirmDialog from "../hooks/useConfirmDialog";
 import useToast from "../hooks/useToast";
 
+interface DashboardPageProps {
+  formattedRemainingSessionTime: string;
+  onLogout: (message?: string) => void | Promise<void>;
+  onRefreshSessionTimer: () => void | Promise<void>;
+  onToggleTheme: () => void;
+  session: AuthSession;
+  theme: Theme;
+}
+
 function DashboardPage({
   formattedRemainingSessionTime,
   onLogout,
@@ -16,7 +26,7 @@ function DashboardPage({
   onToggleTheme,
   session,
   theme,
-}) {
+}: DashboardPageProps) {
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false);
   const { toast, showToast, dismissToast } = useToast();
   const {

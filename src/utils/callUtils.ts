@@ -1,3 +1,5 @@
+import type { Call, CallDirection, CallFilters, CallType, PaginatedCalls } from "../types";
+
 export const defaultFilters = {
   callTypes: {
     answered: true,
@@ -12,18 +14,18 @@ export const defaultFilters = {
   dateTo: "",
   durationMin: "",
   durationMax: "",
-};
+} satisfies CallFilters;
 
-export function getActiveFilterCount(filters) {
+export function getActiveFilterCount(filters: CallFilters) {
   let count = 0;
 
-  Object.keys(defaultFilters.callTypes).forEach((callType) => {
+  (Object.keys(defaultFilters.callTypes) as CallType[]).forEach((callType) => {
     if (filters.callTypes[callType] !== defaultFilters.callTypes[callType]) {
       count += 1;
     }
   });
 
-  Object.keys(defaultFilters.directions).forEach((direction) => {
+  (Object.keys(defaultFilters.directions) as CallDirection[]).forEach((direction) => {
     if (filters.directions[direction] !== defaultFilters.directions[direction]) {
       count += 1;
     }
@@ -48,7 +50,7 @@ export function getActiveFilterCount(filters) {
   return count;
 }
 
-export function filterCalls(calls, filters) {
+export function filterCalls(calls: Call[], filters: CallFilters) {
   return calls.filter((call) => {
     const matchesCallType = filters.callTypes[call.call_type];
     const matchesDirection = filters.directions[call.direction];
@@ -77,13 +79,17 @@ export function filterCalls(calls, filters) {
   });
 }
 
-export function sortCallsNewestFirst(calls) {
+export function sortCallsNewestFirst(calls: Call[]) {
   return [...calls].sort((a, b) => {
-    return new Date(b.created_at) - new Date(a.created_at);
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 }
 
-export function paginateCalls(calls, currentPage, pageSize) {
+export function paginateCalls(
+  calls: Call[],
+  currentPage: number,
+  pageSize: number,
+): PaginatedCalls {
   const totalPages = Math.max(1, Math.ceil(calls.length / pageSize));
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -99,8 +105,8 @@ export function paginateCalls(calls, currentPage, pageSize) {
   };
 }
 
-export function groupCallsByDate(calls) {
-  return calls.reduce((groups, call) => {
+export function groupCallsByDate(calls: Call[]) {
+  return calls.reduce<Record<string, Call[]>>((groups, call) => {
     const dateKey = call.created_at.slice(0, 10);
 
     if (!groups[dateKey]) {
@@ -113,7 +119,7 @@ export function groupCallsByDate(calls) {
   }, {});
 }
 
-export function searchCallsByPhoneNumber(calls, searchTerm) {
+export function searchCallsByPhoneNumber(calls: Call[], searchTerm: string) {
   const normalizedSearchTerm = searchTerm.replace(/\D/g, "");
 
   if (normalizedSearchTerm === "") {

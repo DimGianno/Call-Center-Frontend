@@ -5,6 +5,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import PaginationControls from "../components/PaginationControls";
 import StatsCards from "../components/StatsCards";
 import Toast from "../components/Toast";
+import type { Call } from "../types";
 
 describe("component snapshots", () => {
   it("matches the success toast snapshot", () => {
@@ -61,21 +62,36 @@ describe("component snapshots", () => {
   });
 
   it("matches the stats cards snapshot", () => {
-    const calls = [
+    const calls: Call[] = [
       {
         id: "call-1",
         direction: "inbound",
+        from: "+1 555-0100",
+        to: "+1 555-0110",
         call_type: "answered",
+        duration: 120,
+        created_at: "2026-06-07T08:30:00",
+        is_archived: false,
       },
       {
         id: "call-2",
         direction: "outbound",
+        from: "+1 555-0200",
+        to: "+1 555-0220",
         call_type: "missed",
+        duration: 45,
+        created_at: "2026-06-07T09:30:00",
+        is_archived: false,
       },
       {
         id: "call-3",
         direction: "inbound",
+        from: "+1 555-0300",
+        to: "+1 555-0330",
         call_type: "voicemail",
+        duration: 80,
+        created_at: "2026-06-07T10:30:00",
+        is_archived: false,
       },
     ];
 
@@ -85,7 +101,7 @@ describe("component snapshots", () => {
   });
 
   it("matches the call item snapshot", () => {
-    const call = {
+    const call: Call = {
       id: "call-1",
       direction: "inbound",
       from: "+1 555-0100",
@@ -93,6 +109,7 @@ describe("component snapshots", () => {
       call_type: "answered",
       duration: 120,
       created_at: "2026-06-07T08:30:00",
+      is_archived: false,
     };
 
     const { asFragment } = render(

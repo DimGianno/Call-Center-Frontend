@@ -1,10 +1,11 @@
 import { useState } from "react";
+import type { ConfirmDialogConfig } from "../types";
 
 function useConfirmDialog() {
-  const [confirmDialog, setConfirmDialog] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogConfig | null>(null);
   const [isConfirmProcessing, setIsConfirmProcessing] = useState(false);
 
-  function openConfirmDialog(dialogConfig) {
+  function openConfirmDialog(dialogConfig: ConfirmDialogConfig) {
     setConfirmDialog(dialogConfig);
   }
 

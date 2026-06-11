@@ -1,4 +1,26 @@
-function FilterModal({ draftFilters, onDraftFiltersChange, onReset, onClose, onConfirm }) {
+import type { CSSProperties } from "react";
+import type { CallDirection, CallFilters, CallType } from "../types";
+
+interface FilterModalProps {
+  draftFilters: CallFilters;
+  onDraftFiltersChange: (filters: CallFilters) => void;
+  onReset: () => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+type DurationSliderStyle = CSSProperties & {
+  "--duration-min": string;
+  "--duration-max": string;
+};
+
+function FilterModal({
+  draftFilters,
+  onDraftFiltersChange,
+  onReset,
+  onClose,
+  onConfirm,
+}: FilterModalProps) {
   const durationSliderMax = 500;
   const durationMin = draftFilters.durationMin === "" ? 0 : Number(draftFilters.durationMin);
   const durationMax =
@@ -6,7 +28,7 @@ function FilterModal({ draftFilters, onDraftFiltersChange, onReset, onClose, onC
   const durationMinPercent = (durationMin / durationSliderMax) * 100;
   const durationMaxPercent = (durationMax / durationSliderMax) * 100;
 
-  function handleCallTypeChange(callType, checked) {
+  function handleCallTypeChange(callType: CallType, checked: boolean) {
     onDraftFiltersChange({
       ...draftFilters,
       callTypes: {
@@ -16,7 +38,7 @@ function FilterModal({ draftFilters, onDraftFiltersChange, onReset, onClose, onC
     });
   }
 
-  function handleDirectionChange(direction, checked) {
+  function handleDirectionChange(direction: CallDirection, checked: boolean) {
     onDraftFiltersChange({
       ...draftFilters,
       directions: {
@@ -26,14 +48,14 @@ function FilterModal({ draftFilters, onDraftFiltersChange, onReset, onClose, onC
     });
   }
 
-  function handleDateChange(fieldName, value) {
+  function handleDateChange(fieldName: "dateFrom" | "dateTo", value: string) {
     onDraftFiltersChange({
       ...draftFilters,
       [fieldName]: value,
     });
   }
 
-  function handleDurationMinChange(value) {
+  function handleDurationMinChange(value: string) {
     const nextMin = Math.min(Number(value), durationMax);
 
     onDraftFiltersChange({
@@ -42,7 +64,7 @@ function FilterModal({ draftFilters, onDraftFiltersChange, onReset, onClose, onC
     });
   }
 
-  function handleDurationMaxChange(value) {
+  function handleDurationMaxChange(value: string) {
     const nextMax = Math.max(Number(value), durationMin);
 
     onDraftFiltersChange({
@@ -51,7 +73,7 @@ function FilterModal({ draftFilters, onDraftFiltersChange, onReset, onClose, onC
     });
   }
 
-  function formatDurationLabel(value, isMaxValue = false) {
+  function formatDurationLabel(value: number, isMaxValue = false) {
     if (isMaxValue && value === durationSliderMax) {
       return `${durationSliderMax}+ sec`;
     }
@@ -163,10 +185,12 @@ function FilterModal({ draftFilters, onDraftFiltersChange, onReset, onClose, onC
 
             <div
               className="duration-slider-track"
-              style={{
-                "--duration-min": `${durationMinPercent}%`,
-                "--duration-max": `${durationMaxPercent}%`,
-              }}
+              style={
+                {
+                  "--duration-min": `${durationMinPercent}%`,
+                  "--duration-max": `${durationMaxPercent}%`,
+                } as DurationSliderStyle
+              }
             >
               <input
                 type="range"
