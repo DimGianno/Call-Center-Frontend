@@ -1,8 +1,8 @@
 # Call Center Dashboard
 
-A frontend call management dashboard built with **React**, **JavaScript**, and a deployed backend API.
+A frontend call management dashboard built with **React**, **TypeScript**, and a deployed backend API.
 
-The app displays a call activity feed where users can view active and archived calls, inspect call details, add notes, archive or unarchive calls, delete calls, filter/search calls, group calls by date, paginate large call lists, and receive success/error feedback for API-backed actions.
+The app includes account signup, login, protected dashboard access, and a call activity feed where users can view active and archived calls, inspect call details, add notes, archive or unarchive calls, delete calls, filter/search calls, group calls by date, paginate large call lists, and receive success/error feedback for API-backed actions.
 
 Live frontend:
 
@@ -30,7 +30,7 @@ Backend GitHub project:
 
 [DimGianno/Call-Center-BackEnd](https://github.com/DimGianno/Call-Center-BackEnd)
 
-The frontend API service is centralized in:
+The call data API service is centralized in:
 
 ```txt
 src/api/callsApi.ts
@@ -47,6 +47,21 @@ It handles:
 - Bulk archive and unarchive actions
 - Retry logic for network failures and server errors
 - Clear API error messages for the UI
+
+Authentication requests are centralized in:
+
+```txt
+src/api/authApi.ts
+```
+
+It handles:
+
+- Login requests
+- Signup requests
+- Loading the active session
+- Saving the active session after successful authentication
+- Logging out by clearing the active session
+- Refreshing the local session timer
 
 ---
 
@@ -109,6 +124,20 @@ npm run format
 ---
 
 ## Current Features
+
+### Authentication
+
+- Sign up with name, email, and password
+- Log in with email and password
+- Validate authentication form fields before submitting
+- Redirect authenticated users away from public login/signup routes
+- Protect the dashboard from unauthenticated access
+- Store the active demo session in local storage
+- Display signed-in user details in the account drawer
+- Show a session countdown timer in the dashboard header
+- Refresh the local session timer from the dashboard
+- Log out from the account drawer
+- Redirect users to login when the local session expires
 
 ### Call Feed
 
@@ -227,7 +256,9 @@ npm run format
 ### Bonus Features
 
 - Centralized API service in `src/api/callsApi.ts`
+- Centralized auth service in `src/api/authApi.ts`
 - API base URL stored in `VITE_API_URL`
+- React Router public-only and protected routes
 - Retry logic for network failures and server errors
 - Toast notifications for action success messages
 - Optimistic updates for:
@@ -247,9 +278,12 @@ src/
   index.css
 
   api/
+    authApi.ts
     callsApi.ts
 
   components/
+    AccountDrawer.tsx
+    AuthScreen.tsx
     CallFeed.tsx
     CallItem.tsx
     CallDetails.tsx
@@ -259,13 +293,31 @@ src/
     StatsCards.tsx
     Toast.tsx
 
+  hooks/
+    useAuthSession.ts
+    useCalls.ts
+    useConfirmDialog.ts
+    useToast.ts
+
+  pages/
+    AuthPage.tsx
+    DashboardPage.tsx
+    HomePage.tsx
+
+  routes/
+    ProtectedRoute.tsx
+    PublicOnlyRoute.tsx
+
   utils/
+    authStorage.ts
     callUtils.ts
     formatters.ts
 
   test/
     App.integration.test.tsx
+    authApi.test.ts
     callsApi.test.ts
+    components.snapshot.test.tsx
     setup.ts
 
 .github/
@@ -279,14 +331,21 @@ src/
 
 ```txt
 App
-  |-- StatsCards
-  |-- CallFeed
-  |   |-- FilterModal
-  |   |-- PaginationControls
-  |   `-- CallItem
-  |-- CallDetails
-  |-- ConfirmDialog
-  `-- Toast
+  |-- HomePage
+  |-- PublicOnlyRoute
+  |   `-- AuthPage
+  |       `-- AuthScreen
+  `-- ProtectedRoute
+      `-- DashboardPage
+          |-- AccountDrawer
+          |-- StatsCards
+          |-- CallFeed
+          |   |-- FilterModal
+          |   |-- PaginationControls
+          |   `-- CallItem
+          |-- CallDetails
+          |-- ConfirmDialog
+          `-- Toast
 ```
 
 ---
@@ -295,47 +354,21 @@ App
 
 ### `App.tsx`
 
-`App.tsx` is the main container of the application.
+`App.tsx` defines the main application routing and top-level UI state.
 
 It is responsible for:
 
-- Loading calls from the backend API
-- Storing the full calls state
-- Storing the selected call ID
-- Storing the current call view:
-  - active calls
-  - archived calls
 - Storing the current theme:
   - light
   - dark
-- Storing loading and error state
-- Storing confirmation dialog state
-- Storing toast notification state
-- Selecting a call and fetching its full details
-- Finding the selected call
-- Archiving a single call
-- Unarchiving a single call
-- Deleting a single call
-- Adding a note to a call
-- Archiving all active calls
-- Unarchiving all archived calls
-- Running optimistic updates for single-call actions
-- Rolling back optimistic updates when API requests fail
-- Filtering calls by current view before passing them to `CallFeed`
-- Passing current-view calls to `StatsCards`
-
-Main state values:
-
-```jsx
-const [calls, setCalls] = useState([]);
-const [selectedCallId, setSelectedCallId] = useState(null);
-const [callView, setCallView] = useState("active");
-const [theme, setTheme] = useState("dark");
-const [isLoading, setIsLoading] = useState(true);
-const [errorMessage, setErrorMessage] = useState("");
-const [confirmDialog, setConfirmDialog] = useState(null);
-const [toast, setToast] = useState(null);
-```
+- Creating the browser router
+- Defining public and protected routes
+- Rendering the home, login, signup, and dashboard pages
+- Loading and managing the active auth session through `useAuthSession`
+- Redirecting authenticated users away from login/signup pages
+- Redirecting unauthenticated users away from the dashboard
+- Passing session details and session actions into `DashboardPage`
+- Formatting the remaining session time for the dashboard header
 
 ---
 
@@ -363,6 +396,29 @@ PATCH  /calls/:callId/unarchive
 DELETE /calls/:callId
 PATCH  /calls/archive-all
 PATCH  /calls/unarchive-all
+```
+
+---
+
+### `authApi.ts`
+
+`authApi.ts` is the centralized API service for authentication.
+
+It is responsible for:
+
+- Reading `VITE_API_URL`
+- Sending login requests to the backend
+- Sending signup requests to the backend
+- Parsing authentication responses
+- Returning readable errors for failed auth requests
+- Saving successful auth sessions through `authStorage.ts`
+- Loading, refreshing, and clearing the active session
+
+Backend actions include:
+
+```txt
+POST /auth/login
+POST /auth/signup
 ```
 
 ---
@@ -598,7 +654,9 @@ npm test
 The current suite includes:
 
 - Integration tests for API-backed user flows in `App`
+- Auth API tests for login, signup, session loading, session refresh, logout, and validation behavior
 - API service tests for pagination, retry behavior, request methods, request bodies, and missing API configuration
+- Component snapshot tests for key rendered UI states
 
 The integration tests cover:
 
@@ -613,6 +671,7 @@ The integration tests cover:
 - Reload confirmation
 - Delete confirmation
 - Search, filters, pagination, empty states, and theme toggling
+- Login, signup, protected routes, public-only routes, logout, and expired session redirects
 
 Test files live in:
 
