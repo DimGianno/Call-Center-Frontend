@@ -58,4 +58,3 @@ https://github.com/DimGianno/Call-Center-BackEnd
 This project demonstrates the ability to build a complete frontend application with real API integration, authenticated routing, state management through custom hooks, reusable components, user feedback flows, error handling, and automated tests.
 
 The focus was on creating a practical dashboard that feels close to a real business tool: structured, maintainable, responsive, and easy to use for everyday call management tasks.
-
