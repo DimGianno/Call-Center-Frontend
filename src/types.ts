@@ -11,12 +11,24 @@ export interface SignupCredentials extends LoginCredentials {
   name: string;
 }
 
-export type DemoUser = SignupCredentials;
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  created_at?: string;
+}
 
 export interface AuthSession {
+  user: AuthUser;
+  accessToken: string;
   name: string;
   email: string;
   startedAt: number;
+}
+
+export interface AuthResponse {
+  user: AuthUser;
+  accessToken: string;
 }
 
 export type CallDirection = "inbound" | "outbound";

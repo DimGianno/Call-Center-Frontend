@@ -30,13 +30,36 @@ async function importCallsApi({ apiUrl = API_URL }: { apiUrl?: string } = {}) {
   return import("../api/callsApi");
 }
 
+function seedAuthenticatedSession(accessToken = "test-token") {
+  window.localStorage.setItem(
+    "call-center-demo-session",
+    JSON.stringify({
+      user: {
+        id: "user-1",
+        name: "Test Agent",
+        email: "agent@example.com",
+      },
+      accessToken,
+      name: "Test Agent",
+      email: "agent@example.com",
+      startedAt: Date.now(),
+    }),
+  );
+}
+
+function getFetchHeaders(fetchMock: ReturnType<typeof vi.mocked<typeof fetch>>, callIndex: number) {
+  return fetchMock.mock.calls[callIndex]?.[1]?.headers as Headers;
+}
+
 describe("callsApi", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.stubGlobal("fetch", vi.fn());
+    seedAuthenticatedSession();
   });
 
   afterEach(() => {
+    window.localStorage.clear();
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
@@ -72,10 +95,9 @@ describe("callsApi", () => {
       { id: "archived-1" },
     ]);
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      `${API_URL}/calls?is_archived=false&page=1&limit=50`,
-      expect.objectContaining({ headers: expect.any(Object) }),
-    );
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(`${API_URL}/calls?is_archived=false&page=1&limit=50`);
+    expect(getFetchHeaders(fetchMock, 0).get("Authorization")).toBe("Bearer test-token");
+    expect(getFetchHeaders(fetchMock, 0).get("Content-Type")).toBe("application/json");
     expect(fetchMock).toHaveBeenCalledWith(
       `${API_URL}/calls?is_archived=true&page=1&limit=50`,
       expect.objectContaining({ headers: expect.any(Object) }),

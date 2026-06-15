@@ -1,6 +1,5 @@
-import type { AuthSession, DemoUser, LoginCredentials, SignupCredentials } from "../types";
+import type { AuthResponse, AuthSession } from "../types";
 
-const DEMO_USERS_STORAGE_KEY = "call-center-demo-users";
 const ACTIVE_SESSION_STORAGE_KEY = "call-center-demo-session";
 
 export const SESSION_DURATION_SECONDS = 10 * 60;
@@ -23,38 +22,50 @@ function writeJson(key: string, value: unknown) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
-}
-
-function isDemoUser(value: unknown): value is DemoUser {
+function isAuthResponse(value: unknown): value is AuthResponse {
   if (!value || typeof value !== "object") {
     return false;
   }
 
-  const user = value as Record<string, unknown>;
+  const response = value as Record<string, unknown>;
+  const user = response.user;
 
   return (
-    typeof user.name === "string" &&
-    typeof user.email === "string" &&
-    typeof user.password === "string"
+    typeof response.accessToken === "string" &&
+    !!user &&
+    typeof user === "object" &&
+    typeof (user as Record<string, unknown>).id === "string" &&
+    typeof (user as Record<string, unknown>).name === "string" &&
+    typeof (user as Record<string, unknown>).email === "string"
   );
 }
 
-function isSessionCandidate(value: unknown): value is Pick<AuthSession, "name" | "email"> {
+function isSessionCandidate(value: unknown): value is AuthSession {
   if (!value || typeof value !== "object") {
     return false;
   }
 
   const session = value as Record<string, unknown>;
+  const user = session.user;
 
-  return typeof session.name === "string" && typeof session.email === "string";
+  return (
+    typeof session.name === "string" &&
+    typeof session.email === "string" &&
+    typeof session.accessToken === "string" &&
+    !!user &&
+    typeof user === "object" &&
+    typeof (user as Record<string, unknown>).id === "string" &&
+    typeof (user as Record<string, unknown>).name === "string" &&
+    typeof (user as Record<string, unknown>).email === "string"
+  );
 }
 
-function buildSession(user: Pick<AuthSession, "name" | "email">): AuthSession {
+export function buildSession(authResponse: AuthResponse): AuthSession {
   return {
-    name: user.name,
-    email: user.email,
+    user: authResponse.user,
+    accessToken: authResponse.accessToken,
+    name: authResponse.user.name,
+    email: authResponse.user.email,
     startedAt: Date.now(),
   };
 }
@@ -89,49 +100,12 @@ export function validateAuthForm({
   return "";
 }
 
-export function getDemoUsers(): DemoUser[] {
-  const users = readJson<unknown>(DEMO_USERS_STORAGE_KEY, []);
-
-  if (!Array.isArray(users)) {
-    return [];
+export function saveActiveSession(authResponse: AuthResponse): AuthSession {
+  if (!isAuthResponse(authResponse)) {
+    throw new Error("Invalid authentication response.");
   }
 
-  return users.filter(isDemoUser);
-}
-
-export function signUpDemoUser({ name, email, password }: SignupCredentials): AuthSession {
-  const normalizedEmail = normalizeEmail(email);
-  const users = getDemoUsers();
-  const existingUser = users.find((user) => user.email === normalizedEmail);
-
-  if (existingUser) {
-    throw new Error("An account with this email already exists.");
-  }
-
-  const user: DemoUser = {
-    name: name.trim(),
-    email: normalizedEmail,
-    password,
-  };
-  const session = buildSession(user);
-
-  writeJson(DEMO_USERS_STORAGE_KEY, [...users, user]);
-  writeJson(ACTIVE_SESSION_STORAGE_KEY, session);
-
-  return session;
-}
-
-export function signInDemoUser({ email, password }: LoginCredentials): AuthSession {
-  const normalizedEmail = normalizeEmail(email);
-  const user = getDemoUsers().find((storedUser) => {
-    return storedUser.email === normalizedEmail && storedUser.password === password;
-  });
-
-  if (!user) {
-    throw new Error("Email or password is incorrect.");
-  }
-
-  const session = buildSession(user);
+  const session = buildSession(authResponse);
   writeJson(ACTIVE_SESSION_STORAGE_KEY, session);
 
   return session;
@@ -144,11 +118,14 @@ export function getActiveSession(): AuthSession | null {
     return null;
   }
 
-  return buildSession(session);
+  return session;
 }
 
 export function refreshActiveSession(session: AuthSession): AuthSession {
-  const refreshedSession = buildSession(session);
+  const refreshedSession = {
+    ...session,
+    startedAt: Date.now(),
+  };
   writeJson(ACTIVE_SESSION_STORAGE_KEY, refreshedSession);
   return refreshedSession;
 }

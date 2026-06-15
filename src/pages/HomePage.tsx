@@ -124,9 +124,9 @@ function HomePage({ onToggleTheme, session, theme }: HomePageProps) {
           </p>
         </article>
         <article>
-          <h2>Backend-ready auth</h2>
+          <h2>Authenticated access</h2>
           <p>
-            The current demo login can be replaced later with real signup and login API endpoints.
+            Login and signup connect through the backend auth endpoints before the dashboard loads.
           </p>
         </article>
       </section>

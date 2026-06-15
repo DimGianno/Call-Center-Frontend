@@ -1,9 +1,9 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { loginUser, signupUser } from "../api/authApi";
 import App from "../App";
 import type { AuthSession, Call } from "../types";
-import { clearActiveSession, signUpDemoUser } from "../utils/authStorage";
 import {
   addCallNote,
   archiveAllCalls,
@@ -15,6 +15,25 @@ import {
   unarchiveAllCalls,
   unarchiveCall,
 } from "../api/callsApi";
+
+vi.mock("../api/authApi", () => {
+  return {
+    getCurrentSession: vi.fn(async () => {
+      const storedSession = window.localStorage.getItem("call-center-demo-session");
+      return storedSession ? JSON.parse(storedSession) : null;
+    }),
+    loginUser: vi.fn(),
+    logoutUser: vi.fn(async () => {
+      window.localStorage.removeItem("call-center-demo-session");
+    }),
+    refreshSession: vi.fn(async (session: AuthSession) => {
+      const refreshedSession = { ...session, startedAt: Date.now() };
+      window.localStorage.setItem("call-center-demo-session", JSON.stringify(refreshedSession));
+      return refreshedSession;
+    }),
+    signupUser: vi.fn(),
+  };
+});
 
 vi.mock("../api/callsApi", () => {
   return {
@@ -39,6 +58,8 @@ const fetchCallMock = vi.mocked(fetchCall);
 const resetCallsMock = vi.mocked(resetCalls);
 const unarchiveAllCallsMock = vi.mocked(unarchiveAllCalls);
 const unarchiveCallMock = vi.mocked(unarchiveCall);
+const loginUserMock = vi.mocked(loginUser);
+const signupUserMock = vi.mocked(signupUser);
 
 const activeCall: Call = {
   id: "call-1",
@@ -97,6 +118,12 @@ function seedAuthenticatedSession(overrides: Partial<AuthSession> = {}) {
   window.localStorage.setItem(
     "call-center-demo-session",
     JSON.stringify({
+      user: {
+        id: "user-1",
+        name: "Test Agent",
+        email: "agent@example.com",
+      },
+      accessToken: "test-token",
       name: "Test Agent",
       email: "agent@example.com",
       startedAt: Date.now(),
@@ -120,6 +147,28 @@ describe("App auth gate", () => {
     window.localStorage.clear();
     vi.clearAllMocks();
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
+    loginUserMock.mockResolvedValue({
+      user: {
+        id: "user-login",
+        name: "Stored Agent",
+        email: "stored@example.com",
+      },
+      accessToken: "login-token",
+      name: "Stored Agent",
+      email: "stored@example.com",
+      startedAt: Date.now(),
+    });
+    signupUserMock.mockResolvedValue({
+      user: {
+        id: "user-signup",
+        name: "Alex Agent",
+        email: "alex@example.com",
+      },
+      accessToken: "signup-token",
+      name: "Alex Agent",
+      email: "alex@example.com",
+      startedAt: Date.now(),
+    });
   });
 
   it("renders the home page at the root route", async () => {
@@ -160,7 +209,7 @@ describe("App auth gate", () => {
     expect(fetchAllCalls).not.toHaveBeenCalled();
   });
 
-  it("signs up a demo user, enters the dashboard, and starts the timer", async () => {
+  it("signs up through the backend auth API, enters the dashboard, and starts the timer", async () => {
     renderApp("/signup");
 
     await userEvent.type(await screen.findByLabelText("Name"), "Alex Agent");
@@ -168,6 +217,11 @@ describe("App auth gate", () => {
     await userEvent.type(screen.getByLabelText("Password"), "password123");
     await userEvent.click(screen.getByRole("button", { name: "Create account" }));
 
+    expect(signupUser).toHaveBeenCalledWith({
+      name: "Alex Agent",
+      email: "alex@example.com",
+      password: "password123",
+    });
     expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/dashboard");
     expect(fetchAllCalls).toHaveBeenCalledTimes(1);
@@ -179,20 +233,17 @@ describe("App auth gate", () => {
     );
   });
 
-  it("logs in with a stored demo user", async () => {
-    signUpDemoUser({
-      name: "Stored Agent",
-      email: "stored@example.com",
-      password: "password123",
-    });
-    clearActiveSession();
-
+  it("logs in through the backend auth API", async () => {
     renderApp("/login");
 
     await userEvent.type(await screen.findByLabelText("Email"), "stored@example.com");
     await userEvent.type(screen.getByLabelText("Password"), "password123");
     await userEvent.click(screen.getByRole("button", { name: "Login" }));
 
+    expect(loginUser).toHaveBeenCalledWith({
+      email: "stored@example.com",
+      password: "password123",
+    });
     expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/dashboard");
     await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
@@ -209,13 +260,15 @@ describe("App auth gate", () => {
   });
 
   it("shows validation and login errors without entering the dashboard", async () => {
+    loginUserMock.mockRejectedValueOnce(new Error("Invalid email or password"));
+
     renderApp("/login");
 
     await userEvent.type(await screen.findByLabelText("Email"), "missing@example.com");
     await userEvent.type(screen.getByLabelText("Password"), "password123");
     await userEvent.click(screen.getByRole("button", { name: "Login" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Email or password is incorrect.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Invalid email or password");
     expect(fetchAllCalls).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole("tab", { name: "Sign up" }));

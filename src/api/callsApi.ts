@@ -1,4 +1,5 @@
 import type { Call, CallsPageResponse, ResetCallsResult } from "../types";
+import { getActiveSession } from "../utils/authStorage";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 const MAX_RETRY_ATTEMPTS = 2;
@@ -13,16 +14,14 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
     throw new Error("Missing VITE_API_URL environment variable.");
   }
 
+  const { headers, ...requestOptions } = options;
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
     try {
       const response = await fetch(`${API_BASE_URL}${path}`, {
-        headers: {
-          "Content-Type": "application/json",
-          ...options.headers,
-        },
-        ...options,
+        ...requestOptions,
+        headers: buildRequestHeaders(headers),
       });
 
       const data = await parseJsonResponse(response);
@@ -54,6 +53,35 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
   }
 
   throw lastError instanceof Error ? lastError : new Error("Something went wrong.");
+}
+
+function buildRequestHeaders(headersInit?: HeadersInit) {
+  const headers = new Headers({
+    "Content-Type": "application/json",
+  });
+  const authorizationHeader = getAuthorizationHeader();
+
+  if (authorizationHeader) {
+    headers.set("Authorization", authorizationHeader);
+  }
+
+  if (headersInit) {
+    new Headers(headersInit).forEach((value, key) => {
+      headers.set(key, value);
+    });
+  }
+
+  return headers;
+}
+
+function getAuthorizationHeader() {
+  const session = getActiveSession();
+
+  if (!session?.accessToken) {
+    return "";
+  }
+
+  return `Bearer ${session.accessToken}`;
 }
 
 async function parseJsonResponse(response: Response): Promise<unknown> {
