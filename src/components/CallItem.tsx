@@ -1,6 +1,15 @@
+import type { MouseEvent } from "react";
+import type { Call } from "../types";
 import { formatCallTime } from "../utils/formatters";
 
-function CallItem({ call, onSelectCall, actionLabel, onAction }) {
+interface CallItemProps {
+  call: Call;
+  onSelectCall: (callId: string) => void | Promise<void>;
+  actionLabel: "Archive" | "Unarchive";
+  onAction: (callId: string) => boolean | Promise<boolean>;
+}
+
+function CallItem({ call, onSelectCall, actionLabel, onAction }: CallItemProps) {
   const formattedTime = formatCallTime(call.created_at);
   const isInbound = call.direction === "inbound";
 
@@ -28,7 +37,7 @@ function CallItem({ call, onSelectCall, actionLabel, onAction }) {
         className="archive-button"
         title={`${actionLabel} this call`}
         aria-label={`${actionLabel} this call`}
-        onClick={(event) => {
+        onClick={(event: MouseEvent<HTMLButtonElement>) => {
           event.stopPropagation();
           onAction(call.id);
         }}

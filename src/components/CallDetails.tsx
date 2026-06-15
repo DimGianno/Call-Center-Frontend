@@ -1,16 +1,36 @@
+import type { FormEvent } from "react";
 import { useState } from "react";
+import type { Call } from "../types";
 import { formatCallDateTime } from "../utils/formatters";
 
-function CallDetails({ call, onClose, onAddNote, onArchiveCall, onUnarchiveCall, onDeleteCall }) {
+interface CallDetailsProps {
+  call: Call;
+  onClose: () => void;
+  onAddNote: (callId: string, content: string) => Promise<boolean>;
+  onArchiveCall: (callId: string) => Promise<boolean>;
+  onUnarchiveCall: (callId: string) => Promise<boolean>;
+  onDeleteCall: (callId: string) => boolean;
+}
+
+type PendingAction = "" | "note" | "archive" | "delete";
+
+function CallDetails({
+  call,
+  onClose,
+  onAddNote,
+  onArchiveCall,
+  onUnarchiveCall,
+  onDeleteCall,
+}: CallDetailsProps) {
   const [noteContent, setNoteContent] = useState("");
-  const [pendingAction, setPendingAction] = useState("");
+  const [pendingAction, setPendingAction] = useState<PendingAction>("");
   const formattedDate = formatCallDateTime(call.created_at);
   const isSubmittingNote = pendingAction === "note";
   const isArchiveActionPending = pendingAction === "archive";
   const isDeleting = pendingAction === "delete";
   const isBusy = pendingAction !== "";
 
-  async function handleAddNote(event) {
+  async function handleAddNote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const trimmedNote = noteContent.trim();

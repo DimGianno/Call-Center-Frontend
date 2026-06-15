@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   addCallNote,
   archiveAllCalls,
@@ -9,41 +9,27 @@ import {
   resetCalls,
   unarchiveAllCalls,
   unarchiveCall,
-} from "./api/callsApi";
-import CallFeed from "./components/CallFeed";
-import CallDetails from "./components/CallDetails";
-import ConfirmDialog from "./components/ConfirmDialog";
-import StatsCards from "./components/StatsCards";
-import Toast from "./components/Toast";
+} from "../api/callsApi";
+import type { Call, CallView, OpenConfirmDialog, ShowToast } from "../types";
 
-function App() {
-  const [calls, setCalls] = useState([]);
-  const [selectedCallId, setSelectedCallId] = useState(null);
-  const [theme, setTheme] = useState("dark");
-  const [callView, setCallView] = useState("active");
-  const [isLoading, setIsLoading] = useState(true);
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong.";
+}
+
+function useCalls({
+  showToast,
+  openConfirmDialog,
+}: {
+  showToast: ShowToast;
+  openConfirmDialog: OpenConfirmDialog;
+}) {
+  const [calls, setCalls] = useState<Call[]>([]);
+  const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+  const [callView, setCallView] = useState<CallView>("active");
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [confirmDialog, setConfirmDialog] = useState(null);
-  const [isConfirmProcessing, setIsConfirmProcessing] = useState(false);
-  const [toast, setToast] = useState(null);
 
-  useEffect(() => {
-    loadCalls();
-  }, []);
-
-  useEffect(() => {
-    if (!toast) {
-      return undefined;
-    }
-
-    const timeoutId = setTimeout(() => {
-      setToast(null);
-    }, 3500);
-
-    return () => clearTimeout(timeoutId);
-  }, [toast]);
-
-  async function loadCalls() {
+  const loadCalls = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage("");
 
@@ -51,13 +37,17 @@ function App() {
       const apiCalls = await fetchAllCalls();
       setCalls(apiCalls);
     } catch (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
-  function updateCallInState(updatedCall) {
+  useEffect(() => {
+    loadCalls();
+  }, [loadCalls]);
+
+  function updateCallInState(updatedCall: Call) {
     setCalls((currentCalls) => {
       return currentCalls.map((call) => {
         if (call.id === updatedCall.id) {
@@ -67,39 +57,6 @@ function App() {
         return call;
       });
     });
-  }
-
-  function showToast(message, type = "success") {
-    setToast({
-      id: Date.now(),
-      message,
-      type,
-    });
-  }
-
-  function openConfirmDialog(dialogConfig) {
-    setConfirmDialog(dialogConfig);
-  }
-
-  function closeConfirmDialog() {
-    if (!isConfirmProcessing) {
-      setConfirmDialog(null);
-    }
-  }
-
-  async function handleConfirmAction() {
-    if (!confirmDialog) {
-      return;
-    }
-
-    setIsConfirmProcessing(true);
-
-    try {
-      await confirmDialog.onConfirm();
-      setConfirmDialog(null);
-    } finally {
-      setIsConfirmProcessing(false);
-    }
   }
 
   function handleResetCalls() {
@@ -117,19 +74,13 @@ function App() {
           await loadCalls();
           showToast(resetResult?.message ?? "Calls reset successfully.");
         } catch (error) {
-          setErrorMessage(error.message);
+          setErrorMessage(getErrorMessage(error));
         }
       },
     });
   }
 
-  function handleToggleTheme() {
-    setTheme((currentTheme) => {
-      return currentTheme === "dark" ? "light" : "dark";
-    });
-  }
-
-  async function handleSelectCall(callId) {
+  async function handleSelectCall(callId: string) {
     setErrorMessage("");
 
     try {
@@ -137,11 +88,11 @@ function App() {
       updateCallInState(call);
       setSelectedCallId(callId);
     } catch (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(getErrorMessage(error));
     }
   }
 
-  async function handleArchiveCall(callId) {
+  async function handleArchiveCall(callId: string) {
     setErrorMessage("");
     const previousCalls = calls;
     const previousSelectedCallId = selectedCallId;
@@ -170,14 +121,14 @@ function App() {
     } catch (error) {
       setCalls(previousCalls);
       setSelectedCallId(previousSelectedCallId);
-      setErrorMessage(error.message);
+      setErrorMessage(getErrorMessage(error));
       return false;
     }
 
     return true;
   }
 
-  async function handleAddNote(callId, content) {
+  async function handleAddNote(callId: string, content: string) {
     setErrorMessage("");
     const previousCalls = calls;
     const temporaryNote = {
@@ -205,12 +156,12 @@ function App() {
       return true;
     } catch (error) {
       setCalls(previousCalls);
-      setErrorMessage(error.message);
+      setErrorMessage(getErrorMessage(error));
       return false;
     }
   }
 
-  function handleDeleteCall(callId) {
+  function handleDeleteCall(callId: string) {
     openConfirmDialog({
       title: "Delete this call?",
       message: "This call will be permanently removed from the dashboard.",
@@ -232,7 +183,7 @@ function App() {
         } catch (error) {
           setCalls(previousCalls);
           setSelectedCallId(previousSelectedCallId);
-          setErrorMessage(error.message);
+          setErrorMessage(getErrorMessage(error));
         }
       },
     });
@@ -254,13 +205,13 @@ function App() {
           await loadCalls();
           showToast("All active calls archived successfully.");
         } catch (error) {
-          setErrorMessage(error.message);
+          setErrorMessage(getErrorMessage(error));
         }
       },
     });
   }
 
-  async function handleUnarchiveCall(callId) {
+  async function handleUnarchiveCall(callId: string) {
     setErrorMessage("");
     const previousCalls = calls;
 
@@ -284,7 +235,7 @@ function App() {
       return true;
     } catch (error) {
       setCalls(previousCalls);
-      setErrorMessage(error.message);
+      setErrorMessage(getErrorMessage(error));
       return false;
     }
   }
@@ -303,7 +254,7 @@ function App() {
           await loadCalls();
           showToast("All archived calls unarchived successfully.");
         } catch (error) {
-          setErrorMessage(error.message);
+          setErrorMessage(getErrorMessage(error));
         }
       },
     });
@@ -321,6 +272,7 @@ function App() {
     if (callView === "active") {
       return !call.is_archived;
     }
+
     return call.is_archived;
   });
 
@@ -328,86 +280,23 @@ function App() {
     return call.id === selectedCallId;
   });
 
-  return (
-    <div className="app" data-theme={theme}>
-      <header className="app-header">
-        <h1>Call Center Dashboard</h1>
-        <button
-          className="icon-action-button"
-          title="Toggle light/dark theme"
-          aria-label="Toggle light/dark theme"
-          onClick={handleToggleTheme}
-        >
-          <span className="icon-action-emoji">{theme === "light" ? "🌙" : "☀️"}</span>
-          <span className="icon-action-label">
-            {theme === "light" ? "Dark Mode" : "Light Mode"}
-          </span>
-        </button>
-      </header>
-
-      <main className="dashboard">
-        {errorMessage && (
-          <div className="empty-state">
-            <p>{errorMessage}</p>
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className="empty-state">
-            <p>Loading calls...</p>
-          </div>
-        ) : (
-          <>
-            <StatsCards calls={visibleCalls} callView={callView} />
-            <CallFeed
-              calls={visibleCalls}
-              callView={callView}
-              onCallViewChange={setCallView}
-              onSelectCall={handleSelectCall}
-              onArchiveCall={handleArchiveCall}
-              onUnarchiveCall={handleUnarchiveCall}
-              onArchiveAll={handleArchiveAll}
-              onUnarchiveAll={handleUnarchiveAll}
-              onResetCalls={handleResetCalls}
-            />
-          </>
-        )}
-      </main>
-
-      {/* Display the selected call details in a popup bubble */}
-      {selectedCall && (
-        <CallDetails
-          call={selectedCall}
-          onClose={() => setSelectedCallId(null)}
-          onAddNote={handleAddNote}
-          onArchiveCall={handleArchiveCall}
-          onUnarchiveCall={handleUnarchiveCall}
-          onDeleteCall={handleDeleteCall}
-        />
-      )}
-
-      {confirmDialog && (
-        <ConfirmDialog
-          title={confirmDialog.title}
-          message={confirmDialog.message}
-          confirmLabel={confirmDialog.confirmLabel}
-          isDanger={confirmDialog.isDanger}
-          isProcessing={isConfirmProcessing}
-          onCancel={closeConfirmDialog}
-          onConfirm={handleConfirmAction}
-        />
-      )}
-
-      {toast && (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onDismiss={() => setToast(null)}
-        />
-      )}
-    </div>
-  );
+  return {
+    callView,
+    errorMessage,
+    isLoading,
+    selectedCall,
+    visibleCalls,
+    setCallView,
+    clearSelectedCall: () => setSelectedCallId(null),
+    handleAddNote,
+    handleArchiveAll,
+    handleArchiveCall,
+    handleDeleteCall,
+    handleResetCalls,
+    handleSelectCall,
+    handleUnarchiveAll,
+    handleUnarchiveCall,
+  };
 }
 
-export default App;
+export default useCalls;

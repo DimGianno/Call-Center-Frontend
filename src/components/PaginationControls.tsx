@@ -1,4 +1,16 @@
-function PaginationControls({ currentPage, totalPages, onPreviousPage, onNextPage }) {
+interface PaginationControlsProps {
+  currentPage: number;
+  totalPages: number;
+  onPreviousPage: () => void;
+  onNextPage: () => void;
+}
+
+function PaginationControls({
+  currentPage,
+  totalPages,
+  onPreviousPage,
+  onNextPage,
+}: PaginationControlsProps) {
   if (totalPages <= 1) {
     return null;
   }

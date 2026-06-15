@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { Call, CallFilters, CallView } from "../types";
 import CallItem from "./CallItem";
 import FilterModal from "./FilterModal";
 import PaginationControls from "./PaginationControls";
@@ -13,6 +14,20 @@ import {
   sortCallsNewestFirst,
 } from "../utils/callUtils";
 
+const pageSizeOptions = [5, 10, 25, 50];
+
+interface CallFeedProps {
+  calls: Call[];
+  callView: CallView;
+  onCallViewChange: (callView: CallView) => void;
+  onSelectCall: (callId: string) => void | Promise<void>;
+  onArchiveCall: (callId: string) => Promise<boolean>;
+  onUnarchiveCall: (callId: string) => Promise<boolean>;
+  onArchiveAll: () => void;
+  onUnarchiveAll: () => void;
+  onResetCalls: () => void;
+}
+
 function CallFeed({
   calls,
   callView,
@@ -23,7 +38,7 @@ function CallFeed({
   onArchiveAll,
   onUnarchiveAll,
   onResetCalls,
-}) {
+}: CallFeedProps) {
   const isActiveView = callView === "active";
 
   /* Determine action label and handler based on current view */
@@ -31,13 +46,12 @@ function CallFeed({
   const actionHandler = isActiveView ? onArchiveCall : onUnarchiveCall;
 
   /* archive all / unarchive all handlers */
-  const bulkActionLabel = isActiveView ? "Archive All" : "Unarchive All";
   const bulkActionHandler = isActiveView ? onArchiveAll : onUnarchiveAll;
 
   /* filter */
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [appliedFilters, setAppliedFilters] = useState(defaultFilters);
-  const [draftFilters, setDraftFilters] = useState(defaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState<CallFilters>(defaultFilters);
+  const [draftFilters, setDraftFilters] = useState<CallFilters>(defaultFilters);
   const activeFilterCount = getActiveFilterCount(appliedFilters);
   const hasActiveFilters = activeFilterCount > 0;
 
@@ -56,11 +70,7 @@ function CallFeed({
   const sortedCalls = sortCallsNewestFirst(filteredCalls);
 
   /* paginate sorted calls */
-  const { totalPages, startIndex, endIndex, currentPageCalls } = paginateCalls(
-    sortedCalls,
-    currentPage,
-    pageSize,
-  );
+  const { totalPages, currentPageCalls } = paginateCalls(sortedCalls, currentPage, pageSize);
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -101,23 +111,38 @@ function CallFeed({
               }}
             />
           </label>
-          <label className="page-size-control" title="Select how many calls to show per page">
+          <div
+            className="page-size-control"
+            role="group"
+            aria-label="Select how many calls to show per page"
+            title="Select how many calls to show per page"
+          >
             <span className="page-size-icon">📄</span>
 
-            <select
-              value={pageSize}
-              aria-label="Select how many calls to show per page"
-              onChange={(event) => {
-                setPageSize(Number(event.target.value));
-                setCurrentPage(1);
-              }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-          </label>
+            <div className="page-size-segments">
+              {pageSizeOptions.map((pageSizeOption) => {
+                return (
+                  <button
+                    key={pageSizeOption}
+                    className={
+                      pageSize === pageSizeOption
+                        ? "page-size-segment is-active"
+                        : "page-size-segment"
+                    }
+                    type="button"
+                    aria-label={`Show ${pageSizeOption} calls per page`}
+                    aria-pressed={pageSize === pageSizeOption}
+                    onClick={() => {
+                      setPageSize(pageSizeOption);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {pageSizeOption}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <button
             className="icon-action-button"
             title="Open filters"

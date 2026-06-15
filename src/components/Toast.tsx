@@ -1,4 +1,12 @@
-function Toast({ message, type = "success", onDismiss }) {
+import type { ToastType } from "../types";
+
+interface ToastProps {
+  message: string;
+  type?: ToastType;
+  onDismiss: () => void;
+}
+
+function Toast({ message, type = "success", onDismiss }: ToastProps) {
   return (
     <div className={`toast toast-${type}`} role="status" aria-live="polite">
       <p>{message}</p>

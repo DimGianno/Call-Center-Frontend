@@ -1,3 +1,13 @@
+interface ConfirmDialogProps {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  isDanger?: boolean;
+  isProcessing: boolean;
+  onCancel: () => void;
+  onConfirm: () => void | Promise<void>;
+}
+
 function ConfirmDialog({
   title,
   message,
@@ -6,7 +16,7 @@ function ConfirmDialog({
   isProcessing,
   onCancel,
   onConfirm,
-}) {
+}: ConfirmDialogProps) {
   return (
     <div className="modal-overlay">
       <div className="confirm-dialog" role="dialog" aria-modal="true">
