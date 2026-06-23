@@ -44,41 +44,50 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
-function isAuthResponse(value: unknown): value is AuthResponse {
-  if (!value || typeof value !== "object") {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isAuthUser(value: unknown): value is AuthResponse["user"] {
+  if (!isRecord(value)) {
     return false;
   }
 
-  const response = value as Record<string, unknown>;
-  const user = response.user;
-
   return (
-    typeof response.accessToken === "string" &&
-    !!user &&
-    typeof user === "object" &&
-    typeof (user as Record<string, unknown>).id === "string" &&
-    typeof (user as Record<string, unknown>).name === "string" &&
-    typeof (user as Record<string, unknown>).email === "string"
+    isNonEmptyString(value.id) &&
+    isNonEmptyString(value.name) &&
+    typeof value.email === "string" &&
+    isValidEmail(value.email) &&
+    (value.created_at === undefined || typeof value.created_at === "string")
   );
 }
 
-function isSessionCandidate(value: unknown): value is AuthSession {
-  if (!value || typeof value !== "object") {
+function isAuthResponse(value: unknown): value is AuthResponse {
+  if (!isRecord(value)) {
     return false;
   }
 
-  const session = value as Record<string, unknown>;
-  const user = session.user;
+  return isNonEmptyString(value.accessToken) && isAuthUser(value.user);
+}
+
+function isSessionCandidate(value: unknown): value is AuthSession {
+  if (!isRecord(value) || !isAuthUser(value.user)) {
+    return false;
+  }
+
+  const user = value.user;
 
   return (
-    typeof session.name === "string" &&
-    typeof session.email === "string" &&
-    typeof session.accessToken === "string" &&
-    !!user &&
-    typeof user === "object" &&
-    typeof (user as Record<string, unknown>).id === "string" &&
-    typeof (user as Record<string, unknown>).name === "string" &&
-    typeof (user as Record<string, unknown>).email === "string"
+    isNonEmptyString(value.accessToken) &&
+    value.name === user.name &&
+    value.email === user.email &&
+    typeof value.startedAt === "number" &&
+    Number.isFinite(value.startedAt) &&
+    value.startedAt > 0
   );
 }
 

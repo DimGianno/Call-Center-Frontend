@@ -114,6 +114,60 @@ describe("authApi", () => {
     );
   });
 
+  it.each([
+    {
+      description: "a blank access token",
+      response: {
+        user: { id: "user-1", name: "Dimitrios", email: "user@example.com" },
+        accessToken: "   ",
+      },
+    },
+    {
+      description: "an invalid user",
+      response: {
+        user: { id: "", name: "Dimitrios", email: "not-an-email" },
+        accessToken: "jwt-token",
+      },
+    },
+  ])("rejects an authentication response containing $description", async ({ response }) => {
+    const { loginUser } = await importAuthApi();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(response));
+
+    await expect(
+      loginUser({
+        email: "user@example.com",
+        password: "password123",
+      }),
+    ).rejects.toThrow("Invalid authentication response.");
+    expect(window.localStorage.getItem("call-center-demo-session")).toBeNull();
+  });
+
+  it("rejects invalid or inconsistent stored sessions", async () => {
+    const { getCurrentSession } = await importAuthApi();
+    const validSession = {
+      user: { id: "user-1", name: "Dimitrios", email: "user@example.com" },
+      accessToken: "jwt-token",
+      name: "Dimitrios",
+      email: "user@example.com",
+      startedAt: Date.now(),
+    };
+
+    for (const invalidFields of [
+      { startedAt: "not-a-timestamp" },
+      { name: "Different Name" },
+      { email: "different@example.com" },
+    ]) {
+      window.localStorage.setItem(
+        "call-center-demo-session",
+        JSON.stringify({ ...validSession, ...invalidFields }),
+      );
+
+      await expect(getCurrentSession()).resolves.toBeNull();
+    }
+  });
+
   it("surfaces backend auth errors", async () => {
     const { loginUser } = await importAuthApi();
     const fetchMock = vi.mocked(fetch);
