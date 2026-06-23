@@ -18,8 +18,30 @@ function readJson<T>(key: string, fallbackValue: T): T {
   }
 }
 
-function writeJson(key: string, value: unknown) {
-  window.localStorage.setItem(key, JSON.stringify(value));
+function writeJson(key: string, value: unknown): void {
+  let serializedValue: string;
+
+  try {
+    const result = JSON.stringify(value);
+
+    if (result === undefined) {
+      throw new Error("The supplied value cannot be serialized.");
+    }
+
+    serializedValue = result;
+  } catch (error) {
+    throw new Error("Unable to serialize session data.", {
+      cause: error,
+    });
+  }
+
+  try {
+    window.localStorage.setItem(key, serializedValue);
+  } catch (error) {
+    throw new Error("Unable to save your session. Check your browser storage settings.", {
+      cause: error,
+    });
+  }
 }
 
 function isAuthResponse(value: unknown): value is AuthResponse {
