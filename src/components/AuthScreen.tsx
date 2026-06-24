@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import type { AuthMode, LoginCredentials, SignupCredentials, Theme } from "../types";
-import { validateAuthForm } from "../utils/authStorage";
+import { getEmailValidationMessage, validateAuthForm } from "../utils/authStorage";
 
 const AUTH_MODES = {
   login: "login",
@@ -32,8 +32,11 @@ function AuthScreen({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
+  const [hasInteractedWithEmail, setHasInteractedWithEmail] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSignup = authMode === AUTH_MODES.signup;
+  const emailValidationMessage = getEmailValidationMessage(email);
+  const showEmailValidation = hasInteractedWithEmail && emailValidationMessage !== "";
 
   useEffect(() => {
     setAuthMode(mode);
@@ -51,26 +54,30 @@ function AuthScreen({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setHasInteractedWithEmail(true);
+
+    const normalizedEmail = email.trim();
 
     const validationMessage = validateAuthForm({
       name,
-      email,
+      email: normalizedEmail,
       password,
       isSignup,
     });
 
     if (validationMessage) {
-      setFormError(validationMessage);
+      setFormError(validationMessage === emailValidationMessage ? "" : validationMessage);
       return;
     }
 
     try {
       setIsSubmitting(true);
+      setEmail(normalizedEmail);
 
       if (isSignup) {
-        await onSignup({ name, email, password });
+        await onSignup({ name, email: normalizedEmail, password });
       } else {
-        await onLogin({ email, password });
+        await onLogin({ email: normalizedEmail, password });
       }
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Something went wrong.");
@@ -135,7 +142,7 @@ function AuthScreen({
           </div>
         )}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className="auth-form" noValidate onSubmit={handleSubmit}>
           {isSignup && (
             <label className="auth-field" htmlFor="auth-name">
               <span>Name</span>
@@ -150,16 +157,33 @@ function AuthScreen({
             </label>
           )}
 
-          <label className="auth-field" htmlFor="auth-email">
+          <label
+            className={showEmailValidation ? "auth-field has-error" : "auth-field"}
+            htmlFor="auth-email"
+          >
             <span>Email</span>
             <input
               id="auth-email"
               type="email"
               value={email}
+              aria-describedby={showEmailValidation ? "auth-email-guidance" : undefined}
+              aria-invalid={showEmailValidation}
               autoComplete="email"
               disabled={isSubmitting}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setHasInteractedWithEmail(true);
+                setFormError("");
+              }}
             />
+            <span
+              id="auth-email-guidance"
+              className="auth-field-guidance"
+              aria-atomic="true"
+              aria-live="polite"
+            >
+              {showEmailValidation ? emailValidationMessage : ""}
+            </span>
           </label>
 
           <label className="auth-field" htmlFor="auth-password">

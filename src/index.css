@@ -548,6 +548,28 @@ select {
   outline: none;
 }
 
+.auth-field.has-error input,
+.auth-field.has-error input:focus {
+  border-color: var(--color-missed-text);
+}
+
+.auth-field-guidance {
+  min-height: 34px;
+  color: var(--color-missed-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.app[data-theme="dark"] .auth-field.has-error input,
+.app[data-theme="dark"] .auth-field.has-error input:focus {
+  border-color: var(--color-missed-bg);
+}
+
+.app[data-theme="dark"] .auth-field-guidance {
+  color: var(--color-missed-bg);
+}
+
 .auth-submit-button {
   width: 100%;
   margin-top: 4px;

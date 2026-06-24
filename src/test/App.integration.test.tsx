@@ -209,6 +209,64 @@ describe("App auth gate", () => {
     expect(fetchAllCalls).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["login", "/login"],
+    ["signup", "/signup"],
+  ])("shows live email guidance on the %s page", async (_mode, route) => {
+    renderApp(route);
+
+    const emailInput = await screen.findByLabelText("Email");
+
+    expect(emailInput).toHaveAttribute("aria-invalid", "false");
+    expect(emailInput).not.toHaveAttribute("aria-describedby");
+
+    await userEvent.type(emailInput, "agent");
+
+    expect(
+      screen.getByText("Use one @ and a complete address, such as name@example.com."),
+    ).toBeInTheDocument();
+    expect(emailInput).toHaveAttribute("aria-invalid", "true");
+    expect(emailInput).toHaveAttribute("aria-describedby", "auth-email-guidance");
+
+    await userEvent.type(emailInput, "@example");
+
+    expect(
+      screen.getByText("Add a complete domain after @, such as example.com."),
+    ).toBeInTheDocument();
+
+    await userEvent.type(emailInput, ".com");
+
+    expect(emailInput).toHaveAttribute("aria-invalid", "false");
+    expect(emailInput).not.toHaveAttribute("aria-describedby");
+    expect(screen.getByText("", { selector: "#auth-email-guidance" })).toBeInTheDocument();
+  });
+
+  it("blocks malformed email submission and submits a trimmed valid email", async () => {
+    renderApp("/login");
+
+    const emailInput = await screen.findByLabelText("Email");
+    const passwordInput = screen.getByLabelText("Password");
+
+    await userEvent.type(emailInput, "user..name@example.com");
+    await userEvent.type(passwordInput, "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(loginUserMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        "The part before @ cannot start or end with a dot or contain consecutive dots.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(emailInput, { target: { value: "  stored@example.com  " } });
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(loginUserMock).toHaveBeenCalledWith({
+      email: "stored@example.com",
+      password: "password123",
+    });
+  });
+
   it("signs up through the backend auth API, enters the dashboard, and starts the timer", async () => {
     renderApp("/signup");
 
