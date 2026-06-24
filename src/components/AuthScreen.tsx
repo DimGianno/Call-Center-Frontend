@@ -1,7 +1,11 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import type { AuthMode, LoginCredentials, SignupCredentials, Theme } from "../types";
-import { getEmailValidationMessage, validateAuthForm } from "../utils/authStorage";
+import {
+  getEmailValidationMessage,
+  getPasswordValidationMessage,
+  validateAuthForm,
+} from "../utils/authStorage";
 
 const AUTH_MODES = {
   login: "login",
@@ -33,10 +37,13 @@ function AuthScreen({
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
   const [hasInteractedWithEmail, setHasInteractedWithEmail] = useState(false);
+  const [hasInteractedWithPassword, setHasInteractedWithPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSignup = authMode === AUTH_MODES.signup;
   const emailValidationMessage = getEmailValidationMessage(email);
+  const passwordValidationMessage = getPasswordValidationMessage(password);
   const showEmailValidation = hasInteractedWithEmail && emailValidationMessage !== "";
+  const showPasswordValidation = hasInteractedWithPassword && passwordValidationMessage !== "";
 
   useEffect(() => {
     setAuthMode(mode);
@@ -55,6 +62,7 @@ function AuthScreen({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setHasInteractedWithEmail(true);
+    setHasInteractedWithPassword(true);
 
     const normalizedEmail = email.trim();
 
@@ -66,7 +74,10 @@ function AuthScreen({
     });
 
     if (validationMessage) {
-      setFormError(validationMessage === emailValidationMessage ? "" : validationMessage);
+      const isFieldValidationMessage =
+        validationMessage === emailValidationMessage ||
+        validationMessage === passwordValidationMessage;
+      setFormError(isFieldValidationMessage ? "" : validationMessage);
       return;
     }
 
@@ -186,16 +197,33 @@ function AuthScreen({
             </span>
           </label>
 
-          <label className="auth-field" htmlFor="auth-password">
+          <label
+            className={showPasswordValidation ? "auth-field has-error" : "auth-field"}
+            htmlFor="auth-password"
+          >
             <span>Password</span>
             <input
               id="auth-password"
               type="password"
               value={password}
+              aria-describedby={showPasswordValidation ? "auth-password-guidance" : undefined}
+              aria-invalid={showPasswordValidation}
               autoComplete={isSignup ? "new-password" : "current-password"}
               disabled={isSubmitting}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setHasInteractedWithPassword(true);
+                setFormError("");
+              }}
             />
+            <span
+              id="auth-password-guidance"
+              className="auth-field-guidance"
+              aria-atomic="true"
+              aria-live="polite"
+            >
+              {showPasswordValidation ? passwordValidationMessage : ""}
+            </span>
           </label>
 
           <button

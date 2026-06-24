@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getEmailValidationMessage, isValidEmail, validateAuthForm } from "../utils/authStorage";
+import {
+  getEmailValidationMessage,
+  getPasswordValidationMessage,
+  isValidEmail,
+  validateAuthForm,
+} from "../utils/authStorage";
 
 describe("email validation", () => {
   it.each([
@@ -64,5 +69,25 @@ describe("email validation", () => {
         isSignup: false,
       }),
     ).toBe(getEmailValidationMessage(email));
+  });
+});
+
+describe("password validation", () => {
+  it("requires at least eight characters", () => {
+    expect(getPasswordValidationMessage("")).toBe("Password must be at least 8 characters.");
+    expect(getPasswordValidationMessage("1234567")).toBe("Password must be at least 8 characters.");
+    expect(getPasswordValidationMessage("12345678")).toBe("");
+  });
+
+  it("uses the same password guidance during form validation", () => {
+    const password = "short";
+
+    expect(
+      validateAuthForm({
+        email: "user@example.com",
+        password,
+        isSignup: false,
+      }),
+    ).toBe(getPasswordValidationMessage(password));
   });
 });

@@ -239,6 +239,31 @@ describe("App auth gate", () => {
     expect(emailInput).toHaveAttribute("aria-invalid", "false");
     expect(emailInput).not.toHaveAttribute("aria-describedby");
     expect(screen.getByText("", { selector: "#auth-email-guidance" })).toBeInTheDocument();
+
+    const passwordInput = screen.getByLabelText("Password");
+
+    await userEvent.type(passwordInput, "short");
+
+    expect(screen.getByText("Password must be at least 8 characters.")).toBeInTheDocument();
+    expect(passwordInput).toHaveAttribute("aria-invalid", "true");
+    expect(passwordInput).toHaveAttribute("aria-describedby", "auth-password-guidance");
+
+    await userEvent.type(passwordInput, "123");
+
+    expect(passwordInput).toHaveAttribute("aria-invalid", "false");
+    expect(passwordInput).not.toHaveAttribute("aria-describedby");
+    expect(screen.getByText("", { selector: "#auth-password-guidance" })).toBeInTheDocument();
+  });
+
+  it("shows inline email and password guidance after an empty login submission", async () => {
+    renderApp("/login");
+
+    await screen.findByRole("heading", { name: "Dashboard Access" });
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(screen.getByText("Email is required.")).toBeInTheDocument();
+    expect(screen.getByText("Password must be at least 8 characters.")).toBeInTheDocument();
+    expect(loginUserMock).not.toHaveBeenCalled();
   });
 
   it("blocks malformed email submission and submits a trimmed valid email", async () => {

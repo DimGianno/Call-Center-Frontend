@@ -4,6 +4,7 @@ const ACTIVE_SESSION_STORAGE_KEY = "call-center-demo-session";
 const MAX_EMAIL_LENGTH = 254;
 const MAX_LOCAL_PART_LENGTH = 64;
 const MAX_DOMAIN_LABEL_LENGTH = 63;
+const MIN_PASSWORD_LENGTH = 8;
 const LOCAL_PART_PATTERN = /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+$/;
 const DOMAIN_LABEL_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;
 
@@ -163,6 +164,14 @@ export function isValidEmail(email: string) {
   return getEmailValidationMessage(email) === "";
 }
 
+export function getPasswordValidationMessage(password: string): string {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+
+  return "";
+}
+
 export function validateAuthForm({
   name = "",
   email,
@@ -184,8 +193,10 @@ export function validateAuthForm({
     return emailValidationMessage;
   }
 
-  if (password.length < 8) {
-    return "Password must be at least 8 characters.";
+  const passwordValidationMessage = getPasswordValidationMessage(password);
+
+  if (passwordValidationMessage) {
+    return passwordValidationMessage;
   }
 
   return "";
