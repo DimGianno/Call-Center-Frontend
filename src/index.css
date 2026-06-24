@@ -526,10 +526,13 @@ select {
 
 .auth-field {
   display: grid;
-  gap: 6px;
   color: var(--color-text-heading);
   font-size: 14px;
   font-weight: 800;
+}
+
+.auth-field > label {
+  margin-bottom: 6px;
 }
 
 .auth-field input {
@@ -554,11 +557,29 @@ select {
 }
 
 .auth-field-guidance {
-  min-height: 34px;
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: 0;
   color: var(--color-missed-text);
   font-size: 12px;
   font-weight: 600;
   line-height: 1.4;
+  opacity: 0;
+  transition:
+    grid-template-rows 180ms ease,
+    margin-top 180ms ease,
+    opacity 140ms ease;
+}
+
+.auth-field-guidance.is-visible {
+  grid-template-rows: 1fr;
+  margin-top: 6px;
+  opacity: 1;
+}
+
+.auth-field-guidance-text {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .app[data-theme="dark"] .auth-field.has-error input,
@@ -568,6 +589,12 @@ select {
 
 .app[data-theme="dark"] .auth-field-guidance {
   color: var(--color-missed-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-field-guidance {
+    transition: none;
+  }
 }
 
 .auth-submit-button {

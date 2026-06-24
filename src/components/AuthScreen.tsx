@@ -155,8 +155,8 @@ function AuthScreen({
 
         <form className="auth-form" noValidate onSubmit={handleSubmit}>
           {isSignup && (
-            <label className="auth-field" htmlFor="auth-name">
-              <span>Name</span>
+            <div className="auth-field">
+              <label htmlFor="auth-name">Name</label>
               <input
                 id="auth-name"
                 type="text"
@@ -165,14 +165,11 @@ function AuthScreen({
                 disabled={isSubmitting}
                 onChange={(event) => setName(event.target.value)}
               />
-            </label>
+            </div>
           )}
 
-          <label
-            className={showEmailValidation ? "auth-field has-error" : "auth-field"}
-            htmlFor="auth-email"
-          >
-            <span>Email</span>
+          <div className={showEmailValidation ? "auth-field has-error" : "auth-field"}>
+            <label htmlFor="auth-email">Email</label>
             <input
               id="auth-email"
               type="email"
@@ -189,19 +186,22 @@ function AuthScreen({
             />
             <span
               id="auth-email-guidance"
-              className="auth-field-guidance"
+              className={
+                showEmailValidation ? "auth-field-guidance is-visible" : "auth-field-guidance"
+              }
               aria-atomic="true"
+              aria-hidden={!showEmailValidation}
               aria-live="polite"
             >
-              {showEmailValidation ? emailValidationMessage : ""}
+              <span className="auth-field-guidance-text">
+                {emailValidationMessage ||
+                  "Use one @ and a complete address, such as name@example.com."}
+              </span>
             </span>
-          </label>
+          </div>
 
-          <label
-            className={showPasswordValidation ? "auth-field has-error" : "auth-field"}
-            htmlFor="auth-password"
-          >
-            <span>Password</span>
+          <div className={showPasswordValidation ? "auth-field has-error" : "auth-field"}>
+            <label htmlFor="auth-password">Password</label>
             <input
               id="auth-password"
               type="password"
@@ -218,13 +218,18 @@ function AuthScreen({
             />
             <span
               id="auth-password-guidance"
-              className="auth-field-guidance"
+              className={
+                showPasswordValidation ? "auth-field-guidance is-visible" : "auth-field-guidance"
+              }
               aria-atomic="true"
+              aria-hidden={!showPasswordValidation}
               aria-live="polite"
             >
-              {showPasswordValidation ? passwordValidationMessage : ""}
+              <span className="auth-field-guidance-text">
+                {passwordValidationMessage || "Password must be at least 8 characters."}
+              </span>
             </span>
-          </label>
+          </div>
 
           <button
             className="primary-button auth-submit-button"

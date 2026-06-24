@@ -216,9 +216,12 @@ describe("App auth gate", () => {
     renderApp(route);
 
     const emailInput = await screen.findByLabelText("Email");
+    const emailGuidance = document.getElementById("auth-email-guidance");
 
     expect(emailInput).toHaveAttribute("aria-invalid", "false");
     expect(emailInput).not.toHaveAttribute("aria-describedby");
+    expect(emailGuidance).not.toHaveClass("is-visible");
+    expect(emailGuidance).toHaveAttribute("aria-hidden", "true");
 
     await userEvent.type(emailInput, "agent");
 
@@ -227,6 +230,8 @@ describe("App auth gate", () => {
     ).toBeInTheDocument();
     expect(emailInput).toHaveAttribute("aria-invalid", "true");
     expect(emailInput).toHaveAttribute("aria-describedby", "auth-email-guidance");
+    expect(emailGuidance).toHaveClass("is-visible");
+    expect(emailGuidance).toHaveAttribute("aria-hidden", "false");
 
     await userEvent.type(emailInput, "@example");
 
@@ -238,21 +243,26 @@ describe("App auth gate", () => {
 
     expect(emailInput).toHaveAttribute("aria-invalid", "false");
     expect(emailInput).not.toHaveAttribute("aria-describedby");
-    expect(screen.getByText("", { selector: "#auth-email-guidance" })).toBeInTheDocument();
+    expect(emailGuidance).not.toHaveClass("is-visible");
+    expect(emailGuidance).toHaveAttribute("aria-hidden", "true");
 
     const passwordInput = screen.getByLabelText("Password");
+    const passwordGuidance = document.getElementById("auth-password-guidance");
 
     await userEvent.type(passwordInput, "short");
 
     expect(screen.getByText("Password must be at least 8 characters.")).toBeInTheDocument();
     expect(passwordInput).toHaveAttribute("aria-invalid", "true");
     expect(passwordInput).toHaveAttribute("aria-describedby", "auth-password-guidance");
+    expect(passwordGuidance).toHaveClass("is-visible");
+    expect(passwordGuidance).toHaveAttribute("aria-hidden", "false");
 
     await userEvent.type(passwordInput, "123");
 
     expect(passwordInput).toHaveAttribute("aria-invalid", "false");
     expect(passwordInput).not.toHaveAttribute("aria-describedby");
-    expect(screen.getByText("", { selector: "#auth-password-guidance" })).toBeInTheDocument();
+    expect(passwordGuidance).not.toHaveClass("is-visible");
+    expect(passwordGuidance).toHaveAttribute("aria-hidden", "true");
   });
 
   it("shows inline email and password guidance after an empty login submission", async () => {
