@@ -19,6 +19,7 @@ const pageSizeOptions = [5, 10, 25, 50];
 interface CallFeedProps {
   calls: Call[];
   callView: CallView;
+  showSeedGuidance: boolean;
   onCallViewChange: (callView: CallView) => void;
   onSelectCall: (callId: string) => void | Promise<void>;
   onArchiveCall: (callId: string) => Promise<boolean>;
@@ -31,6 +32,7 @@ interface CallFeedProps {
 function CallFeed({
   calls,
   callView,
+  showSeedGuidance,
   onCallViewChange,
   onSelectCall,
   onArchiveCall,
@@ -216,6 +218,18 @@ function CallFeed({
             </div>
           );
         })
+      ) : showSeedGuidance ? (
+        <div className="empty-state seed-calls-state">
+          <h2>Get started with sample calls</h2>
+          <p>
+            Your account has no call records yet. Select <strong>Seed sample calls</strong>, then
+            confirm to populate the dashboard with demo call data.
+          </p>
+          <button className="primary-button seed-calls-button" type="button" onClick={onResetCalls}>
+            <span aria-hidden="true">↺</span>
+            <span>Seed sample calls</span>
+          </button>
+        </div>
       ) : (
         <div className="empty-state">
           <p>
@@ -234,17 +248,19 @@ function CallFeed({
         onNextPage={handleNextPage}
       />
 
-      <div className="feed-footer">
-        <button
-          className="icon-action-button reset-data-button"
-          title="Reset calls to sample data"
-          aria-label="Reset calls to sample data"
-          onClick={onResetCalls}
-        >
-          <span className="icon-action-emoji">↺</span>
-          <span className="icon-action-label">Reset Data</span>
-        </button>
-      </div>
+      {!showSeedGuidance && (
+        <div className="feed-footer">
+          <button
+            className="icon-action-button reset-data-button"
+            title="Reset calls to sample data"
+            aria-label="Reset calls to sample data"
+            onClick={onResetCalls}
+          >
+            <span className="icon-action-emoji">↺</span>
+            <span className="icon-action-label">Reset Data</span>
+          </button>
+        </div>
+      )}
 
       {isFilterModalOpen && (
         <FilterModal

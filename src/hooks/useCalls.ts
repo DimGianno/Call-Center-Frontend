@@ -60,11 +60,14 @@ function useCalls({
   }
 
   function handleResetCalls() {
+    const isSeedingCalls = calls.length === 0;
+
     openConfirmDialog({
-      title: "Reset calls?",
-      message:
-        "This will delete all calls, restore the sample call data, and close any selected call.",
-      confirmLabel: "Reset calls",
+      title: isSeedingCalls ? "Seed sample calls?" : "Reset calls?",
+      message: isSeedingCalls
+        ? "This will populate your dashboard with sample call data."
+        : "This will delete all calls, restore the sample call data, and close any selected call.",
+      confirmLabel: isSeedingCalls ? "Seed calls" : "Reset calls",
       onConfirm: async () => {
         setErrorMessage("");
 
@@ -72,7 +75,11 @@ function useCalls({
           const resetResult = await resetCalls();
           setSelectedCallId(null);
           await loadCalls();
-          showToast(resetResult?.message ?? "Calls reset successfully.");
+          showToast(
+            isSeedingCalls
+              ? "Sample calls added successfully."
+              : (resetResult?.message ?? "Calls reset successfully."),
+          );
         } catch (error) {
           setErrorMessage(getErrorMessage(error));
         }
@@ -280,10 +287,13 @@ function useCalls({
     return call.id === selectedCallId;
   });
 
+  const hasAnyCalls = calls.length > 0;
+
   return {
     callView,
     errorMessage,
     isLoading,
+    hasAnyCalls,
     selectedCall,
     visibleCalls,
     setCallView,

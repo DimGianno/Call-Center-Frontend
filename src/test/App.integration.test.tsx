@@ -782,12 +782,31 @@ describe("App API-backed user flows", () => {
     expect(container.firstChild).toHaveAttribute("data-theme", "light");
   });
 
-  it("shows an empty state when the API returns no calls", async () => {
-    fetchAllCallsMock.mockResolvedValue([]);
+  it("guides new users to seed sample calls", async () => {
+    resetCallsMock.mockResolvedValue({ insertedCount: 150 });
+    fetchAllCallsMock.mockResolvedValueOnce([]).mockResolvedValueOnce([activeCall]);
 
     renderApp();
 
-    expect(await screen.findByText("No calls available.")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Get started with sample calls" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/confirm to populate the dashboard with demo call data/i),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Seed sample calls" }));
+
+    expect(screen.getByRole("dialog")).toHaveTextContent("Seed sample calls?");
+    expect(screen.getByRole("dialog")).toHaveTextContent(
+      "This will populate your dashboard with sample call data.",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Seed calls" }));
+
+    expect(resetCallsMock).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(fetchAllCallsMock).toHaveBeenCalledTimes(2));
+    expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
+    expect(screen.getByText("Sample calls added successfully.")).toBeInTheDocument();
   });
 
   it("shows an empty state when search or filters hide every call", async () => {

@@ -1315,6 +1315,30 @@ select {
   font-size: 14px;
 }
 
+.seed-calls-state {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.seed-calls-state h2 {
+  margin: 0;
+  color: var(--color-text-heading);
+  font-size: 18px;
+}
+
+.seed-calls-state p {
+  max-width: 560px;
+  line-height: 1.5;
+}
+
+.seed-calls-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 4px;
+}
+
 .toast {
   position: fixed;
   right: 24px;

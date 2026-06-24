@@ -98,6 +98,7 @@ function DashboardPage({
             <CallFeed
               calls={calls.visibleCalls}
               callView={calls.callView}
+              showSeedGuidance={!calls.errorMessage && !calls.hasAnyCalls}
               onArchiveAll={calls.handleArchiveAll}
               onArchiveCall={calls.handleArchiveCall}
               onCallViewChange={calls.setCallView}
