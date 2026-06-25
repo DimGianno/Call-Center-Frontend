@@ -1,0 +1,242 @@
+.home-page {
+  min-height: 100vh;
+  background: var(--color-page-bg);
+  color: var(--color-text-main);
+}
+
+.home-nav {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 32px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.home-brand,
+.home-nav-link,
+.home-nav-button,
+.home-cta-primary,
+.home-cta-secondary {
+  text-decoration: none;
+}
+
+.home-brand {
+  color: var(--color-text-heading);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.home-nav-actions,
+.home-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.home-nav-link {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.home-nav-link:hover {
+  color: var(--color-text-heading);
+}
+
+.home-nav-button {
+  padding: 8px 14px;
+  background: var(--color-header-bg);
+  border-radius: 999px;
+  color: var(--color-text-inverse);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.home-hero {
+  position: relative;
+  min-height: 76vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
+  align-items: center;
+  gap: 56px;
+  padding: 72px 32px 48px;
+  background: #182234;
+  color: var(--color-text-inverse);
+}
+
+.home-hero-copy {
+  width: 100%;
+  max-width: 620px;
+}
+
+.home-kicker {
+  margin: 0 0 14px;
+  color: #93c5fd;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.home-hero h1 {
+  max-width: 620px;
+  margin: 0;
+  color: var(--color-text-inverse);
+  font-size: 64px;
+  line-height: 1;
+}
+
+.home-summary {
+  max-width: 540px;
+  margin: 22px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.home-hero-actions {
+  margin-top: 30px;
+}
+
+.home-cta-primary,
+.home-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-cta-primary {
+  min-width: 148px;
+}
+
+.home-cta-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-inverse);
+}
+
+.home-preview {
+  justify-self: end;
+  width: 100%;
+  max-width: 460px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+  color: #243044;
+}
+
+.preview-header,
+.preview-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.preview-header {
+  margin-bottom: 16px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.preview-header strong {
+  color: var(--color-inbound);
+}
+
+.preview-stats {
+  margin-bottom: 14px;
+}
+
+.preview-stats div {
+  flex: 1;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+}
+
+.preview-stats span,
+.preview-call span,
+.preview-call small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.preview-stats strong {
+  display: block;
+  margin-top: 4px;
+  color: #1f2937;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.preview-call-list {
+  display: grid;
+  gap: 8px;
+}
+
+.preview-call {
+  display: grid;
+  grid-template-columns: 82px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #dfe5ec;
+  border-left: 4px solid var(--color-inbound);
+  border-radius: 8px;
+}
+
+.preview-call.missed {
+  border-left-color: #dc2626;
+}
+
+.preview-call.voicemail {
+  border-left-color: #f59e0b;
+}
+
+.preview-call strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  padding: 32px;
+}
+
+.home-features article {
+  padding: 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.home-features h2 {
+  margin: 0 0 10px;
+  color: var(--color-text-heading);
+  font-size: 18px;
+}
+
+.home-features p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}

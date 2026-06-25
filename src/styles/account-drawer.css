@@ -1,0 +1,211 @@
+.account-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 5px 12px 5px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.account-menu-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.account-menu-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--color-text-inverse);
+  color: var(--color-header-bg);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.account-drawer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.account-drawer-overlay {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(15, 23, 42, 0.54);
+  cursor: default;
+}
+
+.account-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: min(360px, 100%);
+  min-height: 100%;
+  padding: 22px;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-main);
+  box-shadow: var(--shadow-popup);
+}
+
+.account-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.account-drawer-kicker {
+  margin: 0 0 6px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.account-drawer h2,
+.account-drawer h3 {
+  margin: 0;
+  color: var(--color-text-heading);
+}
+
+.account-drawer h2 {
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.account-drawer h3 {
+  font-size: 14px;
+}
+
+.account-drawer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-button-bg);
+  color: var(--color-button-text);
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.account-drawer-close:hover {
+  background: var(--color-button-bg-hover);
+  color: var(--color-button-text-hover);
+}
+
+.account-drawer-email {
+  margin: -8px 0 4px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.account-drawer-section {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-page-bg);
+}
+
+.drawer-theme-toggle {
+  justify-self: start;
+}
+
+.drawer-theme-toggle .theme-toggle-label {
+  max-width: 180px;
+  margin-left: 8px;
+  opacity: 1;
+}
+
+.drawer-logout-button {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #991b1b;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.drawer-logout-button:hover {
+  background: #fecaca;
+}
+
+.theme-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-width: 44px;
+  height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-button-bg);
+  color: var(--color-button-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.theme-toggle-button:hover {
+  background: var(--color-button-bg-hover);
+  border-color: var(--color-border-hover);
+  color: var(--color-button-text-hover);
+}
+
+.theme-toggle-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.theme-toggle-label {
+  max-width: 0;
+  margin-left: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 0.25s ease,
+    opacity 0.2s ease,
+    margin-left 0.25s ease;
+}
+
+.theme-toggle-button:hover .theme-toggle-label,
+.theme-toggle-button:focus-visible .theme-toggle-label {
+  max-width: 180px;
+  margin-left: 8px;
+  opacity: 1;
+}
