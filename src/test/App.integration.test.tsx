@@ -746,11 +746,100 @@ describe("App API-backed user flows", () => {
 
     await screen.findByText("+1 555-0100");
     await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    expect(screen.getByRole("button", { name: "Call Type" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(document.getElementById("filter-section-call-type")).toHaveAttribute("hidden");
+    await userEvent.click(screen.getByRole("button", { name: "Call Type" }));
+    expect(screen.getByRole("button", { name: "Call Type" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(document.getElementById("filter-section-call-type")).not.toHaveAttribute("hidden");
     await userEvent.click(screen.getByLabelText("Answered"));
+    await userEvent.click(screen.getByRole("button", { name: "Call Type" }));
+    expect(screen.getByRole("button", { name: "Call Type" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Call Type" }));
     await userEvent.click(screen.getByRole("button", { name: "Confirm filters" }));
 
     expect(screen.getByText("+1 555-0300")).toBeInTheDocument();
     expect(screen.queryByText("+1 555-0100")).not.toBeInTheDocument();
+  });
+
+  it("filters calls with the calendar date range picker", async () => {
+    const olderCall = createCall({
+      id: "call-older",
+      from: "+1 555-0600",
+      to: "+1 555-0660",
+      created_at: "2026-06-06T10:00:00.000Z",
+    });
+    const newerCall = createCall({
+      id: "call-newer",
+      from: "+1 555-1000",
+      to: "+1 555-1010",
+      created_at: "2026-06-10T11:30:00.000Z",
+    });
+    fetchAllCallsMock.mockResolvedValue([activeCall, olderCall, newerCall]);
+
+    const { container } = renderApp();
+
+    function getCalendarDay(day: number) {
+      const dayElement = container.querySelector(
+        `.date-range-calendar .react-datepicker__day--${String(day).padStart(3, "0")}`,
+      );
+
+      expect(dayElement).not.toBeNull();
+
+      return dayElement as HTMLElement;
+    }
+
+    await screen.findByText("+1 555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    await userEvent.click(screen.getByRole("button", { name: "Date Range" }));
+
+    const newerDate = getCalendarDay(10);
+    const activeDate = getCalendarDay(7);
+    const olderDate = getCalendarDay(6);
+    const unavailableDate = getCalendarDay(8);
+
+    expect(newerDate).not.toHaveClass("react-datepicker__day--disabled");
+    expect(activeDate).not.toHaveClass("react-datepicker__day--disabled");
+    expect(olderDate).not.toHaveClass("react-datepicker__day--disabled");
+    expect(unavailableDate).toHaveClass("react-datepicker__day--disabled");
+    expect(screen.getByText("Any date")).toBeInTheDocument();
+
+    await userEvent.click(activeDate);
+
+    await userEvent.click(screen.getByRole("button", { name: "Confirm filters" }));
+
+    expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
+    expect(screen.queryByText("+1 555-0600")).not.toBeInTheDocument();
+    expect(screen.queryByText("+1 555-1000")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    await userEvent.click(screen.getByRole("button", { name: "Date Range" }));
+    await userEvent.click(screen.getByRole("button", { name: "Clear date range" }));
+    await userEvent.click(getCalendarDay(10));
+    await userEvent.click(getCalendarDay(7));
+
+    await userEvent.click(screen.getByRole("button", { name: "Confirm filters" }));
+
+    expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
+    expect(screen.getByText("+1 555-1000")).toBeInTheDocument();
+    expect(screen.queryByText("+1 555-0600")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    await userEvent.click(screen.getByRole("button", { name: "Date Range" }));
+    await userEvent.click(screen.getByRole("button", { name: "Clear date range" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm filters" }));
+
+    expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
+    expect(screen.getByText("+1 555-0600")).toBeInTheDocument();
+    expect(screen.getByText("+1 555-1000")).toBeInTheDocument();
   });
 
   it("changes page size and navigates through paginated calls", async () => {
@@ -831,6 +920,7 @@ describe("App API-backed user flows", () => {
 
     await screen.findByText("+1 555-0100");
     await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    await userEvent.click(screen.getByRole("button", { name: "Duration" }));
     fireEvent.change(screen.getByLabelText("Minimum call duration in seconds"), {
       target: { value: "200" },
     });

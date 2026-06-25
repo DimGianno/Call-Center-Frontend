@@ -257,8 +257,25 @@
     padding-top: 4px;
   }
 
-  .range-filter-grid {
-    grid-template-columns: 1fr;
+  .date-range-summary {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .date-range-summary strong {
+    text-align: left;
+  }
+
+  .filter-option-row {
+    flex-direction: column;
+  }
+
+  .date-calendar-shell {
+    padding: 8px;
+  }
+
+  .date-range-calendar.react-datepicker {
+    width: 100%;
   }
 
   .feed-footer {

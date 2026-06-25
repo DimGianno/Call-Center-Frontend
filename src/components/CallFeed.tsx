@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Call, CallFilters, CallView } from "../types";
 import CallItem from "./CallItem";
 import FilterModal from "./FilterModal";
@@ -8,6 +8,7 @@ import {
   defaultFilters,
   filterCalls,
   getActiveFilterCount,
+  getAvailableCallDates,
   groupCallsByDate,
   paginateCalls,
   searchCallsByPhoneNumber,
@@ -63,7 +64,12 @@ function CallFeed({
 
   /* search calls */
   const [searchTerm, setSearchTerm] = useState("");
-  const searchedCalls = searchCallsByPhoneNumber(calls, searchTerm);
+  const searchedCalls = useMemo(() => {
+    return searchCallsByPhoneNumber(calls, searchTerm);
+  }, [calls, searchTerm]);
+  const availableCallDates = useMemo(() => {
+    return getAvailableCallDates(searchedCalls);
+  }, [searchedCalls]);
 
   /* filter calls */
   const filteredCalls = filterCalls(searchedCalls, appliedFilters);
@@ -265,6 +271,7 @@ function CallFeed({
       {isFilterModalOpen && (
         <FilterModal
           draftFilters={draftFilters}
+          availableCallDates={availableCallDates}
           onDraftFiltersChange={setDraftFilters}
           onReset={() => setDraftFilters(defaultFilters)}
           onClose={() => setIsFilterModalOpen(false)}
