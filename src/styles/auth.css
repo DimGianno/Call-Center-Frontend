@@ -176,3 +176,31 @@
   width: 100%;
   margin-top: 4px;
 }
+
+.auth-submit-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.auth-loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  border-top-color: var(--color-text-inverse);
+  border-radius: 999px;
+  animation: auth-spinner-spin 0.75s linear infinite;
+}
+
+@keyframes auth-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-loading-spinner {
+    animation: none;
+  }
+}

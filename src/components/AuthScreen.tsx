@@ -12,6 +12,8 @@ const AUTH_MODES = {
   signup: "signup",
 } as const;
 
+const AUTH_LOADING_MESSAGES = ["Waking up the server...", "Almost there...", "Just a moment..."];
+
 interface AuthScreenProps {
   mode?: AuthMode;
   notice: string;
@@ -39,16 +41,37 @@ function AuthScreen({
   const [hasInteractedWithEmail, setHasInteractedWithEmail] = useState(false);
   const [hasInteractedWithPassword, setHasInteractedWithPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const isSignup = authMode === AUTH_MODES.signup;
   const emailValidationMessage = getEmailValidationMessage(email);
   const passwordValidationMessage = getPasswordValidationMessage(password);
   const showEmailValidation = hasInteractedWithEmail && emailValidationMessage !== "";
   const showPasswordValidation = hasInteractedWithPassword && passwordValidationMessage !== "";
+  const submitButtonLabel = isSubmitting
+    ? AUTH_LOADING_MESSAGES[loadingMessageIndex]
+    : isSignup
+      ? "Create account"
+      : "Login";
 
   useEffect(() => {
     setAuthMode(mode);
     setFormError("");
   }, [mode]);
+
+  useEffect(() => {
+    if (!isSubmitting) {
+      setLoadingMessageIndex(0);
+      return;
+    }
+
+    const loadingMessageTimer = window.setInterval(() => {
+      setLoadingMessageIndex((currentIndex) => {
+        return (currentIndex + 1) % AUTH_LOADING_MESSAGES.length;
+      });
+    }, 2600);
+
+    return () => window.clearInterval(loadingMessageTimer);
+  }, [isSubmitting]);
 
   function handleModeChange(nextMode: AuthMode) {
     setAuthMode(nextMode);
@@ -235,8 +258,12 @@ function AuthScreen({
             className="primary-button auth-submit-button"
             type="submit"
             disabled={isSubmitting}
+            aria-busy={isSubmitting}
           >
-            {isSubmitting ? "Working..." : isSignup ? "Create account" : "Login"}
+            <span className="auth-submit-content" aria-atomic="true" aria-live="polite">
+              {isSubmitting && <span className="auth-loading-spinner" aria-hidden="true" />}
+              <span>{submitButtonLabel}</span>
+            </span>
           </button>
         </form>
       </section>

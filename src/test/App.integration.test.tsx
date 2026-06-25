@@ -343,6 +343,61 @@ describe("App auth gate", () => {
     expect(screen.getByRole("dialog", { name: "Stored Agent" })).toBeInTheDocument();
   });
 
+  it("shows rotating loading feedback while waiting for login", async () => {
+    renderApp("/login");
+
+    const emailInput = await screen.findByLabelText("Email");
+    let resolveLogin: (session: AuthSession) => void = () => {};
+    loginUserMock.mockImplementationOnce(
+      () =>
+        new Promise<AuthSession>((resolve) => {
+          resolveLogin = resolve;
+        }),
+    );
+    vi.useFakeTimers();
+
+    fireEvent.change(emailInput, {
+      target: { value: "stored@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    const submitButton = screen.getByRole("button", { name: "Waking up the server..." });
+
+    expect(submitButton).toBeDisabled();
+    expect(submitButton).toHaveAttribute("aria-busy", "true");
+    expect(submitButton.querySelector(".auth-loading-spinner")).not.toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(2600);
+    });
+
+    expect(screen.getByRole("button", { name: "Almost there..." })).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(2600);
+    });
+
+    expect(screen.getByRole("button", { name: "Just a moment..." })).toBeInTheDocument();
+
+    await act(async () => {
+      resolveLogin({
+        user: {
+          id: "user-login",
+          name: "Stored Agent",
+          email: "stored@example.com",
+        },
+        accessToken: "login-token",
+        name: "Stored Agent",
+        email: "stored@example.com",
+        startedAt: Date.now(),
+      });
+      await Promise.resolve();
+    });
+  });
+
   it("redirects logged-in users away from public auth routes", async () => {
     seedAuthenticatedSession();
 
