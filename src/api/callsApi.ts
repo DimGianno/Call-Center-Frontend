@@ -1,5 +1,5 @@
 import type { Call, CallsPageResponse, ResetCallsResult } from "../types";
-import { getActiveSession } from "../utils/authStorage";
+import { notifyAuthSessionExpired } from "../utils/authStorage";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 const MAX_RETRY_ATTEMPTS = 2;
@@ -7,6 +7,7 @@ const RETRY_DELAY_MS = 400;
 
 interface ApiError extends Error {
   shouldRetry?: boolean;
+  status?: number;
 }
 
 async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -21,6 +22,7 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
     try {
       const response = await fetch(`${API_BASE_URL}${path}`, {
         ...requestOptions,
+        credentials: "include",
         headers: buildRequestHeaders(headers),
       });
 
@@ -33,7 +35,11 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
       const errorMessage = getApiErrorMessage(data);
 
       if (!shouldRetryResponse(response) || attempt === MAX_RETRY_ATTEMPTS) {
-        throw createApiError(errorMessage, false);
+        if (response.status === 401) {
+          notifyAuthSessionExpired();
+        }
+
+        throw createApiError(errorMessage, false, response.status);
       }
 
       lastError = new Error(errorMessage);
@@ -59,11 +65,6 @@ function buildRequestHeaders(headersInit?: HeadersInit) {
   const headers = new Headers({
     "Content-Type": "application/json",
   });
-  const authorizationHeader = getAuthorizationHeader();
-
-  if (authorizationHeader) {
-    headers.set("Authorization", authorizationHeader);
-  }
 
   if (headersInit) {
     new Headers(headersInit).forEach((value, key) => {
@@ -72,16 +73,6 @@ function buildRequestHeaders(headersInit?: HeadersInit) {
   }
 
   return headers;
-}
-
-function getAuthorizationHeader() {
-  const session = getActiveSession();
-
-  if (!session?.accessToken) {
-    return "";
-  }
-
-  return `Bearer ${session.accessToken}`;
 }
 
 async function parseJsonResponse(response: Response): Promise<unknown> {
@@ -118,9 +109,10 @@ function isApiError(error: unknown): error is ApiError {
   return error instanceof Error && "shouldRetry" in error;
 }
 
-function createApiError(message: string, shouldRetry: boolean): ApiError {
+function createApiError(message: string, shouldRetry: boolean, status?: number): ApiError {
   const error = new Error(message) as ApiError;
   error.shouldRetry = shouldRetry;
+  error.status = status;
   return error;
 }
 

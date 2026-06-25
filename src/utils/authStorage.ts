@@ -9,46 +9,7 @@ const LOCAL_PART_PATTERN = /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+$/;
 const DOMAIN_LABEL_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;
 
 export const SESSION_DURATION_SECONDS = 10 * 60;
-
-function readJson<T>(key: string, fallbackValue: T): T {
-  try {
-    const storedValue = window.localStorage.getItem(key);
-
-    if (!storedValue) {
-      return fallbackValue;
-    }
-
-    return JSON.parse(storedValue) as T;
-  } catch {
-    return fallbackValue;
-  }
-}
-
-function writeJson(key: string, value: unknown): void {
-  let serializedValue: string;
-
-  try {
-    const result = JSON.stringify(value);
-
-    if (result === undefined) {
-      throw new Error("The supplied value cannot be serialized.");
-    }
-
-    serializedValue = result;
-  } catch (error) {
-    throw new Error("Unable to serialize session data.", {
-      cause: error,
-    });
-  }
-
-  try {
-    window.localStorage.setItem(key, serializedValue);
-  } catch (error) {
-    throw new Error("Unable to save your session. Check your browser storage settings.", {
-      cause: error,
-    });
-  }
-}
+export const AUTH_SESSION_EXPIRED_EVENT = "call-center-auth-session-expired";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -77,33 +38,23 @@ function isAuthResponse(value: unknown): value is AuthResponse {
     return false;
   }
 
-  return isNonEmptyString(value.accessToken) && isAuthUser(value.user);
+  return isAuthUser(value.user) && isValidSessionExpiresAt(value.sessionExpiresAt);
 }
 
-function isSessionCandidate(value: unknown): value is AuthSession {
-  if (!isRecord(value) || !isAuthUser(value.user)) {
-    return false;
-  }
-
-  const user = value.user;
-
-  return (
-    isNonEmptyString(value.accessToken) &&
-    value.name === user.name &&
-    value.email === user.email &&
-    typeof value.startedAt === "number" &&
-    Number.isFinite(value.startedAt) &&
-    value.startedAt > 0
-  );
+function isValidSessionExpiresAt(value: unknown): value is string {
+  return isNonEmptyString(value) && Number.isFinite(Date.parse(value));
 }
 
 export function buildSession(authResponse: AuthResponse): AuthSession {
+  if (!isAuthResponse(authResponse)) {
+    throw new Error("Invalid authentication response.");
+  }
+
   return {
     user: authResponse.user,
-    accessToken: authResponse.accessToken,
     name: authResponse.user.name,
     email: authResponse.user.email,
-    startedAt: Date.now(),
+    sessionExpiresAt: authResponse.sessionExpiresAt,
   };
 }
 
@@ -202,36 +153,11 @@ export function validateAuthForm({
   return "";
 }
 
-export function saveActiveSession(authResponse: AuthResponse): AuthSession {
-  if (!isAuthResponse(authResponse)) {
-    throw new Error("Invalid authentication response.");
-  }
-
-  const session = buildSession(authResponse);
-  writeJson(ACTIVE_SESSION_STORAGE_KEY, session);
-
-  return session;
-}
-
-export function getActiveSession(): AuthSession | null {
-  const session = readJson<unknown>(ACTIVE_SESSION_STORAGE_KEY, null);
-
-  if (!isSessionCandidate(session)) {
-    return null;
-  }
-
-  return session;
-}
-
-export function refreshActiveSession(session: AuthSession): AuthSession {
-  const refreshedSession = {
-    ...session,
-    startedAt: Date.now(),
-  };
-  writeJson(ACTIVE_SESSION_STORAGE_KEY, refreshedSession);
-  return refreshedSession;
-}
-
 export function clearActiveSession() {
   window.localStorage.removeItem(ACTIVE_SESSION_STORAGE_KEY);
+}
+
+export function notifyAuthSessionExpired() {
+  clearActiveSession();
+  window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
 }

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const API_URL = "https://api.example.test";
+const sessionExpiresAt = "2026-06-07T08:40:00.000Z";
 
 function jsonResponse(data: unknown, status = 200): Response {
   return {
@@ -34,8 +35,8 @@ describe("authApi", () => {
     vi.unstubAllEnvs();
   });
 
-  it("logs in through the backend and stores the active session", async () => {
-    const { getCurrentSession, loginUser } = await importAuthApi();
+  it("logs in through the backend using the HttpOnly cookie session", async () => {
+    const { loginUser } = await importAuthApi();
     const fetchMock = vi.mocked(fetch);
 
     fetchMock.mockResolvedValueOnce(
@@ -46,7 +47,8 @@ describe("authApi", () => {
           email: "user@example.com",
           created_at: "2026-01-01T10:00:00.000Z",
         },
-        accessToken: "jwt-token",
+        accessToken: "temporary-compatibility-token",
+        sessionExpiresAt,
       }),
     );
 
@@ -59,28 +61,28 @@ describe("authApi", () => {
       `${API_URL}/auth/login`,
       expect.objectContaining({
         method: "POST",
+        credentials: "include",
         body: JSON.stringify({
           email: "user@example.com",
           password: "password123",
         }),
       }),
     );
-    expect(session).toEqual(
-      expect.objectContaining({
-        accessToken: "jwt-token",
+    expect(session).toEqual({
+      user: {
+        id: "user-1",
         name: "Dimitrios",
         email: "user@example.com",
-      }),
-    );
-    await expect(getCurrentSession()).resolves.toEqual(
-      expect.objectContaining({
-        accessToken: "jwt-token",
-        name: "Dimitrios",
-      }),
-    );
+        created_at: "2026-01-01T10:00:00.000Z",
+      },
+      name: "Dimitrios",
+      email: "user@example.com",
+      sessionExpiresAt,
+    });
+    expect(window.localStorage.getItem("call-center-demo-session")).toBeNull();
   });
 
-  it("signs up through the backend and stores the active session", async () => {
+  it("signs up through the backend using the HttpOnly cookie session", async () => {
     const { signupUser } = await importAuthApi();
     const fetchMock = vi.mocked(fetch);
 
@@ -91,7 +93,8 @@ describe("authApi", () => {
           name: "Alex Agent",
           email: "alex@example.com",
         },
-        accessToken: "signup-token",
+        accessToken: "temporary-compatibility-token",
+        sessionExpiresAt,
       }),
     );
 
@@ -105,6 +108,7 @@ describe("authApi", () => {
       `${API_URL}/auth/signup`,
       expect.objectContaining({
         method: "POST",
+        credentials: "include",
         body: JSON.stringify({
           name: "Alex Agent",
           email: "alex@example.com",
@@ -114,19 +118,65 @@ describe("authApi", () => {
     );
   });
 
+  it("restores the current session through the refresh endpoint", async () => {
+    const { getCurrentSession } = await importAuthApi();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        user: {
+          id: "user-1",
+          name: "Dimitrios",
+          email: "user@example.com",
+        },
+        sessionExpiresAt,
+      }),
+    );
+
+    await expect(getCurrentSession()).resolves.toEqual(
+      expect.objectContaining({
+        name: "Dimitrios",
+        email: "user@example.com",
+        sessionExpiresAt,
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_URL}/auth/refresh`,
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+      }),
+    );
+  });
+
+  it("returns null when the refresh endpoint rejects the cookie session", async () => {
+    const { getCurrentSession } = await importAuthApi();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: "Session expired." }, 401));
+
+    await expect(getCurrentSession()).resolves.toBeNull();
+  });
+
   it.each([
     {
-      description: "a blank access token",
+      description: "a missing session expiry",
       response: {
         user: { id: "user-1", name: "Dimitrios", email: "user@example.com" },
-        accessToken: "   ",
+      },
+    },
+    {
+      description: "an invalid session expiry",
+      response: {
+        user: { id: "user-1", name: "Dimitrios", email: "user@example.com" },
+        sessionExpiresAt: "not-a-date",
       },
     },
     {
       description: "an invalid user",
       response: {
         user: { id: "", name: "Dimitrios", email: "not-an-email" },
-        accessToken: "jwt-token",
+        sessionExpiresAt,
       },
     },
   ])("rejects an authentication response containing $description", async ({ response }) => {
@@ -144,28 +194,23 @@ describe("authApi", () => {
     expect(window.localStorage.getItem("call-center-demo-session")).toBeNull();
   });
 
-  it("rejects invalid or inconsistent stored sessions", async () => {
-    const { getCurrentSession } = await importAuthApi();
-    const validSession = {
-      user: { id: "user-1", name: "Dimitrios", email: "user@example.com" },
-      accessToken: "jwt-token",
-      name: "Dimitrios",
-      email: "user@example.com",
-      startedAt: Date.now(),
-    };
+  it("calls the backend logout endpoint and clears legacy local state", async () => {
+    const { logoutUser } = await importAuthApi();
+    const fetchMock = vi.mocked(fetch);
 
-    for (const invalidFields of [
-      { startedAt: "not-a-timestamp" },
-      { name: "Different Name" },
-      { email: "different@example.com" },
-    ]) {
-      window.localStorage.setItem(
-        "call-center-demo-session",
-        JSON.stringify({ ...validSession, ...invalidFields }),
-      );
+    window.localStorage.setItem("call-center-demo-session", "{}");
+    fetchMock.mockResolvedValueOnce(jsonResponse(null));
 
-      await expect(getCurrentSession()).resolves.toBeNull();
-    }
+    await logoutUser();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_URL}/auth/logout`,
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+      }),
+    );
+    expect(window.localStorage.getItem("call-center-demo-session")).toBeNull();
   });
 
   it("surfaces backend auth errors", async () => {

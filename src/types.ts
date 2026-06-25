@@ -20,15 +20,15 @@ export interface AuthUser {
 
 export interface AuthSession {
   user: AuthUser;
-  accessToken: string;
   name: string;
   email: string;
-  startedAt: number;
+  sessionExpiresAt: string;
 }
 
 export interface AuthResponse {
   user: AuthUser;
-  accessToken: string;
+  accessToken?: string;
+  sessionExpiresAt: string;
 }
 
 export type CallDirection = "inbound" | "outbound";

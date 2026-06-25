@@ -30,23 +30,6 @@ async function importCallsApi({ apiUrl = API_URL }: { apiUrl?: string } = {}) {
   return import("../api/callsApi");
 }
 
-function seedAuthenticatedSession(accessToken = "test-token") {
-  window.localStorage.setItem(
-    "call-center-demo-session",
-    JSON.stringify({
-      user: {
-        id: "user-1",
-        name: "Test Agent",
-        email: "agent@example.com",
-      },
-      accessToken,
-      name: "Test Agent",
-      email: "agent@example.com",
-      startedAt: Date.now(),
-    }),
-  );
-}
-
 function getFetchHeaders(fetchMock: ReturnType<typeof vi.mocked<typeof fetch>>, callIndex: number) {
   return fetchMock.mock.calls[callIndex]?.[1]?.headers as Headers;
 }
@@ -55,7 +38,6 @@ describe("callsApi", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.stubGlobal("fetch", vi.fn());
-    seedAuthenticatedSession();
   });
 
   afterEach(() => {
@@ -96,7 +78,10 @@ describe("callsApi", () => {
     ]);
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe(`${API_URL}/calls?is_archived=false&page=1&limit=50`);
-    expect(getFetchHeaders(fetchMock, 0).get("Authorization")).toBe("Bearer test-token");
+    expect(fetchMock.mock.calls[0]?.[1]).toEqual(
+      expect.objectContaining({ credentials: "include" }),
+    );
+    expect(getFetchHeaders(fetchMock, 0).get("Authorization")).toBeNull();
     expect(getFetchHeaders(fetchMock, 0).get("Content-Type")).toBe("application/json");
     expect(fetchMock).toHaveBeenCalledWith(
       `${API_URL}/calls?is_archived=true&page=1&limit=50`,
@@ -146,6 +131,21 @@ describe("callsApi", () => {
 
     await expect(addCallNote("call-1", "Hello")).rejects.toThrow("Invalid note.");
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("notifies the app when a protected request returns 401", async () => {
+    const { fetchCall } = await importCallsApi();
+    const fetchMock = vi.mocked(fetch);
+    const sessionExpiredListener = vi.fn();
+
+    window.addEventListener("call-center-auth-session-expired", sessionExpiredListener);
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: "Session expired." }, 401));
+
+    await expect(fetchCall("call-1")).rejects.toThrow("Session expired.");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(sessionExpiredListener).toHaveBeenCalledTimes(1);
+    window.removeEventListener("call-center-auth-session-expired", sessionExpiredListener);
   });
 
   it("sends request methods and JSON bodies for mutations", async () => {

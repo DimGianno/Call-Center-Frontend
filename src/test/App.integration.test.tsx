@@ -26,8 +26,13 @@ vi.mock("../api/authApi", () => {
     logoutUser: vi.fn(async () => {
       window.localStorage.removeItem("call-center-demo-session");
     }),
-    refreshSession: vi.fn(async (session: AuthSession) => {
-      const refreshedSession = { ...session, startedAt: Date.now() };
+    refreshSession: vi.fn(async () => {
+      const storedSession = window.localStorage.getItem("call-center-demo-session");
+      const session = storedSession ? (JSON.parse(storedSession) as AuthSession) : null;
+      const refreshedSession = {
+        ...(session as AuthSession),
+        sessionExpiresAt: new Date(Date.now() + 600_000).toISOString(),
+      };
       window.localStorage.setItem("call-center-demo-session", JSON.stringify(refreshedSession));
       return refreshedSession;
     }),
@@ -60,6 +65,10 @@ const unarchiveAllCallsMock = vi.mocked(unarchiveAllCalls);
 const unarchiveCallMock = vi.mocked(unarchiveCall);
 const loginUserMock = vi.mocked(loginUser);
 const signupUserMock = vi.mocked(signupUser);
+
+function createSessionExpiresAt(durationMs = 600_000) {
+  return new Date(Date.now() + durationMs).toISOString();
+}
 
 const activeCall: Call = {
   id: "call-1",
@@ -123,10 +132,9 @@ function seedAuthenticatedSession(overrides: Partial<AuthSession> = {}) {
         name: "Test Agent",
         email: "agent@example.com",
       },
-      accessToken: "test-token",
       name: "Test Agent",
       email: "agent@example.com",
-      startedAt: Date.now(),
+      sessionExpiresAt: createSessionExpiresAt(),
       ...overrides,
     }),
   );
@@ -153,10 +161,9 @@ describe("App auth gate", () => {
         name: "Stored Agent",
         email: "stored@example.com",
       },
-      accessToken: "login-token",
       name: "Stored Agent",
       email: "stored@example.com",
-      startedAt: Date.now(),
+      sessionExpiresAt: createSessionExpiresAt(),
     });
     signupUserMock.mockResolvedValue({
       user: {
@@ -164,10 +171,9 @@ describe("App auth gate", () => {
         name: "Alex Agent",
         email: "alex@example.com",
       },
-      accessToken: "signup-token",
       name: "Alex Agent",
       email: "alex@example.com",
-      startedAt: Date.now(),
+      sessionExpiresAt: createSessionExpiresAt(),
     });
   });
 
@@ -389,10 +395,9 @@ describe("App auth gate", () => {
           name: "Stored Agent",
           email: "stored@example.com",
         },
-        accessToken: "login-token",
         name: "Stored Agent",
         email: "stored@example.com",
-        startedAt: Date.now(),
+        sessionExpiresAt: createSessionExpiresAt(),
       });
       await Promise.resolve();
     });
@@ -520,6 +525,22 @@ describe("App auth gate", () => {
     await userEvent.click(screen.getByRole("button", { name: "Logout" }));
 
     expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/login");
+  });
+
+  it("treats server-side session expiry as a logout", async () => {
+    seedAuthenticatedSession();
+
+    renderApp("/dashboard");
+
+    expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new Event("call-center-auth-session-expired"));
+    });
+
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(screen.getByText("Your session expired. Please log in again.")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/login");
   });
 });
