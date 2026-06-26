@@ -4,7 +4,7 @@ A frontend call management dashboard built with **React**, **TypeScript**, and a
 
 The app includes account signup, login, protected dashboard access, and a call activity feed where users can view active and archived calls, inspect call details, add notes, archive or unarchive calls, delete calls, filter/search calls, group calls by date, paginate large call lists, and receive success/error feedback for API-backed actions.
 
-Live frontend:
+Live frontend URL:
 
 ```txt
 https://call-center-frontend-fawn.vercel.app/
