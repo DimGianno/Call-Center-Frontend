@@ -19,7 +19,7 @@ interface TutorialOverlayProps {
 interface TutorialStep {
   id: string;
   topic: Exclude<TutorialTopicId, "full">;
-  targetId: TutorialTargetId;
+  targetId?: TutorialTargetId;
   title: string;
   body: string;
   emptyBody?: string;
@@ -43,7 +43,6 @@ const tutorialSteps: TutorialStep[] = [
   {
     id: "ui-layout",
     topic: "ui",
-    targetId: "dashboard-layout",
     title: "Understand the layout",
     body: "The fixed header holds session and account controls. The dashboard body starts with summary stats and then the call feed.",
   },
@@ -295,6 +294,10 @@ function TutorialOverlay({
   }
 
   const body = !hasCallCards && currentStep.emptyBody ? currentStep.emptyBody : currentStep.body;
+  const shouldDockPanelLeft =
+    currentStep.targetId === "account-button" ||
+    currentStep.targetId === "account-drawer" ||
+    currentStep.targetId === "account-close-button";
 
   function handlePreviousStep() {
     setCurrentStepIndex((index) => Math.max(index - 1, 0));
@@ -311,7 +314,7 @@ function TutorialOverlay({
 
   return (
     <section
-      className="tutorial-panel"
+      className={shouldDockPanelLeft ? "tutorial-panel is-docked-left" : "tutorial-panel"}
       role="dialog"
       aria-labelledby="tutorial-step-title"
       aria-describedby="tutorial-step-description"

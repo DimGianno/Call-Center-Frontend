@@ -659,13 +659,14 @@ describe("App API-backed user flows", () => {
     );
 
     expect(screen.getByRole("dialog", { name: "Understand the layout" })).toBeInTheDocument();
-    await waitFor(() => {
-      expect(document.querySelector('[data-tutorial-active="true"]')).not.toBeNull();
-    });
+    expect(document.querySelector('[data-tutorial-active="true"]')).toBeNull();
     expect(screen.queryByRole("dialog", { name: "Seed sample calls" })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Read the session timer" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('[data-tutorial-active="true"]')).not.toBeNull();
+    });
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Open account settings" })).toBeInTheDocument();

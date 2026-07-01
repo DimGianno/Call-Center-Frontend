@@ -11,15 +11,6 @@
   animation: tutorial-target-breathe 1.45s ease-in-out infinite;
 }
 
-[data-tutorial-active="true"]::after {
-  position: absolute;
-  inset: -11px;
-  pointer-events: none;
-  border: 1px solid rgba(37, 99, 235, 0.72);
-  border-radius: inherit;
-  content: "";
-}
-
 [data-tutorial-active="true"].account-drawer,
 [data-tutorial-active="true"].filter-modal,
 [data-tutorial-active="true"].stats-cards,
@@ -102,6 +93,11 @@
   right: 24px;
   bottom: 24px;
   z-index: 210;
+}
+
+.tutorial-panel.is-docked-left {
+  right: auto;
+  left: 24px;
 }
 
 .tutorial-panel-header {
