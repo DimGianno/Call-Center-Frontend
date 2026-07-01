@@ -24,6 +24,8 @@ interface TutorialStep {
   emptyBody?: string;
   requiredEventId?: TutorialEventId;
   requiresCallCards?: boolean;
+  hintLabel: string;
+  hintTone: "click" | "look" | "type";
   actionHint?: string;
 }
 
@@ -36,6 +38,8 @@ const tutorialSteps: TutorialStep[] = [
     body: "This control restores sample call data. It changes your calls, so this tutorial points it out without requiring you to click it.",
     emptyBody:
       "New accounts start here. Select Seed sample calls and confirm when you want demo calls to explore.",
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "ui-layout",
@@ -43,6 +47,8 @@ const tutorialSteps: TutorialStep[] = [
     targetId: "dashboard-layout",
     title: "Understand the layout",
     body: "The fixed header holds session and account controls. The dashboard body starts with summary stats and then the call feed.",
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "ui-timer",
@@ -50,6 +56,8 @@ const tutorialSteps: TutorialStep[] = [
     targetId: "session-timer",
     title: "Read the session timer",
     body: "The timer shows how long your server session has left. Refreshing it asks the backend to extend a valid cookie session.",
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "ui-account",
@@ -58,6 +66,8 @@ const tutorialSteps: TutorialStep[] = [
     title: "Open account settings",
     body: "Click Account to open the user drawer. The tutorial will continue after you do.",
     requiredEventId: "account-opened",
+    hintLabel: "Click here",
+    hintTone: "click",
     actionHint: "Click Account to continue.",
   },
   {
@@ -66,6 +76,8 @@ const tutorialSteps: TutorialStep[] = [
     targetId: "account-drawer",
     title: "Use the account drawer",
     body: "The drawer shows who is signed in, lets you switch theme, rerun tutorial sections, and log out.",
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "ui-stats",
@@ -73,6 +85,8 @@ const tutorialSteps: TutorialStep[] = [
     targetId: "stats-cards",
     title: "Read the stats cards",
     body: "These cards summarize the current view: total calls, inbound and outbound direction, and call outcomes.",
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "ui-search",
@@ -81,6 +95,8 @@ const tutorialSteps: TutorialStep[] = [
     title: "Search calls",
     body: "Type part of a phone number into the search field to narrow the feed.",
     requiredEventId: "search-typed",
+    hintLabel: "Type here",
+    hintTone: "type",
     actionHint: "Type into the phone number search field to continue.",
   },
   {
@@ -90,6 +106,8 @@ const tutorialSteps: TutorialStep[] = [
     title: "Change page size",
     body: "Click a page-size option to change how many calls appear per page.",
     requiredEventId: "page-size-changed",
+    hintLabel: "Click here",
+    hintTone: "click",
     actionHint: "Click 5, 10, 25, or 50 to continue.",
   },
   {
@@ -99,6 +117,8 @@ const tutorialSteps: TutorialStep[] = [
     title: "Switch active and archived calls",
     body: "Click the view button to switch between active calls and archived calls.",
     requiredEventId: "archived-view-opened",
+    hintLabel: "Click here",
+    hintTone: "click",
     actionHint: "Click View Archived or View Active to continue.",
   },
   {
@@ -108,6 +128,8 @@ const tutorialSteps: TutorialStep[] = [
     title: "Open filters",
     body: "Click Filters to open the filter modal.",
     requiredEventId: "filters-opened",
+    hintLabel: "Click here",
+    hintTone: "click",
     actionHint: "Click Filters to continue.",
   },
   {
@@ -116,6 +138,8 @@ const tutorialSteps: TutorialStep[] = [
     targetId: "filter-modal",
     title: "Filter calls",
     body: "Filters are grouped by call type, direction, date range, and duration. Close or cancel the modal when you are ready to continue.",
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "ui-bulk-actions",
@@ -123,6 +147,8 @@ const tutorialSteps: TutorialStep[] = [
     targetId: "bulk-action-button",
     title: "Bulk actions",
     body: "Archive all and unarchive all affect every call in the current view. They ask for confirmation before changing data.",
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "ui-pagination",
@@ -130,6 +156,8 @@ const tutorialSteps: TutorialStep[] = [
     targetId: "pagination-controls",
     title: "Use pagination",
     body: "Pagination controls appear when the current result set spans more than one page.",
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "ui-reset",
@@ -137,6 +165,8 @@ const tutorialSteps: TutorialStep[] = [
     targetId: "reset-data-button",
     title: "Reset sample data",
     body: "Reset Data restores sample calls. Because it changes data, the tutorial explains it without requiring a click.",
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "call-feed",
@@ -144,6 +174,8 @@ const tutorialSteps: TutorialStep[] = [
     targetId: "call-feed",
     title: "Read the call feed",
     body: "The feed groups calls by date. Each group contains call cards with direction, type, route, time, duration, and an archive action.",
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "open-call",
@@ -155,6 +187,8 @@ const tutorialSteps: TutorialStep[] = [
       "Call cards appear here after you have calls. Once sample calls exist, clicking a card opens its details panel.",
     requiredEventId: "call-details-opened",
     requiresCallCards: true,
+    hintLabel: "Click here",
+    hintTone: "click",
     actionHint: "Click a call card to continue.",
   },
   {
@@ -166,6 +200,8 @@ const tutorialSteps: TutorialStep[] = [
     emptyBody:
       "After you seed calls and open one, the details panel will show direction, route, type, duration, date, and notes. Notes, archive, and delete are available there, but they change data.",
     requiresCallCards: true,
+    hintLabel: "Look here",
+    hintTone: "look",
   },
   {
     id: "call-note",
@@ -177,6 +213,8 @@ const tutorialSteps: TutorialStep[] = [
       "After you seed calls and open one, you can type notes in the details panel without submitting until you are ready.",
     requiredEventId: "note-typed",
     requiresCallCards: true,
+    hintLabel: "Type here",
+    hintTone: "type",
     actionHint: "Type a short note to continue.",
   },
 ];
@@ -247,6 +285,27 @@ function TutorialOverlay({
       onActiveTargetChange(null);
     };
   }, [currentStep?.targetId, onActiveTargetChange]);
+
+  useEffect(() => {
+    if (!currentStep) {
+      return undefined;
+    }
+
+    const hintTimer = window.setTimeout(() => {
+      const activeElement = document.querySelector<HTMLElement>('[data-tutorial-active="true"]');
+
+      activeElement?.setAttribute("data-tutorial-hint", currentStep.hintLabel);
+      activeElement?.setAttribute("data-tutorial-hint-tone", currentStep.hintTone);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(hintTimer);
+      document.querySelectorAll<HTMLElement>("[data-tutorial-hint]").forEach((element) => {
+        element.removeAttribute("data-tutorial-hint");
+        element.removeAttribute("data-tutorial-hint-tone");
+      });
+    };
+  }, [currentStep]);
 
   if (!currentStep) {
     return null;
