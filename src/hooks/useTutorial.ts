@@ -157,6 +157,7 @@ function useTutorial({ showToast }: { showToast: ShowToast }) {
     completedEvents,
     isTutorialActive: activeFlow !== null,
     isWelcomeOpen,
+    tutorialState,
     closeTutorial,
     completeTutorial,
     recordTutorialEvent,

@@ -139,24 +139,65 @@
   opacity: 1;
 }
 
+.drawer-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-heading);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.drawer-section-toggle:hover,
+.drawer-section-toggle:focus-visible {
+  color: var(--color-button-text-hover);
+}
+
+.drawer-section-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-button-bg);
+  color: var(--color-button-text);
+  font-size: 17px;
+  line-height: 1;
+}
+
 .drawer-tutorial-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .drawer-tutorial-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
   min-height: 38px;
-  padding: 8px 10px;
+  padding: 8px 8px 8px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border-radius: var(--radius-card);
   background: var(--color-button-bg);
   color: var(--color-button-text);
   cursor: pointer;
   font-size: 13px;
   font-weight: 800;
   line-height: 1.2;
-  text-align: center;
+  text-align: left;
 }
 
 .drawer-tutorial-button:hover,
@@ -164,6 +205,30 @@
   background: var(--color-button-bg-hover);
   border-color: var(--color-border-hover);
   color: var(--color-button-text-hover);
+}
+
+.drawer-tutorial-status {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.drawer-tutorial-status.is-completed {
+  border-color: var(--color-answered-bg);
+  background: var(--color-answered-bg);
+  color: var(--color-answered-text);
+}
+
+.drawer-tutorial-status.is-new {
+  border-color: var(--color-focus);
+  background: color-mix(in srgb, var(--color-focus) 16%, var(--color-surface));
+  color: var(--color-text-heading);
 }
 
 .drawer-logout-button {

@@ -1,8 +1,37 @@
 [data-tutorial-active="true"] {
   position: relative;
+  z-index: 2;
   outline: 3px solid var(--color-focus);
-  outline-offset: 4px;
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-focus) 18%, transparent);
+  outline-offset: 5px;
+  scroll-margin: calc(var(--header-height) + 28px);
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--color-focus) 20%, transparent),
+    0 0 28px color-mix(in srgb, var(--color-focus) 38%, transparent);
+  animation: tutorial-target-pulse 1.5s ease-in-out infinite;
+}
+
+[data-tutorial-active="true"]::after {
+  position: absolute;
+  inset: -9px;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--color-focus) 70%, transparent);
+  border-radius: inherit;
+  content: "";
+}
+
+@keyframes tutorial-target-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 8px color-mix(in srgb, var(--color-focus) 18%, transparent),
+      0 0 24px color-mix(in srgb, var(--color-focus) 32%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 12px color-mix(in srgb, var(--color-focus) 26%, transparent),
+      0 0 36px color-mix(in srgb, var(--color-focus) 46%, transparent);
+  }
 }
 
 .tutorial-welcome-layer {

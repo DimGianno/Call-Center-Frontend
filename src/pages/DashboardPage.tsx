@@ -49,6 +49,24 @@ function DashboardPage({
     }
   }, [calls.selectedCall, recordTutorialEvent]);
 
+  useEffect(() => {
+    if (!activeTutorialTarget) {
+      return undefined;
+    }
+
+    const scrollTimer = window.setTimeout(() => {
+      const activeElement = document.querySelector<HTMLElement>('[data-tutorial-active="true"]');
+
+      activeElement?.scrollIntoView?.({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    }, 0);
+
+    return () => window.clearTimeout(scrollTimer);
+  }, [activeTutorialTarget]);
+
   function handleOpenAccountDrawer() {
     setIsAccountDrawerOpen(true);
     recordTutorialEvent("account-opened");
@@ -115,6 +133,7 @@ function DashboardPage({
         activeTutorialTarget={activeTutorialTarget}
         session={session}
         theme={theme}
+        tutorialState={tutorial.tutorialState}
       />
 
       <main

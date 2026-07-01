@@ -736,20 +736,49 @@ describe("App API-backed user flows", () => {
     await screen.findByText("+1 555-0100");
     await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
 
-    expect(screen.getByRole("heading", { name: "Tutorials" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Full tutorial" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Seeding calls" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Stats cards" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Layout and call list" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Call details and notes" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Filters" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Session timer" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Account settings" })).toBeInTheDocument();
+    const tutorialsToggle = screen.getByRole("button", { name: "Tutorials" });
 
-    await userEvent.click(screen.getByRole("button", { name: "Filters" }));
+    expect(tutorialsToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: /Full tutorial/i })).not.toBeInTheDocument();
+
+    await userEvent.click(tutorialsToggle);
+
+    expect(tutorialsToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "Full tutorial Completed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Seeding calls Completed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stats cards Completed" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Layout and call list Completed" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Call details and notes Completed" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Filters Completed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Session timer Completed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Account settings Completed" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Filters Completed" }));
 
     expect(screen.getByRole("dialog", { name: "Open filters" })).toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Test Agent" })).not.toBeInTheDocument();
+  });
+
+  it("marks unfinished tutorial topics as not started in the account drawer", async () => {
+    mockTutorialState({
+      completedAt: null,
+      completedTopics: ["filters"],
+      skippedAt: "2026-07-01T11:00:00.000Z",
+    });
+
+    renderApp();
+
+    await screen.findByText("+1 555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    await userEvent.click(screen.getByRole("button", { name: "Tutorials" }));
+
+    expect(screen.getByRole("button", { name: "Full tutorial Not started" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Seeding calls Not started" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Filters Completed" })).toBeInTheDocument();
   });
 
   it("shows an API error when calls fail to load", async () => {

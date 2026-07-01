@@ -1,5 +1,12 @@
-import { useEffect } from "react";
-import type { AuthSession, Theme, TutorialTargetId, TutorialTopicId } from "../types";
+import { useEffect, useState } from "react";
+import { TUTORIAL_VERSION } from "../hooks/useTutorial";
+import type {
+  AuthSession,
+  Theme,
+  TutorialState,
+  TutorialTargetId,
+  TutorialTopicId,
+} from "../types";
 
 interface AccountDrawerProps {
   activeTutorialTarget: TutorialTargetId | null;
@@ -10,6 +17,7 @@ interface AccountDrawerProps {
   onToggleTheme: () => void;
   session: AuthSession;
   theme: Theme;
+  tutorialState: TutorialState | null;
 }
 
 const tutorialOptions: Array<{ label: string; topicId: TutorialTopicId }> = [
@@ -23,6 +31,54 @@ const tutorialOptions: Array<{ label: string; topicId: TutorialTopicId }> = [
   { label: "Account settings", topicId: "account-settings" },
 ];
 
+function getTutorialStatus(
+  topicId: TutorialTopicId,
+  tutorialState: TutorialState | null,
+): "completed" | "new" | "not-started" {
+  if (topicId === "full") {
+    if (tutorialState?.version !== undefined && tutorialState.version !== TUTORIAL_VERSION) {
+      return "new";
+    }
+
+    if (tutorialState?.completedAt) {
+      return "completed";
+    }
+
+    return isFirstRunTutorialState(tutorialState) ? "new" : "not-started";
+  }
+
+  if (tutorialState?.version !== undefined && tutorialState.version !== TUTORIAL_VERSION) {
+    return "new";
+  }
+
+  if (tutorialState?.completedTopics.includes(topicId)) {
+    return "completed";
+  }
+
+  return isFirstRunTutorialState(tutorialState) ? "new" : "not-started";
+}
+
+function isFirstRunTutorialState(tutorialState: TutorialState | null) {
+  return (
+    tutorialState !== null &&
+    !tutorialState.hasSeenWelcome &&
+    !tutorialState.completedAt &&
+    !tutorialState.skippedAt
+  );
+}
+
+function getTutorialStatusLabel(status: "completed" | "new" | "not-started") {
+  if (status === "completed") {
+    return "Completed";
+  }
+
+  if (status === "new") {
+    return "New";
+  }
+
+  return "Not started";
+}
+
 function AccountDrawer({
   activeTutorialTarget,
   isOpen,
@@ -32,7 +88,10 @@ function AccountDrawer({
   onToggleTheme,
   session,
   theme,
+  tutorialState,
 }: AccountDrawerProps) {
+  const [isTutorialSectionOpen, setIsTutorialSectionOpen] = useState(false);
+
   useEffect(() => {
     if (!isOpen) {
       return undefined;
@@ -107,17 +166,39 @@ function AccountDrawer({
         </div>
 
         <div className="account-drawer-section">
-          <h3>Tutorials</h3>
-          <div className="drawer-tutorial-list">
+          <h3>
+            <button
+              className="drawer-section-toggle"
+              type="button"
+              aria-expanded={isTutorialSectionOpen}
+              aria-controls="drawer-tutorial-list"
+              onClick={() => setIsTutorialSectionOpen((isOpen) => !isOpen)}
+            >
+              <span>Tutorials</span>
+              <span aria-hidden="true" className="drawer-section-chevron">
+                {isTutorialSectionOpen ? "-" : "+"}
+              </span>
+            </button>
+          </h3>
+          <div
+            id="drawer-tutorial-list"
+            className="drawer-tutorial-list"
+            hidden={!isTutorialSectionOpen}
+          >
             {tutorialOptions.map((tutorialOption) => {
+              const status = getTutorialStatus(tutorialOption.topicId, tutorialState);
+              const statusLabel = getTutorialStatusLabel(status);
+
               return (
                 <button
                   className="drawer-tutorial-button"
                   type="button"
                   key={tutorialOption.topicId}
+                  aria-label={`${tutorialOption.label} ${statusLabel}`}
                   onClick={() => onStartTutorial(tutorialOption.topicId)}
                 >
-                  {tutorialOption.label}
+                  <span>{tutorialOption.label}</span>
+                  <span className={`drawer-tutorial-status is-${status}`}>{statusLabel}</span>
                 </button>
               );
             })}
