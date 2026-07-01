@@ -99,6 +99,11 @@ function CallFeed({
     });
   }
 
+  function handleCloseFilters() {
+    setIsFilterModalOpen(false);
+    onTutorialEvent?.("filters-closed");
+  }
+
   /* group calls for current page by date */
   const groupedCalls = groupCallsByDate(currentPageCalls);
   const tutorialCallCardId = currentPageCalls[0]?.id;
@@ -230,27 +235,32 @@ function CallFeed({
 
       {/* call list */}
       {sortedCalls.length > 0 ? (
-        Object.entries(groupedCalls).map(([dateKey, callsForDate]) => {
-          return (
-            <div className="call-date-group" key={dateKey}>
-              <h3 className="date-group-title">{formatDateHeader(dateKey)}</h3>
-              {callsForDate.map((call) => {
-                return (
-                  <CallItem
-                    key={call.id}
-                    call={call}
-                    onSelectCall={onSelectCall}
-                    actionLabel={actionLabel}
-                    isTutorialActive={
-                      activeTutorialTarget === "call-card" && call.id === tutorialCallCardId
-                    }
-                    onAction={actionHandler}
-                  />
-                );
-              })}
-            </div>
-          );
-        })
+        <div
+          className="call-date-groups"
+          data-tutorial-active={activeTutorialTarget === "call-date-groups" ? "true" : undefined}
+        >
+          {Object.entries(groupedCalls).map(([dateKey, callsForDate]) => {
+            return (
+              <div className="call-date-group" key={dateKey}>
+                <h3 className="date-group-title">{formatDateHeader(dateKey)}</h3>
+                {callsForDate.map((call) => {
+                  return (
+                    <CallItem
+                      key={call.id}
+                      call={call}
+                      onSelectCall={onSelectCall}
+                      actionLabel={actionLabel}
+                      isTutorialActive={
+                        activeTutorialTarget === "call-card" && call.id === tutorialCallCardId
+                      }
+                      onAction={actionHandler}
+                    />
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       ) : showSeedGuidance ? (
         <div
           className="empty-state seed-calls-state"
@@ -304,14 +314,14 @@ function CallFeed({
         <FilterModal
           draftFilters={draftFilters}
           availableCallDates={availableCallDates}
-          isTutorialActive={activeTutorialTarget === "filter-modal"}
+          activeTutorialTarget={activeTutorialTarget}
           onDraftFiltersChange={setDraftFilters}
           onReset={() => setDraftFilters(defaultFilters)}
-          onClose={() => setIsFilterModalOpen(false)}
+          onClose={handleCloseFilters}
           onConfirm={() => {
             setAppliedFilters(draftFilters);
             setCurrentPage(1);
-            setIsFilterModalOpen(false);
+            handleCloseFilters();
           }}
         />
       )}

@@ -199,6 +199,9 @@ function AccountDrawer({
             className="account-drawer-close"
             type="button"
             aria-label="Close account settings"
+            data-tutorial-active={
+              activeTutorialTarget === "account-close-button" ? "true" : undefined
+            }
             onClick={onClose}
           >
             x

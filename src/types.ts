@@ -45,12 +45,17 @@ export type TutorialTargetId =
   | "pagination-controls"
   | "call-card"
   | "call-details"
+  | "call-details-summary"
+  | "call-update-actions"
   | "note-field"
   | "filters-button"
   | "filter-modal"
+  | "filter-close-button"
   | "session-timer"
   | "account-button"
   | "account-drawer"
+  | "account-close-button"
+  | "call-date-groups"
   | "reset-data-button";
 
 export type TutorialEventId =
@@ -58,6 +63,7 @@ export type TutorialEventId =
   | "account-opened"
   | "archived-view-opened"
   | "call-details-opened"
+  | "filters-closed"
   | "filters-opened"
   | "note-typed"
   | "page-size-changed"

@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import DatePicker from "react-datepicker";
-import type { CallDirection, CallFilters, CallType } from "../types";
+import type { CallDirection, CallFilters, CallType, TutorialTargetId } from "../types";
 import { dateKeyToLocalDate, localDateToDateKey, type AvailableCallDate } from "../utils/callUtils";
 import { formatDateHeader } from "../utils/formatters";
 
 interface FilterModalProps {
   draftFilters: CallFilters;
   availableCallDates: AvailableCallDate[];
-  isTutorialActive?: boolean;
+  activeTutorialTarget: TutorialTargetId | null;
   onDraftFiltersChange: (filters: CallFilters) => void;
   onReset: () => void;
   onClose: () => void;
@@ -24,7 +24,7 @@ type FilterSectionKey = "callType" | "direction" | "dateRange" | "duration";
 function FilterModal({
   draftFilters,
   availableCallDates,
-  isTutorialActive = false,
+  activeTutorialTarget,
   onDraftFiltersChange,
   onReset,
   onClose,
@@ -225,7 +225,10 @@ function FilterModal({
 
   return (
     <div className="modal-overlay">
-      <div className="filter-modal" data-tutorial-active={isTutorialActive ? "true" : undefined}>
+      <div
+        className="filter-modal"
+        data-tutorial-active={activeTutorialTarget === "filter-modal" ? "true" : undefined}
+      >
         <div className="modal-header">
           <h2>Filter Calls</h2>
 
@@ -234,6 +237,9 @@ function FilterModal({
             onClick={onClose}
             title="Close filter modal"
             aria-label="Close filter modal"
+            data-tutorial-active={
+              activeTutorialTarget === "filter-close-button" ? "true" : undefined
+            }
           >
             Close
           </button>

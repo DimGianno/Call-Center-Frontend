@@ -180,8 +180,8 @@ function DashboardPage({
           onArchiveCall={calls.handleArchiveCall}
           onClose={calls.clearSelectedCall}
           onDeleteCall={calls.handleDeleteCall}
-          isTutorialActive={activeTutorialTarget === "call-details"}
-          isTutorialNoteActive={activeTutorialTarget === "note-field"}
+          isTutorialActionsActive={activeTutorialTarget === "call-update-actions"}
+          isTutorialSummaryActive={activeTutorialTarget === "call-details-summary"}
           onTutorialNoteTyped={() => recordTutorialEvent("note-typed")}
           onUnarchiveCall={calls.handleUnarchiveCall}
         />
@@ -214,6 +214,7 @@ function DashboardPage({
         <TutorialOverlay
           activeFlow={tutorial.activeFlow}
           completedEvents={tutorial.completedEvents}
+          hasAnyCalls={calls.hasAnyCalls}
           hasCallCards={calls.visibleCalls.length > 0}
           onActiveTargetChange={setActiveTutorialTarget}
           onComplete={tutorial.completeTutorial}

@@ -12,6 +12,7 @@ const emptyTutorialEvents: TutorialEventState = {
   "account-opened": false,
   "archived-view-opened": false,
   "call-details-opened": false,
+  "filters-closed": false,
   "filters-opened": false,
   "note-typed": false,
   "page-size-changed": false,

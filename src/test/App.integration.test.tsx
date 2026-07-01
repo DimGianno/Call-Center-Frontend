@@ -658,14 +658,11 @@ describe("App API-backed user flows", () => {
       }),
     );
 
-    expect(screen.getByRole("dialog", { name: "Seed sample calls" })).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Understand the layout" })).toBeInTheDocument();
     await waitFor(() => {
-      expect(document.querySelector(".tutorial-spotlight-ring")).not.toBeNull();
-      expect(document.querySelector(".tutorial-spotlight-hint")).toHaveTextContent("Look here");
+      expect(document.querySelector('[data-tutorial-active="true"]')).not.toBeNull();
     });
+    expect(screen.queryByRole("dialog", { name: "Seed sample calls" })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Read the session timer" })).toBeInTheDocument();
@@ -688,29 +685,28 @@ describe("App API-backed user flows", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Search calls" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
-    await userEvent.type(screen.getByLabelText("Search calls by phone number"), "555");
-    expect(await screen.findByRole("dialog", { name: "Change page size" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Change page size" })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Show 5 calls per page" }));
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(
-      await screen.findByRole("dialog", { name: "Switch active and archived calls" }),
+      screen.getByRole("dialog", { name: "Switch active and archived calls" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
-    await userEvent.click(screen.getByRole("button", { name: "View archived calls" }));
-    expect(await screen.findByText("+1 555-0200")).toBeInTheDocument();
-    expect(await screen.findByRole("dialog", { name: "Open filters" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Open filters" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
     await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
     expect(await screen.findByRole("dialog", { name: "Filter calls" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(screen.getByRole("dialog", { name: "Bulk actions" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Close filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Close filter modal" }));
+
+    expect(await screen.findByRole("dialog", { name: "Bulk actions" })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Use pagination" })).toBeInTheDocument();
@@ -725,17 +721,14 @@ describe("App API-backed user flows", () => {
     expect(screen.getByRole("dialog", { name: "Open call details" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
-    await userEvent.click(screen.getByText("+1 555-0200"));
+    await userEvent.click(screen.getByText("+1 555-0100"));
     expect(await screen.findByText("Selected Call Info:")).toBeInTheDocument();
-    expect(
-      await screen.findByRole("dialog", { name: "Review and update a call" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Review a call" })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(screen.getByRole("dialog", { name: "Practice typing a note" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Finish" })).toBeDisabled();
+    expect(screen.getByRole("dialog", { name: "Update a call" })).toBeInTheDocument();
 
-    await userEvent.type(screen.getByLabelText("Add note"), "Practice note");
+    await userEvent.click(screen.getByRole("button", { name: "Finish" }));
 
     await waitFor(() => {
       expect(updateTutorialStateMock).toHaveBeenCalledWith(
