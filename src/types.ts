@@ -54,6 +54,7 @@ export type TutorialTargetId =
   | "reset-data-button";
 
 export type TutorialEventId =
+  | "account-closed"
   | "account-opened"
   | "archived-view-opened"
   | "call-details-opened"

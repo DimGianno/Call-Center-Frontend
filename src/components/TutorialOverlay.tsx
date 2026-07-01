@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { TutorialEventId, TutorialTargetId, TutorialTopicId } from "../types";
 
 interface TutorialWelcomeDialogProps {
@@ -28,6 +28,19 @@ interface TutorialStep {
   hintTone: "click" | "look" | "type";
   actionHint?: string;
 }
+
+interface SpotlightGeometry {
+  centerX: number;
+  centerY: number;
+  height: number;
+  left: number;
+  radiusX: number;
+  radiusY: number;
+  top: number;
+  width: number;
+}
+
+const AUTO_ADVANCE_DELAY_MS = 180;
 
 const tutorialSteps: TutorialStep[] = [
   {
@@ -78,6 +91,17 @@ const tutorialSteps: TutorialStep[] = [
     body: "The drawer shows who is signed in, lets you switch theme, rerun tutorial sections, and log out.",
     hintLabel: "Look here",
     hintTone: "look",
+  },
+  {
+    id: "ui-close-account-drawer",
+    topic: "ui",
+    targetId: "account-drawer",
+    title: "Close account settings",
+    body: "Close the account drawer before continuing so the dashboard controls are visible again.",
+    requiredEventId: "account-closed",
+    hintLabel: "Close drawer",
+    hintTone: "click",
+    actionHint: "Close account drawer to continue.",
   },
   {
     id: "ui-stats",
@@ -227,6 +251,96 @@ function getStepsForFlow(activeFlow: TutorialTopicId) {
   return tutorialSteps.filter((step) => step.topic === activeFlow);
 }
 
+function getSpotlightGeometry(element: HTMLElement): SpotlightGeometry {
+  const targetPadding = 18;
+  const rect = element.getBoundingClientRect();
+  const left = Math.max(rect.left - targetPadding, 10);
+  const top = Math.max(rect.top - targetPadding, 10);
+  const width = Math.min(rect.width + targetPadding * 2, window.innerWidth - left - 10);
+  const height = Math.min(rect.height + targetPadding * 2, window.innerHeight - top - 10);
+
+  return {
+    centerX: left + width / 2,
+    centerY: top + height / 2,
+    height,
+    left,
+    radiusX: Math.max(width / 2, 42),
+    radiusY: Math.max(height / 2, 42),
+    top,
+    width,
+  };
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getTutorialPanelStyle(spotlightGeometry: SpotlightGeometry | null): CSSProperties {
+  if (!spotlightGeometry) {
+    return {};
+  }
+
+  const margin = 18;
+  const gap = 24;
+  const panelWidth = Math.min(430, window.innerWidth - margin * 2);
+  const estimatedPanelHeight = 300;
+  const maxLeft = window.innerWidth - panelWidth - margin;
+  const maxTop = window.innerHeight - estimatedPanelHeight - margin;
+  const centeredTop = clamp(
+    spotlightGeometry.centerY - estimatedPanelHeight / 2,
+    margin,
+    Math.max(margin, maxTop),
+  );
+
+  if (window.innerWidth - (spotlightGeometry.left + spotlightGeometry.width) >= panelWidth + gap) {
+    return {
+      left: spotlightGeometry.left + spotlightGeometry.width + gap,
+      top: centeredTop,
+      width: panelWidth,
+    };
+  }
+
+  if (spotlightGeometry.left >= panelWidth + gap) {
+    return {
+      left: spotlightGeometry.left - panelWidth - gap,
+      top: centeredTop,
+      width: panelWidth,
+    };
+  }
+
+  const centeredLeft = clamp(
+    spotlightGeometry.centerX - panelWidth / 2,
+    margin,
+    Math.max(margin, maxLeft),
+  );
+
+  if (
+    window.innerHeight - (spotlightGeometry.top + spotlightGeometry.height) >=
+    estimatedPanelHeight + gap
+  ) {
+    return {
+      left: centeredLeft,
+      top: spotlightGeometry.top + spotlightGeometry.height + gap,
+      width: panelWidth,
+    };
+  }
+
+  return {
+    left: centeredLeft,
+    top: Math.max(margin, spotlightGeometry.top - estimatedPanelHeight - gap),
+    width: panelWidth,
+  };
+}
+
+function getSpotlightHintStyle(spotlightGeometry: SpotlightGeometry): CSSProperties {
+  const hintWidth = 116;
+
+  return {
+    left: clamp(spotlightGeometry.centerX - hintWidth / 2, 16, window.innerWidth - hintWidth - 16),
+    top: Math.max(12, spotlightGeometry.top - 44),
+  };
+}
+
 function TutorialWelcomeDialog({ onStart, onSkip }: TutorialWelcomeDialogProps) {
   return (
     <div className="tutorial-welcome-layer">
@@ -266,6 +380,7 @@ function TutorialOverlay({
 }: TutorialOverlayProps) {
   const steps = useMemo(() => getStepsForFlow(activeFlow), [activeFlow]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [spotlightGeometry, setSpotlightGeometry] = useState<SpotlightGeometry | null>(null);
   const currentStep = steps[currentStepIndex];
   const isLastStep = currentStepIndex === steps.length - 1;
   const isActionOptional = Boolean(currentStep?.requiresCallCards) && !hasCallCards;
@@ -288,24 +403,53 @@ function TutorialOverlay({
 
   useEffect(() => {
     if (!currentStep) {
+      setSpotlightGeometry(null);
       return undefined;
     }
 
-    const hintTimer = window.setTimeout(() => {
-      const activeElement = document.querySelector<HTMLElement>('[data-tutorial-active="true"]');
+    let animationFrameId = 0;
 
-      activeElement?.setAttribute("data-tutorial-hint", currentStep.hintLabel);
-      activeElement?.setAttribute("data-tutorial-hint-tone", currentStep.hintTone);
-    }, 0);
+    function updateSpotlightGeometry() {
+      animationFrameId = window.requestAnimationFrame(() => {
+        const activeElement = document.querySelector<HTMLElement>('[data-tutorial-active="true"]');
+
+        setSpotlightGeometry(activeElement ? getSpotlightGeometry(activeElement) : null);
+      });
+    }
+
+    const measureTimer = window.setTimeout(updateSpotlightGeometry, 0);
+
+    window.addEventListener("resize", updateSpotlightGeometry);
+    window.addEventListener("scroll", updateSpotlightGeometry, true);
 
     return () => {
-      window.clearTimeout(hintTimer);
-      document.querySelectorAll<HTMLElement>("[data-tutorial-hint]").forEach((element) => {
-        element.removeAttribute("data-tutorial-hint");
-        element.removeAttribute("data-tutorial-hint-tone");
-      });
+      window.clearTimeout(measureTimer);
+      window.cancelAnimationFrame(animationFrameId);
+      window.removeEventListener("resize", updateSpotlightGeometry);
+      window.removeEventListener("scroll", updateSpotlightGeometry, true);
     };
   }, [currentStep]);
+
+  useEffect(() => {
+    if (
+      !currentStep?.requiredEventId ||
+      isActionOptional ||
+      !completedEvents[currentStep.requiredEventId]
+    ) {
+      return undefined;
+    }
+
+    const advanceTimer = window.setTimeout(() => {
+      if (isLastStep) {
+        onComplete();
+        return;
+      }
+
+      setCurrentStepIndex((index) => Math.min(index + 1, steps.length - 1));
+    }, AUTO_ADVANCE_DELAY_MS);
+
+    return () => window.clearTimeout(advanceTimer);
+  }, [completedEvents, currentStep, isActionOptional, isLastStep, onComplete, steps.length]);
 
   if (!currentStep) {
     return null;
@@ -327,68 +471,113 @@ function TutorialOverlay({
   }
 
   return (
-    <section
-      className="tutorial-panel"
-      role="dialog"
-      aria-labelledby="tutorial-step-title"
-      aria-describedby="tutorial-step-description"
-    >
-      <div className="tutorial-panel-header">
-        <p className="tutorial-kicker">
-          Step {currentStepIndex + 1} of {steps.length}
-        </p>
-        <button
-          className="tutorial-close-button"
-          type="button"
-          aria-label="Skip tutorial"
-          onClick={onSkip}
-        >
-          x
-        </button>
-      </div>
-
-      <h2 id="tutorial-step-title">{currentStep.title}</h2>
-      <p id="tutorial-step-description">{body}</p>
-
-      {isWaitingForRequiredClick && currentStep.actionHint && (
-        <p className="tutorial-action-hint" role="status">
-          {currentStep.actionHint}
-        </p>
+    <>
+      {spotlightGeometry && (
+        <div className="tutorial-spotlight-layer" aria-hidden="true">
+          <svg className="tutorial-spotlight-svg">
+            <defs>
+              <mask id="tutorial-spotlight-mask">
+                <rect width="100%" height="100%" fill="white" />
+                <ellipse
+                  cx={spotlightGeometry.centerX}
+                  cy={spotlightGeometry.centerY}
+                  rx={spotlightGeometry.radiusX}
+                  ry={spotlightGeometry.radiusY}
+                  fill="black"
+                />
+              </mask>
+            </defs>
+            <rect
+              width="100%"
+              height="100%"
+              fill="rgba(15, 23, 42, 0.62)"
+              mask="url(#tutorial-spotlight-mask)"
+            />
+            <ellipse
+              className={`tutorial-spotlight-ring is-${currentStep.hintTone}`}
+              cx={spotlightGeometry.centerX}
+              cy={spotlightGeometry.centerY}
+              rx={spotlightGeometry.radiusX}
+              ry={spotlightGeometry.radiusY}
+            />
+          </svg>
+          <div
+            className={`tutorial-spotlight-hint is-${currentStep.hintTone}`}
+            style={getSpotlightHintStyle(spotlightGeometry)}
+          >
+            {currentStep.hintLabel}
+          </div>
+        </div>
       )}
 
-      <div className="tutorial-progress" aria-hidden="true">
-        {steps.map((step, index) => {
-          return (
-            <span
-              className={index === currentStepIndex ? "tutorial-dot is-active" : "tutorial-dot"}
-              key={step.id}
-            />
-          );
-        })}
-      </div>
+      <section
+        className="tutorial-panel"
+        role="dialog"
+        aria-labelledby="tutorial-step-title"
+        aria-describedby="tutorial-step-description"
+        style={{
+          ...getTutorialPanelStyle(spotlightGeometry),
+          bottom: spotlightGeometry ? "auto" : undefined,
+          right: spotlightGeometry ? "auto" : undefined,
+        }}
+      >
+        <div className="tutorial-panel-header">
+          <p className="tutorial-kicker">
+            Step {currentStepIndex + 1} of {steps.length}
+          </p>
+          <button
+            className="tutorial-close-button"
+            type="button"
+            aria-label="Skip tutorial"
+            onClick={onSkip}
+          >
+            x
+          </button>
+        </div>
 
-      <div className="tutorial-actions">
-        <button
-          className="secondary-button"
-          type="button"
-          disabled={currentStepIndex === 0}
-          onClick={handlePreviousStep}
-        >
-          Back
-        </button>
-        <button className="secondary-button" type="button" onClick={onSkip}>
-          Skip
-        </button>
-        <button
-          className="primary-button"
-          type="button"
-          disabled={isWaitingForRequiredClick}
-          onClick={handleNextStep}
-        >
-          {isLastStep ? "Finish" : "Next"}
-        </button>
-      </div>
-    </section>
+        <h2 id="tutorial-step-title">{currentStep.title}</h2>
+        <p id="tutorial-step-description">{body}</p>
+
+        {isWaitingForRequiredClick && currentStep.actionHint && (
+          <p className="tutorial-action-hint" role="status">
+            {currentStep.actionHint}
+          </p>
+        )}
+
+        <div className="tutorial-progress" aria-hidden="true">
+          {steps.map((step, index) => {
+            return (
+              <span
+                className={index === currentStepIndex ? "tutorial-dot is-active" : "tutorial-dot"}
+                key={step.id}
+              />
+            );
+          })}
+        </div>
+
+        <div className="tutorial-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={currentStepIndex === 0}
+            onClick={handlePreviousStep}
+          >
+            Back
+          </button>
+          <button className="secondary-button" type="button" onClick={onSkip}>
+            Skip
+          </button>
+          <button
+            className="primary-button"
+            type="button"
+            disabled={isWaitingForRequiredClick}
+            onClick={handleNextStep}
+          >
+            {isLastStep ? "Finish" : "Next"}
+          </button>
+        </div>
+      </section>
+    </>
   );
 }
 

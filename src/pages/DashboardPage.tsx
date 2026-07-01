@@ -72,6 +72,11 @@ function DashboardPage({
     recordTutorialEvent("account-opened");
   }
 
+  function handleCloseAccountDrawer() {
+    setIsAccountDrawerOpen(false);
+    recordTutorialEvent("account-closed");
+  }
+
   function handleStartTutorial(topicId: TutorialTopicId) {
     setIsAccountDrawerOpen(false);
     tutorial.startTutorial(topicId);
@@ -119,7 +124,7 @@ function DashboardPage({
 
       <AccountDrawer
         isOpen={isAccountDrawerOpen}
-        onClose={() => setIsAccountDrawerOpen(false)}
+        onClose={handleCloseAccountDrawer}
         onLogout={onLogout}
         onStartTutorial={handleStartTutorial}
         onToggleTheme={onToggleTheme}

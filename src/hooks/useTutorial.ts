@@ -8,6 +8,7 @@ type TutorialFlowId = TutorialTopicId;
 type TutorialEventState = Record<TutorialEventId, boolean>;
 
 const emptyTutorialEvents: TutorialEventState = {
+  "account-closed": false,
   "account-opened": false,
   "archived-view-opened": false,
   "call-details-opened": false,

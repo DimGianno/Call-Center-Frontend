@@ -662,6 +662,10 @@ describe("App API-backed user flows", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Understand the layout" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector(".tutorial-spotlight-ring")).not.toBeNull();
+      expect(document.querySelector(".tutorial-spotlight-hint")).toHaveTextContent("Look here");
+    });
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Read the session timer" })).toBeInTheDocument();
@@ -671,48 +675,38 @@ describe("App API-backed user flows", () => {
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
     await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
-    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
+    expect(
+      await screen.findByRole("dialog", { name: "Use the account drawer" }),
+    ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(screen.getByRole("dialog", { name: "Use the account drawer" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Close account settings" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
     await userEvent.click(screen.getByRole("button", { name: "Close account settings" }));
 
-    await userEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(screen.getByRole("dialog", { name: "Read the stats cards" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Read the stats cards" })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Search calls" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
     await userEvent.type(screen.getByLabelText("Search calls by phone number"), "555");
-    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
-
-    await userEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(screen.getByRole("dialog", { name: "Change page size" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Change page size" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
     await userEvent.click(screen.getByRole("button", { name: "Show 5 calls per page" }));
-    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
-
-    await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(
-      screen.getByRole("dialog", { name: "Switch active and archived calls" }),
+      await screen.findByRole("dialog", { name: "Switch active and archived calls" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
     await userEvent.click(screen.getByRole("button", { name: "View archived calls" }));
     expect(await screen.findByText("+1 555-0200")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
-
-    await userEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(screen.getByRole("dialog", { name: "Open filters" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Open filters" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
     await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
-    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
-
-    await userEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(screen.getByRole("dialog", { name: "Filter calls" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Filter calls" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
@@ -733,19 +727,15 @@ describe("App API-backed user flows", () => {
 
     await userEvent.click(screen.getByText("+1 555-0200"));
     expect(await screen.findByText("Selected Call Info:")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
-
-    await userEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(screen.getByRole("dialog", { name: "Review and update a call" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("dialog", { name: "Review and update a call" }),
+    ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Practice typing a note" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Finish" })).toBeDisabled();
 
     await userEvent.type(screen.getByLabelText("Add note"), "Practice note");
-    expect(screen.getByRole("button", { name: "Finish" })).not.toBeDisabled();
-
-    await userEvent.click(screen.getByRole("button", { name: "Finish" }));
 
     await waitFor(() => {
       expect(updateTutorialStateMock).toHaveBeenCalledWith(
