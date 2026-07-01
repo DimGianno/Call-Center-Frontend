@@ -1,19 +1,34 @@
 import { useEffect } from "react";
-import type { AuthSession, Theme } from "../types";
+import type { AuthSession, Theme, TutorialTargetId, TutorialTopicId } from "../types";
 
 interface AccountDrawerProps {
+  activeTutorialTarget: TutorialTargetId | null;
   isOpen: boolean;
   onClose: () => void;
   onLogout: () => void | Promise<void>;
+  onStartTutorial: (topicId: TutorialTopicId) => void;
   onToggleTheme: () => void;
   session: AuthSession;
   theme: Theme;
 }
 
+const tutorialOptions: Array<{ label: string; topicId: TutorialTopicId }> = [
+  { label: "Full tutorial", topicId: "full" },
+  { label: "Seeding calls", topicId: "seeding" },
+  { label: "Stats cards", topicId: "stats" },
+  { label: "Layout and call list", topicId: "layout" },
+  { label: "Call details and notes", topicId: "call-details" },
+  { label: "Filters", topicId: "filters" },
+  { label: "Session timer", topicId: "session-timer" },
+  { label: "Account settings", topicId: "account-settings" },
+];
+
 function AccountDrawer({
+  activeTutorialTarget,
   isOpen,
   onClose,
   onLogout,
+  onStartTutorial,
   onToggleTheme,
   session,
   theme,
@@ -54,6 +69,7 @@ function AccountDrawer({
         role="dialog"
         aria-modal="true"
         aria-labelledby="account-drawer-title"
+        data-tutorial-active={activeTutorialTarget === "account-drawer" ? "true" : undefined}
       >
         <div className="account-drawer-header">
           <div>
@@ -88,6 +104,24 @@ function AccountDrawer({
               {theme === "light" ? "Dark Mode" : "Light Mode"}
             </span>
           </button>
+        </div>
+
+        <div className="account-drawer-section">
+          <h3>Tutorials</h3>
+          <div className="drawer-tutorial-list">
+            {tutorialOptions.map((tutorialOption) => {
+              return (
+                <button
+                  className="drawer-tutorial-button"
+                  type="button"
+                  key={tutorialOption.topicId}
+                  onClick={() => onStartTutorial(tutorialOption.topicId)}
+                >
+                  {tutorialOption.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="account-drawer-section">

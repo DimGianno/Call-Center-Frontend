@@ -80,6 +80,10 @@
     padding: 18px;
   }
 
+  .drawer-tutorial-list {
+    grid-template-columns: 1fr;
+  }
+
   .auth-page {
     align-items: start;
     padding: 72px 16px 16px;

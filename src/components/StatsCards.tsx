@@ -3,9 +3,10 @@ import type { Call, CallView } from "../types";
 interface StatsCardsProps {
   calls: Call[];
   callView: CallView;
+  isTutorialActive?: boolean;
 }
 
-function StatsCards({ calls, callView }: StatsCardsProps) {
+function StatsCards({ calls, callView, isTutorialActive = false }: StatsCardsProps) {
   const stats = {
     total: calls.length,
     inbound: calls.filter((call) => call.direction === "inbound").length,
@@ -57,7 +58,11 @@ function StatsCards({ calls, callView }: StatsCardsProps) {
   ];
 
   return (
-    <section className="stats-cards" aria-label="Call statistics">
+    <section
+      className="stats-cards"
+      aria-label="Call statistics"
+      data-tutorial-active={isTutorialActive ? "true" : undefined}
+    >
       {cards.map((card) => {
         return (
           <article className={`stat-card stat-card-${card.key}`} key={card.key}>

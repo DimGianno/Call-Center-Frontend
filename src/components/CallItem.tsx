@@ -6,15 +6,26 @@ interface CallItemProps {
   call: Call;
   onSelectCall: (callId: string) => void | Promise<void>;
   actionLabel: "Archive" | "Unarchive";
+  isTutorialActive?: boolean;
   onAction: (callId: string) => boolean | Promise<boolean>;
 }
 
-function CallItem({ call, onSelectCall, actionLabel, onAction }: CallItemProps) {
+function CallItem({
+  call,
+  onSelectCall,
+  actionLabel,
+  isTutorialActive = false,
+  onAction,
+}: CallItemProps) {
   const formattedTime = formatCallTime(call.created_at);
   const isInbound = call.direction === "inbound";
 
   return (
-    <div className="call-card" onClick={() => onSelectCall(call.id)}>
+    <div
+      className="call-card"
+      data-tutorial-active={isTutorialActive ? "true" : undefined}
+      onClick={() => onSelectCall(call.id)}
+    >
       <div className="call-meta">
         <div className={isInbound ? "direction inbound" : "direction outbound"}>
           {isInbound ? "↙ Inbound" : "↘ Outbound"}

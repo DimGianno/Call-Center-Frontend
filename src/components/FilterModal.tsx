@@ -7,6 +7,7 @@ import { formatDateHeader } from "../utils/formatters";
 interface FilterModalProps {
   draftFilters: CallFilters;
   availableCallDates: AvailableCallDate[];
+  isTutorialActive?: boolean;
   onDraftFiltersChange: (filters: CallFilters) => void;
   onReset: () => void;
   onClose: () => void;
@@ -23,6 +24,7 @@ type FilterSectionKey = "callType" | "direction" | "dateRange" | "duration";
 function FilterModal({
   draftFilters,
   availableCallDates,
+  isTutorialActive = false,
   onDraftFiltersChange,
   onReset,
   onClose,
@@ -223,7 +225,7 @@ function FilterModal({
 
   return (
     <div className="modal-overlay">
-      <div className="filter-modal">
+      <div className="filter-modal" data-tutorial-active={isTutorialActive ? "true" : undefined}>
         <div className="modal-header">
           <h2>Filter Calls</h2>
 

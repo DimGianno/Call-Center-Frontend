@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import type { Call, CallFilters, CallView } from "../types";
+import type { Call, CallFilters, CallView, TutorialEventId, TutorialTargetId } from "../types";
 import CallItem from "./CallItem";
 import FilterModal from "./FilterModal";
 import PaginationControls from "./PaginationControls";
@@ -18,6 +18,7 @@ import {
 const pageSizeOptions = [5, 10, 25, 50];
 
 interface CallFeedProps {
+  activeTutorialTarget: TutorialTargetId | null;
   calls: Call[];
   callView: CallView;
   showSeedGuidance: boolean;
@@ -28,9 +29,11 @@ interface CallFeedProps {
   onArchiveAll: () => void;
   onUnarchiveAll: () => void;
   onResetCalls: () => void;
+  onTutorialEvent?: (eventId: TutorialEventId) => void;
 }
 
 function CallFeed({
+  activeTutorialTarget,
   calls,
   callView,
   showSeedGuidance,
@@ -41,6 +44,7 @@ function CallFeed({
   onArchiveAll,
   onUnarchiveAll,
   onResetCalls,
+  onTutorialEvent,
 }: CallFeedProps) {
   const isActiveView = callView === "active";
 
@@ -97,9 +101,13 @@ function CallFeed({
 
   /* group calls for current page by date */
   const groupedCalls = groupCallsByDate(currentPageCalls);
+  const tutorialCallCardId = currentPageCalls[0]?.id;
 
   return (
-    <section className="call-feed">
+    <section
+      className="call-feed"
+      data-tutorial-active={activeTutorialTarget === "call-feed" ? "true" : undefined}
+    >
       <div className="feed-header">
         <div className="feed-actions">
           <label
@@ -155,9 +163,11 @@ function CallFeed({
             className="icon-action-button"
             title="Open filters"
             aria-label="Open filters"
+            data-tutorial-active={activeTutorialTarget === "filters-button" ? "true" : undefined}
             onClick={() => {
               setDraftFilters(appliedFilters);
               setIsFilterModalOpen(true);
+              onTutorialEvent?.("filters-opened");
             }}
           >
             <span className="icon-action-emoji">
@@ -217,6 +227,9 @@ function CallFeed({
                     call={call}
                     onSelectCall={onSelectCall}
                     actionLabel={actionLabel}
+                    isTutorialActive={
+                      activeTutorialTarget === "call-card" && call.id === tutorialCallCardId
+                    }
                     onAction={actionHandler}
                   />
                 );
@@ -225,7 +238,10 @@ function CallFeed({
           );
         })
       ) : showSeedGuidance ? (
-        <div className="empty-state seed-calls-state">
+        <div
+          className="empty-state seed-calls-state"
+          data-tutorial-active={activeTutorialTarget === "seed-calls" ? "true" : undefined}
+        >
           <h2>Get started with sample calls</h2>
           <p>
             Your account has no call records yet. Select <strong>Seed sample calls</strong>, then
@@ -260,6 +276,7 @@ function CallFeed({
             className="icon-action-button reset-data-button"
             title="Reset calls to sample data"
             aria-label="Reset calls to sample data"
+            data-tutorial-active={activeTutorialTarget === "seed-calls" ? "true" : undefined}
             onClick={onResetCalls}
           >
             <span className="icon-action-emoji">↺</span>
@@ -272,6 +289,7 @@ function CallFeed({
         <FilterModal
           draftFilters={draftFilters}
           availableCallDates={availableCallDates}
+          isTutorialActive={activeTutorialTarget === "filter-modal"}
           onDraftFiltersChange={setDraftFilters}
           onReset={() => setDraftFilters(defaultFilters)}
           onClose={() => setIsFilterModalOpen(false)}

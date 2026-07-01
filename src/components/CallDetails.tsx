@@ -5,6 +5,7 @@ import { formatCallDateTime } from "../utils/formatters";
 
 interface CallDetailsProps {
   call: Call;
+  isTutorialActive?: boolean;
   onClose: () => void;
   onAddNote: (callId: string, content: string) => Promise<boolean>;
   onArchiveCall: (callId: string) => Promise<boolean>;
@@ -16,6 +17,7 @@ type PendingAction = "" | "note" | "archive" | "delete";
 
 function CallDetails({
   call,
+  isTutorialActive = false,
   onClose,
   onAddNote,
   onArchiveCall,
@@ -70,7 +72,10 @@ function CallDetails({
 
   return (
     <div className="modal-overlay">
-      <div className="call-details-modal">
+      <div
+        className="call-details-modal"
+        data-tutorial-active={isTutorialActive ? "true" : undefined}
+      >
         <div className="modal-header">
           <h2>Selected Call Info:</h2>
           <button

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loginUser, signupUser } from "../api/authApi";
 import App from "../App";
-import type { AuthSession, Call } from "../types";
+import type { AuthSession, Call, TutorialState } from "../types";
 import {
   addCallNote,
   archiveAllCalls,
@@ -15,6 +15,7 @@ import {
   unarchiveAllCalls,
   unarchiveCall,
 } from "../api/callsApi";
+import { fetchTutorialState, updateTutorialState } from "../api/tutorialApi";
 
 vi.mock("../api/authApi", () => {
   return {
@@ -54,6 +55,13 @@ vi.mock("../api/callsApi", () => {
   };
 });
 
+vi.mock("../api/tutorialApi", () => {
+  return {
+    fetchTutorialState: vi.fn(),
+    updateTutorialState: vi.fn(),
+  };
+});
+
 const addCallNoteMock = vi.mocked(addCallNote);
 const archiveAllCallsMock = vi.mocked(archiveAllCalls);
 const archiveCallMock = vi.mocked(archiveCall);
@@ -65,9 +73,45 @@ const unarchiveAllCallsMock = vi.mocked(unarchiveAllCalls);
 const unarchiveCallMock = vi.mocked(unarchiveCall);
 const loginUserMock = vi.mocked(loginUser);
 const signupUserMock = vi.mocked(signupUser);
+const fetchTutorialStateMock = vi.mocked(fetchTutorialState);
+const updateTutorialStateMock = vi.mocked(updateTutorialState);
 
 function createSessionExpiresAt(durationMs = 600_000) {
   return new Date(Date.now() + durationMs).toISOString();
+}
+
+function createTutorialState(overrides: Partial<TutorialState> = {}): TutorialState {
+  return {
+    version: 1,
+    hasSeenWelcome: true,
+    completedAt: "2026-07-01T10:00:00.000Z",
+    skippedAt: null,
+    completedTopics: [
+      "seeding",
+      "stats",
+      "layout",
+      "call-details",
+      "filters",
+      "session-timer",
+      "account-settings",
+    ],
+    ...overrides,
+  };
+}
+
+function mockTutorialState(overrides: Partial<TutorialState> = {}) {
+  const tutorialState = createTutorialState(overrides);
+
+  fetchTutorialStateMock.mockResolvedValue(tutorialState);
+  updateTutorialStateMock.mockImplementation(async (update) => {
+    return {
+      ...tutorialState,
+      ...update,
+      completedTopics: update.completedTopics ?? tutorialState.completedTopics,
+    };
+  });
+
+  return tutorialState;
 }
 
 const activeCall: Call = {
@@ -155,6 +199,7 @@ describe("App auth gate", () => {
     window.localStorage.clear();
     vi.clearAllMocks();
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
+    mockTutorialState();
     loginUserMock.mockResolvedValue({
       user: {
         id: "user-login",
@@ -551,6 +596,7 @@ describe("App API-backed user flows", () => {
     seedAuthenticatedSession();
     vi.clearAllMocks();
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
+    mockTutorialState();
   });
 
   it("loads calls from the API and renders the active call feed", async () => {
@@ -561,6 +607,149 @@ describe("App API-backed user flows", () => {
     expect(fetchAllCalls).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("+1 555-0200")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "View archived calls" })).toBeInTheDocument();
+  });
+
+  it("shows the first-run tutorial welcome and lets users skip it", async () => {
+    mockTutorialState({
+      hasSeenWelcome: false,
+      completedAt: null,
+      skippedAt: null,
+      completedTopics: [],
+    });
+
+    renderApp();
+
+    expect(
+      await screen.findByRole("dialog", { name: "Welcome to your call center dashboard" }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Not now" }));
+
+    await waitFor(() => {
+      expect(updateTutorialStateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          version: 1,
+          hasSeenWelcome: true,
+          skippedAt: expect.any(String),
+        }),
+      );
+    });
+    expect(
+      screen.queryByRole("dialog", { name: "Welcome to your call center dashboard" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show the first-run tutorial welcome for returning users", async () => {
+    renderApp();
+
+    expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
+    expect(fetchTutorialStateMock).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("dialog", { name: "Welcome to your call center dashboard" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("completes the full tutorial after safe click-along actions", async () => {
+    fetchCallMock.mockResolvedValue(activeCall);
+    mockTutorialState({
+      hasSeenWelcome: false,
+      completedAt: null,
+      skippedAt: null,
+      completedTopics: [],
+    });
+
+    renderApp();
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Start tutorial",
+      }),
+    );
+
+    expect(screen.getByRole("dialog", { name: "Start with sample calls" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(screen.getByRole("dialog", { name: "Open call details" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+    await userEvent.click(screen.getByText("+1 555-0100"));
+    expect(await screen.findByText("Selected Call Info:")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Review and update a call" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Close call details" }));
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(screen.getByRole("dialog", { name: "Open filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Filter calls precisely" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(screen.getByRole("dialog", { name: "Watch the session timer" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(screen.getByRole("dialog", { name: "Open account settings" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Use the account drawer" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Finish" }));
+
+    await waitFor(() => {
+      expect(updateTutorialStateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          version: 1,
+          hasSeenWelcome: true,
+          completedAt: expect.any(String),
+          completedTopics: [
+            "seeding",
+            "stats",
+            "layout",
+            "call-details",
+            "filters",
+            "session-timer",
+            "account-settings",
+          ],
+        }),
+      );
+    });
+  });
+
+  it("lets users rerun tutorial topics from the account drawer", async () => {
+    renderApp();
+
+    await screen.findByText("+1 555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+
+    expect(screen.getByRole("heading", { name: "Tutorials" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Full tutorial" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Seeding calls" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stats cards" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Layout and call list" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Call details and notes" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Session timer" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Account settings" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Filters" }));
+
+    expect(screen.getByRole("dialog", { name: "Open filters" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Test Agent" })).not.toBeInTheDocument();
   });
 
   it("shows an API error when calls fail to load", async () => {

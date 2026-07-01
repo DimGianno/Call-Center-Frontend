@@ -31,6 +31,41 @@ export interface AuthResponse {
   sessionExpiresAt: string;
 }
 
+export type TutorialTopicId =
+  | "full"
+  | "seeding"
+  | "stats"
+  | "layout"
+  | "call-details"
+  | "filters"
+  | "session-timer"
+  | "account-settings";
+
+export type TutorialTargetId =
+  | "dashboard-layout"
+  | "seed-calls"
+  | "stats-cards"
+  | "call-feed"
+  | "call-card"
+  | "call-details"
+  | "filters-button"
+  | "filter-modal"
+  | "session-timer"
+  | "account-button"
+  | "account-drawer";
+
+export type TutorialEventId = "call-details-opened" | "filters-opened" | "account-opened";
+
+export interface TutorialState {
+  version: number;
+  hasSeenWelcome: boolean;
+  completedAt: string | null;
+  skippedAt: string | null;
+  completedTopics: string[];
+}
+
+export type TutorialStateUpdate = Partial<TutorialState>;
+
 export type CallDirection = "inbound" | "outbound";
 
 export type CallType = "answered" | "missed" | "voicemail";
