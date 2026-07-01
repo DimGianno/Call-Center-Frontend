@@ -298,6 +298,14 @@ function TutorialOverlay({
     currentStep.targetId === "account-button" ||
     currentStep.targetId === "account-drawer" ||
     currentStep.targetId === "account-close-button";
+  const shouldDockPanelTop = currentStep.targetId === "reset-data-button";
+  const panelClassName = [
+    "tutorial-panel",
+    shouldDockPanelLeft ? "is-docked-left" : "",
+    shouldDockPanelTop ? "is-docked-top" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   function handlePreviousStep() {
     setCurrentStepIndex((index) => Math.max(index - 1, 0));
@@ -314,7 +322,7 @@ function TutorialOverlay({
 
   return (
     <section
-      className={shouldDockPanelLeft ? "tutorial-panel is-docked-left" : "tutorial-panel"}
+      className={panelClassName}
       role="dialog"
       aria-labelledby="tutorial-step-title"
       aria-describedby="tutorial-step-description"

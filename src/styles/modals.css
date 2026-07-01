@@ -9,6 +9,10 @@
   background: rgba(15, 23, 42, 0.45);
 }
 
+.confirm-modal-overlay {
+  z-index: 240;
+}
+
 .call-details-modal,
 .filter-modal,
 .confirm-dialog {

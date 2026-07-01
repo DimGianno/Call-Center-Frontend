@@ -1,5 +1,4 @@
 [data-tutorial-active="true"] {
-  position: relative;
   z-index: 206;
   border-radius: var(--radius-card);
   outline: 3px solid #2563eb;
@@ -100,6 +99,11 @@
   left: 24px;
 }
 
+.tutorial-panel.is-docked-top {
+  top: calc(var(--header-height) + 24px);
+  bottom: auto;
+}
+
 .tutorial-panel-header {
   display: flex;
   align-items: center;
@@ -180,6 +184,11 @@
     bottom: 16px;
     left: 16px;
     width: auto;
+  }
+
+  .tutorial-panel.is-docked-top {
+    top: 16px;
+    bottom: auto;
   }
 
   .tutorial-actions {

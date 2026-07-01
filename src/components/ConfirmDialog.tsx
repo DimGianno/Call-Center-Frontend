@@ -18,7 +18,7 @@ function ConfirmDialog({
   onConfirm,
 }: ConfirmDialogProps) {
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay confirm-modal-overlay">
       <div className="confirm-dialog" role="dialog" aria-modal="true">
         <div className="modal-header">
           <h2>{title}</h2>
