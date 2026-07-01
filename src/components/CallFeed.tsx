@@ -113,6 +113,7 @@ function CallFeed({
           <label
             className={searchTerm.trim() !== "" ? "search-control has-value" : "search-control"}
             title="Search calls by phone number"
+            data-tutorial-active={activeTutorialTarget === "search-control" ? "true" : undefined}
           >
             <span className="search-icon">🔎</span>
 
@@ -124,6 +125,9 @@ function CallFeed({
               onChange={(event) => {
                 setSearchTerm(event.target.value);
                 setCurrentPage(1);
+                if (event.target.value.trim() !== "") {
+                  onTutorialEvent?.("search-typed");
+                }
               }}
             />
           </label>
@@ -132,6 +136,7 @@ function CallFeed({
             role="group"
             aria-label="Select how many calls to show per page"
             title="Select how many calls to show per page"
+            data-tutorial-active={activeTutorialTarget === "page-size-control" ? "true" : undefined}
           >
             <span className="page-size-icon">📄</span>
 
@@ -151,6 +156,7 @@ function CallFeed({
                     onClick={() => {
                       setPageSize(pageSizeOption);
                       setCurrentPage(1);
+                      onTutorialEvent?.("page-size-changed");
                     }}
                   >
                     {pageSizeOption}
@@ -181,9 +187,13 @@ function CallFeed({
             className="icon-action-button"
             title={isActiveView ? "View archived calls" : "View active calls"}
             aria-label={isActiveView ? "View archived calls" : "View active calls"}
+            data-tutorial-active={
+              activeTutorialTarget === "view-toggle-button" ? "true" : undefined
+            }
             onClick={() => {
               onCallViewChange(isActiveView ? "archived" : "active");
               setCurrentPage(1);
+              onTutorialEvent?.("archived-view-opened");
             }}
           >
             <span className="icon-action-emoji">🗂️</span>
@@ -195,6 +205,9 @@ function CallFeed({
             className="icon-action-button"
             title={isActiveView ? "Archive all calls" : "Unarchive all calls"}
             aria-label={isActiveView ? "Archive all calls" : "Unarchive all calls"}
+            data-tutorial-active={
+              activeTutorialTarget === "bulk-action-button" ? "true" : undefined
+            }
             onClick={bulkActionHandler}
             disabled={calls.length === 0}
           >
@@ -209,6 +222,7 @@ function CallFeed({
       {/* top pagination controls */}
       <PaginationControls
         currentPage={currentPage}
+        isTutorialActive={activeTutorialTarget === "pagination-controls"}
         totalPages={totalPages}
         onPreviousPage={handlePreviousPage}
         onNextPage={handleNextPage}
@@ -265,6 +279,7 @@ function CallFeed({
       {/* bottom pagination controls */}
       <PaginationControls
         currentPage={currentPage}
+        isTutorialActive={activeTutorialTarget === "pagination-controls"}
         totalPages={totalPages}
         onPreviousPage={handlePreviousPage}
         onNextPage={handleNextPage}
@@ -276,7 +291,7 @@ function CallFeed({
             className="icon-action-button reset-data-button"
             title="Reset calls to sample data"
             aria-label="Reset calls to sample data"
-            data-tutorial-active={activeTutorialTarget === "seed-calls" ? "true" : undefined}
+            data-tutorial-active={activeTutorialTarget === "reset-data-button" ? "true" : undefined}
             onClick={onResetCalls}
           >
             <span className="icon-action-emoji">↺</span>

@@ -73,15 +73,8 @@ function DashboardPage({
   }
 
   function handleStartTutorial(topicId: TutorialTopicId) {
-    if (topicId !== "account-settings") {
-      setIsAccountDrawerOpen(false);
-    }
-
+    setIsAccountDrawerOpen(false);
     tutorial.startTutorial(topicId);
-
-    if (topicId === "account-settings") {
-      recordTutorialEvent("account-opened");
-    }
   }
 
   return (
@@ -183,6 +176,8 @@ function DashboardPage({
           onClose={calls.clearSelectedCall}
           onDeleteCall={calls.handleDeleteCall}
           isTutorialActive={activeTutorialTarget === "call-details"}
+          isTutorialNoteActive={activeTutorialTarget === "note-field"}
+          onTutorialNoteTyped={() => recordTutorialEvent("note-typed")}
           onUnarchiveCall={calls.handleUnarchiveCall}
         />
       )}

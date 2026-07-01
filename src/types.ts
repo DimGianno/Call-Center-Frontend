@@ -31,30 +31,36 @@ export interface AuthResponse {
   sessionExpiresAt: string;
 }
 
-export type TutorialTopicId =
-  | "full"
-  | "seeding"
-  | "stats"
-  | "layout"
-  | "call-details"
-  | "filters"
-  | "session-timer"
-  | "account-settings";
+export type TutorialTopicId = "full" | "seeding" | "ui" | "call-feed" | "call-item";
 
 export type TutorialTargetId =
   | "dashboard-layout"
   | "seed-calls"
   | "stats-cards"
   | "call-feed"
+  | "search-control"
+  | "page-size-control"
+  | "view-toggle-button"
+  | "bulk-action-button"
+  | "pagination-controls"
   | "call-card"
   | "call-details"
+  | "note-field"
   | "filters-button"
   | "filter-modal"
   | "session-timer"
   | "account-button"
-  | "account-drawer";
+  | "account-drawer"
+  | "reset-data-button";
 
-export type TutorialEventId = "call-details-opened" | "filters-opened" | "account-opened";
+export type TutorialEventId =
+  | "account-opened"
+  | "archived-view-opened"
+  | "call-details-opened"
+  | "filters-opened"
+  | "note-typed"
+  | "page-size-changed"
+  | "search-typed";
 
 export interface TutorialState {
   version: number;

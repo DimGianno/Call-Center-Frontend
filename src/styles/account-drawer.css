@@ -176,9 +176,25 @@
   line-height: 1;
 }
 
+.drawer-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .drawer-tutorial-list {
   display: grid;
   gap: 6px;
+}
+
+.drawer-tutorial-list[hidden],
+.drawer-tutorial-list.is-collapsed {
+  display: none;
+}
+
+.drawer-tutorial-list.is-open {
+  display: grid;
 }
 
 .drawer-tutorial-button {
@@ -207,6 +223,19 @@
   color: var(--color-button-text-hover);
 }
 
+.drawer-tutorial-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.drawer-tutorial-copy small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .drawer-tutorial-status {
   flex-shrink: 0;
   padding: 4px 8px;
@@ -229,6 +258,10 @@
   border-color: var(--color-focus);
   background: color-mix(in srgb, var(--color-focus) 16%, var(--color-surface));
   color: var(--color-text-heading);
+}
+
+.drawer-tutorial-status.is-not-started {
+  border-color: var(--color-border);
 }
 
 .drawer-logout-button {

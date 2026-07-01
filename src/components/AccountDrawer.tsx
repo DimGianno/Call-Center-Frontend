@@ -20,16 +20,38 @@ interface AccountDrawerProps {
   tutorialState: TutorialState | null;
 }
 
-const tutorialOptions: Array<{ label: string; topicId: TutorialTopicId }> = [
-  { label: "Full tutorial", topicId: "full" },
-  { label: "Seeding calls", topicId: "seeding" },
-  { label: "Stats cards", topicId: "stats" },
-  { label: "Layout and call list", topicId: "layout" },
-  { label: "Call details and notes", topicId: "call-details" },
-  { label: "Filters", topicId: "filters" },
-  { label: "Session timer", topicId: "session-timer" },
-  { label: "Account settings", topicId: "account-settings" },
+const tutorialOptions: Array<{ description: string; label: string; topicId: TutorialTopicId }> = [
+  { description: "Complete every tutorial category.", label: "Full tutorial", topicId: "full" },
+  { description: "Add the first sample data set.", label: "Seeding calls", topicId: "seeding" },
+  {
+    description: "Timer, account, stats, controls, filters, pagination, reset.",
+    label: "UI",
+    topicId: "ui",
+  },
+  {
+    description: "Dates, routes, types, duration, and list layout.",
+    label: "Call feed",
+    topicId: "call-feed",
+  },
+  {
+    description: "Open details, notes, archive, delete, and item fields.",
+    label: "Call item",
+    topicId: "call-item",
+  },
 ];
+
+const tutorialCategoryIds: Array<Exclude<TutorialTopicId, "full">> = [
+  "seeding",
+  "ui",
+  "call-feed",
+  "call-item",
+];
+const legacyCompletedTopicMap: Record<Exclude<TutorialTopicId, "full">, string[]> = {
+  "call-feed": ["layout"],
+  "call-item": ["call-details"],
+  seeding: [],
+  ui: ["account-settings", "filters", "session-timer", "stats"],
+};
 
 function getTutorialStatus(
   topicId: TutorialTopicId,
@@ -40,7 +62,7 @@ function getTutorialStatus(
       return "new";
     }
 
-    if (tutorialState?.completedAt) {
+    if (areAllTutorialCategoriesComplete(tutorialState)) {
       return "completed";
     }
 
@@ -51,11 +73,48 @@ function getTutorialStatus(
     return "new";
   }
 
-  if (tutorialState?.completedTopics.includes(topicId)) {
+  if (isTutorialTopicComplete(topicId, tutorialState)) {
     return "completed";
   }
 
   return isFirstRunTutorialState(tutorialState) ? "new" : "not-started";
+}
+
+function isTutorialTopicComplete(
+  topicId: Exclude<TutorialTopicId, "full">,
+  tutorialState: TutorialState | null,
+) {
+  if (!tutorialState) {
+    return false;
+  }
+
+  const completedTopics = tutorialState.completedTopics;
+  const legacyTopicIds = legacyCompletedTopicMap[topicId];
+
+  return (
+    completedTopics.includes(topicId) ||
+    legacyTopicIds.some((legacyTopicId) => completedTopics.includes(legacyTopicId))
+  );
+}
+
+function areAllTutorialCategoriesComplete(tutorialState: TutorialState | null) {
+  return tutorialCategoryIds.every((topicId) => isTutorialTopicComplete(topicId, tutorialState));
+}
+
+function getTutorialHeaderStatus(tutorialState: TutorialState | null): "completed" | "new" | null {
+  if (tutorialState?.version !== undefined && tutorialState.version !== TUTORIAL_VERSION) {
+    return "new";
+  }
+
+  if (isFirstRunTutorialState(tutorialState)) {
+    return "new";
+  }
+
+  if (areAllTutorialCategoriesComplete(tutorialState)) {
+    return "completed";
+  }
+
+  return null;
 }
 
 function isFirstRunTutorialState(tutorialState: TutorialState | null) {
@@ -91,6 +150,7 @@ function AccountDrawer({
   tutorialState,
 }: AccountDrawerProps) {
   const [isTutorialSectionOpen, setIsTutorialSectionOpen] = useState(false);
+  const tutorialHeaderStatus = getTutorialHeaderStatus(tutorialState);
 
   useEffect(() => {
     if (!isOpen) {
@@ -170,11 +230,23 @@ function AccountDrawer({
             <button
               className="drawer-section-toggle"
               type="button"
+              aria-label={
+                tutorialHeaderStatus
+                  ? `Tutorials ${getTutorialStatusLabel(tutorialHeaderStatus)}`
+                  : "Tutorials"
+              }
               aria-expanded={isTutorialSectionOpen}
               aria-controls="drawer-tutorial-list"
               onClick={() => setIsTutorialSectionOpen((isOpen) => !isOpen)}
             >
-              <span>Tutorials</span>
+              <span className="drawer-section-title">
+                <span>Tutorials</span>
+                {tutorialHeaderStatus && (
+                  <span className={`drawer-tutorial-status is-${tutorialHeaderStatus}`}>
+                    {getTutorialStatusLabel(tutorialHeaderStatus)}
+                  </span>
+                )}
+              </span>
               <span aria-hidden="true" className="drawer-section-chevron">
                 {isTutorialSectionOpen ? "-" : "+"}
               </span>
@@ -182,7 +254,11 @@ function AccountDrawer({
           </h3>
           <div
             id="drawer-tutorial-list"
-            className="drawer-tutorial-list"
+            className={
+              isTutorialSectionOpen
+                ? "drawer-tutorial-list is-open"
+                : "drawer-tutorial-list is-collapsed"
+            }
             hidden={!isTutorialSectionOpen}
           >
             {tutorialOptions.map((tutorialOption) => {
@@ -197,7 +273,10 @@ function AccountDrawer({
                   aria-label={`${tutorialOption.label} ${statusLabel}`}
                   onClick={() => onStartTutorial(tutorialOption.topicId)}
                 >
-                  <span>{tutorialOption.label}</span>
+                  <span className="drawer-tutorial-copy">
+                    <span>{tutorialOption.label}</span>
+                    {tutorialOption.description && <small>{tutorialOption.description}</small>}
+                  </span>
                   <span className={`drawer-tutorial-status is-${status}`}>{statusLabel}</span>
                 </button>
               );

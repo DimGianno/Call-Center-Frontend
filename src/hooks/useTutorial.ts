@@ -9,8 +9,12 @@ type TutorialEventState = Record<TutorialEventId, boolean>;
 
 const emptyTutorialEvents: TutorialEventState = {
   "account-opened": false,
+  "archived-view-opened": false,
   "call-details-opened": false,
   "filters-opened": false,
+  "note-typed": false,
+  "page-size-changed": false,
+  "search-typed": false,
 };
 
 function shouldShowFirstRunWelcome(tutorialState: TutorialState) {
@@ -23,15 +27,7 @@ function shouldShowFirstRunWelcome(tutorialState: TutorialState) {
 
 function getCompletedTopics(flowId: TutorialFlowId) {
   if (flowId === "full") {
-    return [
-      "seeding",
-      "stats",
-      "layout",
-      "call-details",
-      "filters",
-      "session-timer",
-      "account-settings",
-    ];
+    return ["seeding", "ui", "call-feed", "call-item"];
   }
 
   return [flowId];

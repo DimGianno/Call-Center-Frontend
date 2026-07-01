@@ -6,8 +6,10 @@ import { formatCallDateTime } from "../utils/formatters";
 interface CallDetailsProps {
   call: Call;
   isTutorialActive?: boolean;
+  isTutorialNoteActive?: boolean;
   onClose: () => void;
   onAddNote: (callId: string, content: string) => Promise<boolean>;
+  onTutorialNoteTyped?: () => void;
   onArchiveCall: (callId: string) => Promise<boolean>;
   onUnarchiveCall: (callId: string) => Promise<boolean>;
   onDeleteCall: (callId: string) => boolean;
@@ -18,8 +20,10 @@ type PendingAction = "" | "note" | "archive" | "delete";
 function CallDetails({
   call,
   isTutorialActive = false,
+  isTutorialNoteActive = false,
   onClose,
   onAddNote,
+  onTutorialNoteTyped,
   onArchiveCall,
   onUnarchiveCall,
   onDeleteCall,
@@ -152,7 +156,14 @@ function CallDetails({
             value={noteContent}
             placeholder="Write a note for this call..."
             disabled={isBusy}
-            onChange={(event) => setNoteContent(event.target.value)}
+            data-tutorial-active={isTutorialNoteActive ? "true" : undefined}
+            onChange={(event) => {
+              setNoteContent(event.target.value);
+
+              if (event.target.value.trim() !== "") {
+                onTutorialNoteTyped?.();
+              }
+            }}
           />
           <button
             className="primary-button"

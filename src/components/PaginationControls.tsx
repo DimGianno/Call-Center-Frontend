@@ -1,5 +1,6 @@
 interface PaginationControlsProps {
   currentPage: number;
+  isTutorialActive?: boolean;
   totalPages: number;
   onPreviousPage: () => void;
   onNextPage: () => void;
@@ -7,6 +8,7 @@ interface PaginationControlsProps {
 
 function PaginationControls({
   currentPage,
+  isTutorialActive = false,
   totalPages,
   onPreviousPage,
   onNextPage,
@@ -16,7 +18,10 @@ function PaginationControls({
   }
 
   return (
-    <div className="pagination-controls">
+    <div
+      className="pagination-controls"
+      data-tutorial-active={isTutorialActive ? "true" : undefined}
+    >
       <button
         className="pagination-button"
         title="Go to previous page"
