@@ -280,7 +280,7 @@ function CallFeed({
         <div className="empty-state">
           <p>
             {calls.length === 0
-              ? "No calls available."
+              ? `No ${isActiveView ? "active" : "archived"} calls available.`
               : "No calls match the current search or filters."}
           </p>
         </div>

@@ -798,7 +798,7 @@ describe("App API-backed user flows", () => {
     renderApp();
 
     expect(await screen.findByText("Unable to load calls.")).toBeInTheDocument();
-    expect(screen.getByText("No calls available.")).toBeInTheDocument();
+    expect(screen.getByText("No active calls available.")).toBeInTheDocument();
   });
 
   it("shows an API error when selected call details fail to load", async () => {
@@ -885,7 +885,7 @@ describe("App API-backed user flows", () => {
     await userEvent.click(within(callCard).getByRole("button", { name: "Archive this call" }));
 
     expect(archiveCall).toHaveBeenCalledWith("call-1");
-    expect(await screen.findByText("No calls available.")).toBeInTheDocument();
+    expect(await screen.findByText("No active calls available.")).toBeInTheDocument();
     expect(screen.getByText("Call archived successfully.")).toBeInTheDocument();
   });
 
@@ -917,7 +917,7 @@ describe("App API-backed user flows", () => {
     await userEvent.click(within(callCard).getByRole("button", { name: "Unarchive this call" }));
 
     expect(unarchiveCall).toHaveBeenCalledWith("call-2");
-    expect(await screen.findByText("No calls available.")).toBeInTheDocument();
+    expect(await screen.findByText("No archived calls available.")).toBeInTheDocument();
     expect(screen.getByText("Call unarchived successfully.")).toBeInTheDocument();
   });
 
@@ -956,7 +956,7 @@ describe("App API-backed user flows", () => {
 
     expect(archiveAllCalls).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(fetchAllCalls).toHaveBeenCalledTimes(2));
-    expect(screen.getByText("No calls available.")).toBeInTheDocument();
+    expect(screen.getByText("No active calls available.")).toBeInTheDocument();
     expect(screen.getByText("All active calls archived successfully.")).toBeInTheDocument();
   });
 
@@ -1016,7 +1016,7 @@ describe("App API-backed user flows", () => {
     );
 
     expect(deleteCall).toHaveBeenCalledWith("call-1");
-    expect(await screen.findByText("No calls available.")).toBeInTheDocument();
+    expect(await screen.findByText("No active calls available.")).toBeInTheDocument();
     expect(screen.getByText("Call deleted successfully.")).toBeInTheDocument();
     expect(screen.queryByText("Selected Call Info:")).not.toBeInTheDocument();
   });
