@@ -331,14 +331,6 @@ function TutorialOverlay({
         <p className="tutorial-kicker">
           Step {currentStepIndex + 1} of {steps.length}
         </p>
-        <button
-          className="tutorial-close-button"
-          type="button"
-          aria-label="Skip tutorial"
-          onClick={onSkip}
-        >
-          x
-        </button>
       </div>
 
       <h2 id="tutorial-step-title">{currentStep.title}</h2>
