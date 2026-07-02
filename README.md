@@ -1,71 +1,64 @@
 # Call Center Dashboard
 
-A frontend call management dashboard built with **React**, **TypeScript**, and a deployed backend API.
+A teaching-friendly React frontend for managing call-center records.
 
-The app includes account signup, login, protected dashboard access with first time user tutorial, and a call activity feed where users can view active and archived calls, inspect call details, add notes, archive or unarchive calls, delete calls, filter/search calls, group calls by date, paginate large call lists, and receive success/error feedback for API-backed actions.
+The app supports signup, login, backend-owned HttpOnly cookie sessions, server session refresh,
+active and archived call feeds, call details, notes, archive/unarchive/delete actions, seeded sample
+data, reset sample data, search, filtering, pagination, light/dark themes, confirmation dialogs,
+toast feedback, and a guided tutorial for new users.
 
-Live frontend URL:
-
-```txt
-https://call-center-frontend-fawn.vercel.app/
-```
-
----
-
-## Backend API
-
-The frontend connects to the deployed backend through a Vite environment variable:
-
-```env
-VITE_API_URL=https://call-center-backend-7z8r.onrender.com
-```
-
-API documentation:
-
-```txt
-https://call-center-backend-7z8r.onrender.com/api-docs/
-```
-
-Backend GitHub project:
-
-[DimGianno/Call-Center-BackEnd](https://github.com/DimGianno/Call-Center-BackEnd)
-
-The call data API service is centralized in:
-
-```txt
-src/api/callsApi.ts
-```
-
-It handles:
-
-- API base URL configuration through `VITE_API_URL`
-- Fetching active and archived calls
-- Fetching a single selected call
-- Adding notes
-- Archiving and unarchiving calls
-- Deleting calls
-- Bulk archive and unarchive actions
-- Retry logic for network failures and server errors
-- Clear API error messages for the UI
-
-Authentication requests are centralized in:
-
-```txt
-src/api/authApi.ts
-```
-
-It handles:
-
-- Login requests
-- Signup requests
-- Loading the active session
-- Saving the active session after successful authentication
-- Logging out by clearing the active session
-- Refreshing the local session timer
+This README is intentionally detailed. It is meant to help someone open the project, understand the
+moving pieces, and trace how a user action travels through routes, hooks, API modules, utilities,
+and UI components.
 
 ---
 
-## Setup
+## Table Of Contents
+
+- [Tech Stack](#tech-stack)
+- [Project Setup](#project-setup)
+- [Scripts](#scripts)
+- [Current Feature Set](#current-feature-set)
+- [How The App Starts](#how-the-app-starts)
+- [Route And Session Flow](#route-and-session-flow)
+- [API Layer](#api-layer)
+- [Call Data Flow](#call-data-flow)
+- [Tutorial Flow](#tutorial-flow)
+- [Project Structure](#project-structure)
+- [File Responsibilities](#file-responsibilities)
+- [State Ownership](#state-ownership)
+- [Utilities](#utilities)
+- [Styling System](#styling-system)
+- [Testing And Quality](#testing-and-quality)
+- [Error Handling](#error-handling)
+- [Future Improvements](#future-improvements)
+
+---
+
+## Tech Stack
+
+| Tool                  | Current role                                                               |
+| --------------------- | -------------------------------------------------------------------------- |
+| React 19              | Component rendering and stateful UI.                                       |
+| React DOM 19          | Mounts the React app into `index.html`.                                    |
+| React Router 7        | Browser routing, protected routes, and public-only routes.                 |
+| TypeScript 6          | Static typing for components, hooks, API responses, and utility contracts. |
+| Vite 8                | Development server, asset pipeline, and production build.                  |
+| Vitest 4              | Unit and integration test runner.                                          |
+| React Testing Library | Tests user-visible behavior instead of implementation details.             |
+| jest-dom              | Adds DOM-specific matchers for tests.                                      |
+| jsdom                 | Provides a browser-like test environment.                                  |
+| ESLint 10             | Static linting.                                                            |
+| Prettier 3            | Formatting.                                                                |
+| react-datepicker 9    | Inline date-range calendar in the filter modal.                            |
+
+There are no global state libraries, CSS frameworks, or icon packages. State is kept local with
+React hooks, shared behavior is extracted into custom hooks, and all styling is plain CSS split by
+purpose under `src/styles/`.
+
+---
+
+## Project Setup
 
 Install dependencies:
 
@@ -76,932 +69,861 @@ npm install
 Create a `.env` file in the project root:
 
 ```env
-VITE_API_URL=https://call-center-backend-7z8r.onrender.com
+VITE_API_URL=<backend-api-origin>
 ```
 
-Run the development server:
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-Build the app:
+Build the production bundle:
 
 ```bash
 npm run build
 ```
 
-Preview the production build:
+Preview the production bundle locally:
 
 ```bash
 npm run preview
 ```
 
-Run tests:
+Run the full quality gate:
 
 ```bash
-npm test
+npm run check
 ```
 
-Run tests in watch mode:
-
-```bash
-npm run test:watch
-```
-
-Check formatting:
-
-```bash
-npm run format:check
-```
-
-Format files:
-
-```bash
-npm run format
-```
+The app expects the backend API to support cookie-based auth and the call/tutorial endpoints listed
+below. Frontend requests that depend on authentication send cookies with `credentials: "include"`.
 
 ---
 
-## Current Features
+## Scripts
 
-### Authentication
+| Script                 | What it does                                                     |
+| ---------------------- | ---------------------------------------------------------------- |
+| `npm run dev`          | Starts the Vite dev server.                                      |
+| `npm run build`        | Runs a production build into `dist/`.                            |
+| `npm run preview`      | Serves the production build locally.                             |
+| `npm test`             | Runs the Vitest suite once.                                      |
+| `npm run test:watch`   | Runs Vitest in watch mode.                                       |
+| `npm run typecheck`    | Runs `tsc --noEmit`.                                             |
+| `npm run lint`         | Runs ESLint.                                                     |
+| `npm run format`       | Formats project files with Prettier.                             |
+| `npm run format:check` | Checks formatting without rewriting files.                       |
+| `npm run check`        | Runs format check, typecheck, lint, tests, and production build. |
 
-- Sign up with name, email, and password
-- Log in with email and password
-- Validate authentication form fields before submitting
-- Redirect authenticated users away from public login/signup routes
-- Protect the dashboard from unauthenticated access
-- Store the active demo session in local storage
-- Display signed-in user details in the account drawer
-- Show a session countdown timer in the dashboard header
-- Refresh the local session timer from the dashboard
-- Log out from the account drawer
-- Redirect users to login when the local session expires
+`npm run check` is the main "is this safe to ship?" command.
 
-### Call Feed
+---
 
-- Fetch calls from the backend API
-- View active calls in a call activity feed
-- View archived calls using the active/archived feed toggle
-- View compact statistics cards for the current active or archived feed view
-- Group calls by date
-- Sort calls newest first
-- Display call rows with:
-  - direction
-  - call type
-  - from number
-  - to number
-  - time
-  - duration
-  - archive/unarchive action
+## Current Feature Set
 
-### Statistics Cards
+### Authentication And Sessions
 
-- Show 6 compact cards above the call feed
-- Count only the current feed view:
-  - active calls when viewing Active
-  - archived calls when viewing Archived
-- Display:
-  - current view total
-  - inbound calls
-  - outbound calls
-  - answered calls
-  - missed calls
-  - voicemail calls
-- Match the direction and call-type colors used in the feed
-- Stay independent from phone search, filters, sorting, and pagination
+- Users can sign up and log in from the auth screens.
+- Login and signup submit to the backend, which sets an HttpOnly `session` cookie.
+- The frontend does not store or depend on an access token in `localStorage`.
+- Auth responses still include `accessToken` for temporary backend compatibility, but frontend state
+  is built from `user` and `sessionExpiresAt`.
+- The session timer is display-only. It counts down from the backend-provided `sessionExpiresAt`.
+- Refreshing the timer calls `POST /auth/refresh`, which asks the backend to extend a valid session.
+- Logging out calls `POST /auth/logout`, then clears frontend session state.
+- If a protected API request returns `401`, the frontend clears auth state and treats the session as
+  expired.
+- Email and password fields validate inline while the user types.
+- Auth buttons show rotating loading copy for slow wakeups, such as a sleeping backend.
 
-### Call Details
+### Dashboard
 
-- View full call details in a centered modal
-- Fetch the selected call from the backend so details can include notes
-- Display call details in a table layout
-- Display notes when a call has notes
-- Show a fallback message when no notes exist
-- Add a note to the selected call
-- Archive an active call from the details modal
-- Unarchive an archived call from the details modal
-- Delete the selected call from the details modal
+- The fixed header shows the dashboard title, session timer, and account button.
+- Stats cards summarize active calls, inbound calls, outbound calls, answered calls, missed calls,
+  and voicemail calls for the current loaded data set.
+- The account drawer shows the signed-in user, theme toggle, tutorials, and logout.
+- The dashboard supports dark and light themes through CSS variables.
 
-### Archive / Unarchive / Delete
+### Calls
 
-- Archive a single active call
-- Unarchive a single archived call
-- Archive all active calls
-- Unarchive all archived calls
-- Delete a single call
-- Confirm destructive or bulk actions using an in-app confirmation dialog
-- Show toast notifications after successful actions
+- Calls are fetched from the backend after the user reaches the dashboard.
+- The app loads active and archived calls so the UI can switch views without losing local context.
+- Active and archived views share the same feed controls.
+- A call can be opened to show details.
+- Notes can be added from the call details modal.
+- Active calls can be archived.
+- Archived calls can be unarchived.
+- Calls can be deleted after confirmation.
+- Active calls can be archived in bulk.
+- Archived calls can be unarchived in bulk.
+- Empty accounts show a seeded empty state with a `Seed sample calls` action.
+- Existing call data can be restored to the sample set with `Reset Data`.
 
-### Notes
+### Search, Filters, Sorting, And Pagination
 
-- Add a note from the call details modal
-- Submit note content to the backend
-- Display the updated note list after the backend confirms the change
-- Use optimistic UI updates so the note appears immediately while the request is pending
+- Search matches phone numbers by normalizing away non-digits.
+- Calls can be filtered by call type, direction, date range, and duration.
+- Filter sections fold and unfold to keep the modal compact.
+- Date range filtering uses `react-datepicker` as an inline calendar.
+- Calendar dates without calls are disabled.
+- Date comparisons use `YYYY-MM-DD` strings, which keeps the filter compatible with the backend data
+  shape and avoids unnecessary date libraries.
+- Calls are sorted newest-first.
+- Calls are grouped by date headings.
+- Page size can be changed between `5`, `10`, `25`, and `50`.
+- Pagination appears above and below the call list.
 
-### Filtering
+### Guided Tutorial
 
-- Filter calls using a modal with confirmation
-- Filter by call type:
-  - answered
-  - missed
-  - voicemail
-- Filter by direction:
-  - inbound
-  - outbound
-- Filter by date range using native date inputs
-- Filter by duration using a double slider from `0 sec` to `500+ sec`
-- Reset filters inside the filter modal
-- Cancel filter changes without affecting the feed
-- Show active filter count on the filter button
-- Date and duration filtering are handled on the frontend after calls are fetched
+- First-time users see a welcome dialog after reaching the authenticated dashboard.
+- Tutorial state is stored by the backend per user.
+- The account drawer exposes a foldable Tutorials section.
+- Tutorial categories are:
+  - Full tutorial
+  - Seeding calls
+  - UI
+  - Call feed
+  - Call item
+- Tutorial rows show whether a category is new, completed, or not started.
+- The Tutorials header can show a green completed badge or blue new badge.
+- The tutorial highlights real dashboard elements with a direct breathing highlight.
+- Safe steps can require real clicks, such as opening filters or account settings.
+- Data-changing actions are described but not forced, such as reset, archive, delete, and note
+  changes.
+- The seed slide is skipped when the user already has calls.
 
-### Search
+---
 
-- Search calls by phone number
-- Search checks both `from` and `to` numbers
-- Search works together with filters, pagination, and active/archived views
-- Phone search ignores spaces and symbols, so searches like `612`, `+33 6 12`, and `33 612` can match the same number
-- Phone search is handled on the frontend after calls are fetched
+## How The App Starts
 
-### Pagination
+The boot path is:
 
-- Paginate large call lists in the UI
-- Choose how many calls to show per page:
-  - 5
-  - 10
-  - 25
-  - 50
-- The page-size selector is capped at 50 to match the backend API limit
-- Show pagination controls at the top and bottom of the feed
-- Reset to page 1 when filters, search, page size, or feed view change
+```text
+index.html
+  -> src/main.tsx
+    -> src/App.tsx
+      -> AppRoutes
+        -> route guard
+          -> page
+            -> hooks
+              -> API modules
+                -> backend
+```
 
-### UI / UX
+### `index.html`
 
-- Toggle between light and dark mode
-- Compact icon-style feed controls
-- Expanding icon buttons on hover
-- Hover titles and `aria-label`s for clearer button meaning
-- Loading indicator while calls are being fetched
-- Empty states for:
-  - no active calls
-  - no archived calls
-  - no calls matching search or filters
-- Graceful error messages when API requests fail
-- In-app confirmation dialog for reload, bulk actions, and delete
-- Toast notifications for successful actions
+`index.html` provides the root DOM element:
 
-### Bonus Features
+```html
+<div id="root"></div>
+```
 
-- Centralized API service in `src/api/callsApi.ts`
-- Centralized auth service in `src/api/authApi.ts`
-- API base URL stored in `VITE_API_URL`
-- React Router public-only and protected routes
-- Retry logic for network failures and server errors
-- Toast notifications for action success messages
-- Optimistic updates for:
-  - archive single call
-  - unarchive single call
-  - delete single call
-  - add note
+It also loads the app entry:
+
+```html
+<script type="module" src="/src/main.tsx"></script>
+```
+
+Vite transforms this module during development and bundles it during production builds.
+
+### `src/main.tsx`
+
+`main.tsx` creates the React root and renders the app:
+
+```tsx
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);
+```
+
+The important parts are:
+
+- `document.getElementById("root")` finds the DOM node from `index.html`.
+- `createRoot(...)` tells React where to mount.
+- `<StrictMode>` enables extra development checks.
+- `<App />` is the top-level app component.
+
+### `src/App.tsx`
+
+`App.tsx` sets up browser routing, theme state, auth session state, and route protection.
+
+The route tree is:
+
+| Path         | Route behavior                                                          |
+| ------------ | ----------------------------------------------------------------------- |
+| `/`          | Home page.                                                              |
+| `/login`     | Public-only login page. Redirects authenticated users to `/dashboard`.  |
+| `/signup`    | Public-only signup page. Redirects authenticated users to `/dashboard`. |
+| `/dashboard` | Protected dashboard. Redirects unauthenticated users to `/login`.       |
+| `*`          | Redirects unknown routes to `/`.                                        |
+
+`AppRoutes` owns the current theme and uses `useAuthSession()` to get the current auth state and auth
+handlers. It passes the minimum required props down into pages.
+
+---
+
+## Route And Session Flow
+
+### Route Guards
+
+`ProtectedRoute.tsx` prevents unauthenticated access to the dashboard.
+
+It needs two pieces of information:
+
+- `isAuthReady`: whether the startup session check has finished.
+- `session`: whether the frontend currently has a valid session state.
+
+While auth is still being checked, protected content should not make a premature decision. After the
+check finishes, no session means redirect to `/login`.
+
+`PublicOnlyRoute.tsx` does the opposite. It keeps logged-in users away from login and signup screens
+by redirecting them to `/dashboard`.
+
+### Session Source Of Truth
+
+The real source of truth is the backend session cookie. The cookie is HttpOnly, which means the
+frontend cannot read it with JavaScript. That is good: it reduces the damage from malicious
+JavaScript because the session secret is not available through `localStorage` or regular script
+access.
+
+The frontend keeps only display state:
+
+```ts
+interface AuthSession {
+  user: AuthUser;
+  name: string;
+  email: string;
+  sessionExpiresAt: string;
+}
+```
+
+`sessionExpiresAt` drives the visible countdown, but the backend enforces whether a session is
+actually valid.
+
+### Startup Refresh
+
+When the app loads, `useAuthSession()` calls `getCurrentSession()`, which calls
+`POST /auth/refresh`.
+
+That request has two jobs:
+
+1. Ask the backend whether the cookie session is still valid.
+2. Receive the current user and a fresh `sessionExpiresAt` if it is valid.
+
+If refresh returns `401`, the frontend clears local auth state and behaves as logged out.
+
+### Timer Behavior
+
+The session timer is calculated from:
+
+```text
+sessionExpiresAt - Date.now()
+```
+
+That means the timer can recover when a tab sleeps, the browser throttles intervals, or the window is
+minimized. The UI recalculates against an absolute expiry timestamp instead of trusting that an
+interval fired every second.
+
+Refreshing the timer calls the backend. The frontend does not extend the session by itself.
+
+---
+
+## API Layer
+
+All API modules read the base URL from:
+
+```ts
+import.meta.env.VITE_API_URL;
+```
+
+Authenticated requests include:
+
+```ts
+credentials: "include";
+```
+
+That option tells `fetch` to send cookies to the backend and accept cookie updates from auth
+responses, assuming the backend CORS policy allows the current origin.
+
+### Auth Endpoints
+
+Implemented in `src/api/authApi.ts`.
+
+| Frontend function         | HTTP request         | Purpose                                           |
+| ------------------------- | -------------------- | ------------------------------------------------- |
+| `loginUser(credentials)`  | `POST /auth/login`   | Logs in and receives user/session expiry.         |
+| `signupUser(credentials)` | `POST /auth/signup`  | Creates account and receives user/session expiry. |
+| `refreshSession()`        | `POST /auth/refresh` | Refreshes a valid cookie session.                 |
+| `getCurrentSession()`     | `POST /auth/refresh` | Startup helper that returns `null` on `401`.      |
+| `logoutUser()`            | `POST /auth/logout`  | Clears the backend session and frontend state.    |
+
+Auth responses are parsed and validated before they become frontend session state.
+
+### Calls Endpoints
+
+Implemented in `src/api/callsApi.ts`.
+
+| Frontend function                             | HTTP request                           | Purpose                                    |
+| --------------------------------------------- | -------------------------------------- | ------------------------------------------ |
+| `fetchCallsPage({ isArchived, page, limit })` | `GET /calls?is_archived=&page=&limit=` | Fetches one page of calls.                 |
+| `fetchCallsByArchiveStatus(isArchived)`       | repeated `GET /calls`                  | Fetches every page for one archive status. |
+| `fetchAllCalls()`                             | active + archived fetches in parallel  | Gives the dashboard both views.            |
+| `fetchCall(callId)`                           | `GET /calls/:callId`                   | Loads a single call's freshest details.    |
+| `addCallNote(callId, content)`                | `POST /calls/:callId/notes`            | Adds a note and returns the updated call.  |
+| `archiveCall(callId)`                         | `PATCH /calls/:callId/archive`         | Archives one call.                         |
+| `unarchiveCall(callId)`                       | `PATCH /calls/:callId/unarchive`       | Restores one call to active.               |
+| `deleteCall(callId)`                          | `DELETE /calls/:callId`                | Deletes one call.                          |
+| `archiveAllCalls()`                           | `PATCH /calls/archive-all`             | Archives all active calls.                 |
+| `unarchiveAllCalls()`                         | `PATCH /calls/unarchive-all`           | Unarchives all archived calls.             |
+| `resetCalls()`                                | `POST /calls/reset`                    | Seeds or restores sample calls.            |
+
+`apiRequest()` is the shared calls request helper. It adds JSON headers, includes cookies, retries
+server errors a limited number of times, parses JSON responses, and announces session expiry on
+`401`.
+
+### Tutorial Endpoints
+
+Implemented in `src/api/tutorialApi.ts`.
+
+| Frontend function             | HTTP request               | Purpose                                            |
+| ----------------------------- | -------------------------- | -------------------------------------------------- |
+| `fetchTutorialState()`        | `GET /users/me/tutorial`   | Loads tutorial progress for the current user.      |
+| `updateTutorialState(update)` | `PATCH /users/me/tutorial` | Saves skip, completion, and completed topic state. |
+
+The expected tutorial state shape is:
+
+```ts
+interface TutorialState {
+  version: number;
+  hasSeenWelcome: boolean;
+  completedAt: string | null;
+  skippedAt: string | null;
+  completedTopics: string[];
+}
+```
+
+Tutorial API failures should not block the dashboard. A failed save shows a toast only when the user
+explicitly tries to save tutorial progress.
+
+---
+
+## Call Data Flow
+
+The dashboard call path is:
+
+```text
+DashboardPage
+  -> useCalls
+    -> callsApi
+      -> backend
+    -> local calls state
+  -> StatsCards
+  -> CallFeed
+    -> callUtils
+    -> FilterModal
+    -> CallItem
+  -> CallDetails
+```
+
+### Loading Calls
+
+`useCalls()` calls `fetchAllCalls()` on mount. `fetchAllCalls()` loads active and archived calls so
+the dashboard can switch views using local state.
+
+The hook stores:
+
+- `calls`: all loaded calls.
+- `callView`: active or archived view.
+- `selectedCall`: the call currently open in the details modal.
+- `isLoading`: whether calls are being fetched.
+- `errorMessage`: the latest call-related error message.
+
+### Visible Calls
+
+`useCalls()` derives `visibleCalls` from `calls` and `callView`.
+
+If `callView` is `active`, only non-archived calls are passed to `CallFeed`.
+
+If `callView` is `archived`, only archived calls are passed to `CallFeed`.
+
+### Feed Transformations
+
+Inside `CallFeed.tsx`, the visible list goes through this pipeline:
+
+```text
+visible calls
+  -> searchCallsByPhoneNumber
+  -> filterCalls
+  -> sortCallsNewestFirst
+  -> paginateCalls
+  -> groupCallsByDate
+  -> render date groups and call cards
+```
+
+`useMemo()` is used for searched calls and available calendar dates so large lists avoid unnecessary
+recalculation when unrelated state changes.
+
+### Optimistic Updates
+
+Some actions update the UI before the backend confirms:
+
+- Archive one call.
+- Unarchive one call.
+- Add a note.
+- Delete one call.
+
+The hook saves the previous state first. If the backend fails, it rolls back to the previous state
+and shows the error.
+
+Bulk actions and reset reload from the backend after the action finishes because they affect many
+records.
+
+### Empty States
+
+The call feed distinguishes three cases:
+
+| Situation                             | Message or action                                  |
+| ------------------------------------- | -------------------------------------------------- |
+| Account has no calls                  | Shows seeded empty state with `Seed sample calls`. |
+| Active view has no active calls       | `No active calls available.`                       |
+| Archived view has no archived calls   | `No archived calls available.`                     |
+| Search/filter hides all current calls | `No calls match the current search or filters.`    |
+
+---
+
+## Tutorial Flow
+
+The tutorial path is:
+
+```text
+DashboardPage
+  -> useTutorial
+    -> tutorialApi
+      -> backend tutorial state
+  -> TutorialWelcomeDialog
+  -> TutorialOverlay
+  -> active tutorial target props
+  -> highlighted dashboard elements
+```
+
+### First Visit
+
+`useTutorial()` fetches tutorial state from the backend after the dashboard is ready.
+
+The welcome dialog appears only when the backend state says the user has not seen, skipped, or
+completed the current tutorial version.
+
+The current tutorial version is:
+
+```ts
+export const TUTORIAL_VERSION = 1;
+```
+
+Changing this number in the future can make the tutorial feel new again for users who completed an
+older version.
+
+### Tutorial Categories
+
+The account drawer tutorial section exposes five launch buttons:
+
+| Topic         | What it covers                                                              |
+| ------------- | --------------------------------------------------------------------------- |
+| Full tutorial | Every tutorial category.                                                    |
+| Seeding calls | How new accounts get sample data.                                           |
+| UI            | Timer, account drawer, stats, controls, filters, pagination, and reset.     |
+| Call feed     | Date groups, routes, types, durations, and list layout.                     |
+| Call item     | Opening details, reading call fields, notes, archive/unarchive, and delete. |
+
+The section folds under the Tutorials header. Each row has a status badge.
+
+### Click-Along Steps
+
+Some steps wait for real user events:
+
+- Opening account settings.
+- Closing account settings.
+- Opening filters.
+- Closing filters.
+- Opening call details.
+
+The dashboard reports those actions through tutorial event callbacks. When the required event is
+recorded, the tutorial auto-advances.
+
+Steps that would change data are presented but not required. That keeps the tutorial educational
+without forcing destructive or noisy actions.
+
+### Highlighting
+
+The tutorial passes an `activeTutorialTarget` down into dashboard components. Components place
+`data-tutorial-active="true"` on the active target. `src/styles/tutorial.css` turns that marker into
+the blue breathing highlight.
+
+This keeps the tutorial package-free and avoids a third-party walkthrough dependency.
 
 ---
 
 ## Project Structure
 
-```txt
-src/
-  App.tsx
-  main.tsx
-  index.css
-
-  api/
-    authApi.ts
-    callsApi.ts
-
-  components/
-    AccountDrawer.tsx
-    AuthScreen.tsx
-    CallFeed.tsx
-    CallItem.tsx
-    CallDetails.tsx
-    ConfirmDialog.tsx
-    FilterModal.tsx
-    PaginationControls.tsx
-    StatsCards.tsx
-    Toast.tsx
-
-  hooks/
-    useAuthSession.ts
-    useCalls.ts
-    useConfirmDialog.ts
-    useToast.ts
-
-  pages/
-    AuthPage.tsx
-    DashboardPage.tsx
-    HomePage.tsx
-
-  routes/
-    ProtectedRoute.tsx
-    PublicOnlyRoute.tsx
-
-  utils/
-    authStorage.ts
-    callUtils.ts
-    formatters.ts
-
-  test/
-    App.integration.test.tsx
-    authApi.test.ts
-    callsApi.test.ts
-    components.snapshot.test.tsx
-    setup.ts
-
-.github/
-  workflows/
-    ci.yml
-```
-
----
-
-## Component Tree
-
-```txt
-App
-  |-- HomePage
-  |-- PublicOnlyRoute
-  |   `-- AuthPage
-  |       `-- AuthScreen
-  `-- ProtectedRoute
-      `-- DashboardPage
-          |-- AccountDrawer
-          |-- StatsCards
-          |-- CallFeed
-          |   |-- FilterModal
-          |   |-- PaginationControls
-          |   `-- CallItem
-          |-- CallDetails
-          |-- ConfirmDialog
-          `-- Toast
+```text
+.
+├── index.html
+├── package.json
+├── package-lock.json
+├── vite.config.ts
+├── tsconfig.json
+├── eslint.config.js
+├── vercel.json
+├── src
+│   ├── main.tsx
+│   ├── App.tsx
+│   ├── index.css
+│   ├── types.ts
+│   ├── api
+│   │   ├── authApi.ts
+│   │   ├── callsApi.ts
+│   │   └── tutorialApi.ts
+│   ├── components
+│   │   ├── AccountDrawer.tsx
+│   │   ├── AuthScreen.tsx
+│   │   ├── CallDetails.tsx
+│   │   ├── CallFeed.tsx
+│   │   ├── CallItem.tsx
+│   │   ├── ConfirmDialog.tsx
+│   │   ├── FilterModal.tsx
+│   │   ├── PaginationControls.tsx
+│   │   ├── StatsCards.tsx
+│   │   ├── Toast.tsx
+│   │   └── TutorialOverlay.tsx
+│   ├── hooks
+│   │   ├── useAuthSession.ts
+│   │   ├── useCalls.ts
+│   │   ├── useConfirmDialog.ts
+│   │   ├── useToast.ts
+│   │   └── useTutorial.ts
+│   ├── pages
+│   │   ├── AuthPage.tsx
+│   │   ├── DashboardPage.tsx
+│   │   └── HomePage.tsx
+│   ├── routes
+│   │   ├── ProtectedRoute.tsx
+│   │   └── PublicOnlyRoute.tsx
+│   ├── styles
+│   │   ├── account-drawer.css
+│   │   ├── app-shell.css
+│   │   ├── auth.css
+│   │   ├── base.css
+│   │   ├── calls.css
+│   │   ├── dashboard.css
+│   │   ├── feedback.css
+│   │   ├── feed.css
+│   │   ├── home.css
+│   │   ├── modals.css
+│   │   ├── responsive.css
+│   │   ├── tokens.css
+│   │   └── tutorial.css
+│   ├── test
+│   │   ├── App.integration.test.tsx
+│   │   ├── authApi.test.ts
+│   │   ├── authStorage.test.ts
+│   │   ├── callsApi.test.ts
+│   │   ├── callUtils.test.ts
+│   │   ├── components.snapshot.test.tsx
+│   │   ├── setup.ts
+│   │   ├── tutorialApi.test.ts
+│   │   └── __snapshots__
+│   └── utils
+│       ├── authStorage.ts
+│       ├── callUtils.ts
+│       └── formatters.ts
 ```
 
 ---
 
 ## File Responsibilities
 
-### `App.tsx`
+### Entry Files
 
-`App.tsx` defines the main application routing and top-level UI state.
+| File            | Responsibility                                                                          |
+| --------------- | --------------------------------------------------------------------------------------- |
+| `index.html`    | HTML shell and React mount point.                                                       |
+| `src/main.tsx`  | Creates the React root and renders `<App />`.                                           |
+| `src/App.tsx`   | Routes, top-level theme state, session hook, route guards, and session time formatting. |
+| `src/index.css` | Central stylesheet entry that imports `react-datepicker` CSS and local style modules.   |
+| `src/types.ts`  | Shared TypeScript types for auth, calls, filters, tutorial state, toasts, and dialogs.  |
 
-It is responsible for:
+### Pages
 
-- Storing the current theme:
-  - light
-  - dark
-- Creating the browser router
-- Defining public and protected routes
-- Rendering the home, login, signup, and dashboard pages
-- Loading and managing the active auth session through `useAuthSession`
-- Redirecting authenticated users away from login/signup pages
-- Redirecting unauthenticated users away from the dashboard
-- Passing session details and session actions into `DashboardPage`
-- Formatting the remaining session time for the dashboard header
+| File                | Responsibility                                                                                              |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `HomePage.tsx`      | Public landing/home screen with navigation to auth or dashboard depending on session state.                 |
+| `AuthPage.tsx`      | Chooses login or signup mode and renders `AuthScreen`.                                                      |
+| `DashboardPage.tsx` | Composes dashboard hooks and UI: stats, feed, details, account drawer, tutorial, toasts, and confirmations. |
 
----
+### Routes
 
-### `callsApi.ts`
+| File                  | Responsibility                                                              |
+| --------------------- | --------------------------------------------------------------------------- |
+| `ProtectedRoute.tsx`  | Waits for auth readiness, then allows dashboard access only with a session. |
+| `PublicOnlyRoute.tsx` | Keeps authenticated users out of login/signup routes.                       |
 
-`callsApi.ts` is the centralized API service for backend communication.
+### API Modules
 
-It is responsible for:
+| File             | Responsibility                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------- |
+| `authApi.ts`     | Login, signup, refresh, logout, auth response parsing, and frontend session creation.                   |
+| `callsApi.ts`    | All call-related backend requests, retry handling, JSON parsing, and `401` session expiry notification. |
+| `tutorialApi.ts` | Fetches and updates backend-backed tutorial progress.                                                   |
 
-- Reading `VITE_API_URL`
-- Building API requests
-- Parsing JSON responses safely
-- Retrying network and server failures
-- Returning backend data to the UI
-- Throwing readable errors for failed requests
+### Hooks
 
-Backend actions include:
+| File                  | Responsibility                                                                                                   |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `useAuthSession.ts`   | Owns auth session state, startup refresh, login, signup, logout, timer refresh, and expiry behavior.             |
+| `useCalls.ts`         | Owns loaded calls, selected call, active/archived view, optimistic call actions, reset, and errors.              |
+| `useTutorial.ts`      | Owns tutorial state, welcome dialog visibility, active flow, completed click events, skip, and completion saves. |
+| `useConfirmDialog.ts` | Stores the active confirmation dialog config.                                                                    |
+| `useToast.ts`         | Stores transient success/error toast messages and removes them after a delay.                                    |
 
-```txt
-GET    /calls
-GET    /calls/:callId
-POST   /calls/:callId/notes
-PATCH  /calls/:callId/archive
-PATCH  /calls/:callId/unarchive
-DELETE /calls/:callId
-PATCH  /calls/archive-all
-PATCH  /calls/unarchive-all
-```
+### Components
 
----
-
-### `authApi.ts`
-
-`authApi.ts` is the centralized API service for authentication.
-
-It is responsible for:
-
-- Reading `VITE_API_URL`
-- Sending login requests to the backend
-- Sending signup requests to the backend
-- Parsing authentication responses
-- Returning readable errors for failed auth requests
-- Saving successful auth sessions through `authStorage.ts`
-- Loading, refreshing, and clearing the active session
-
-Backend actions include:
-
-```txt
-POST /auth/login
-POST /auth/signup
-```
+| File                     | Responsibility                                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `AuthScreen.tsx`         | Login/signup form, inline email/password validation, loading messages, and submit handling.                        |
+| `AccountDrawer.tsx`      | User drawer, theme toggle, foldable tutorial section, tutorial status badges, and logout.                          |
+| `StatsCards.tsx`         | Summary cards derived from the current call data.                                                                  |
+| `CallFeed.tsx`           | Search, filters, view toggle, bulk actions, pagination, empty states, seed/reset actions, and call list rendering. |
+| `CallItem.tsx`           | One call row/card with route, type, time, duration, and archive/unarchive action.                                  |
+| `CallDetails.tsx`        | Details modal, notes list, note form, archive/unarchive, and delete.                                               |
+| `FilterModal.tsx`        | Foldable filter groups, date-range calendar, duration sliders, reset/cancel/confirm buttons.                       |
+| `PaginationControls.tsx` | Previous/next controls and page count text.                                                                        |
+| `ConfirmDialog.tsx`      | Reusable confirmation modal for data-changing actions.                                                             |
+| `Toast.tsx`              | Toast message presentation.                                                                                        |
+| `TutorialOverlay.tsx`    | Welcome dialog, tutorial step panel, click requirements, progress dots, and active target selection.               |
 
 ---
 
-### `CallFeed.tsx`
+## State Ownership
 
-`CallFeed.tsx` displays the current call feed.
+| State                      | Owner                        | Why it lives there                                        |
+| -------------------------- | ---------------------------- | --------------------------------------------------------- |
+| Theme                      | `AppRoutes`                  | Needed across home, auth, and dashboard pages.            |
+| Auth session               | `useAuthSession`             | Shared by route guards and pages.                         |
+| Remaining session seconds  | `useAuthSession`             | Derived from backend `sessionExpiresAt`.                  |
+| Calls                      | `useCalls`                   | Shared by stats, feed, details, and actions.              |
+| Selected call              | `useCalls`                   | Details modal depends on it, and actions can clear it.    |
+| Active/archived view       | `useCalls`                   | Determines which calls the feed receives.                 |
+| Search term                | `CallFeed`                   | Only affects feed display.                                |
+| Applied filters            | `CallFeed`                   | Only affects feed display after confirmation.             |
+| Draft filters              | `CallFeed` and `FilterModal` | Lets users edit filters before confirming.                |
+| Current page and page size | `CallFeed`                   | Only affects feed pagination.                             |
+| Confirmation dialog        | `useConfirmDialog`           | Shared by reset, delete, archive all, and unarchive all.  |
+| Toasts                     | `useToast`                   | Shared success/error feedback.                            |
+| Tutorial progress          | Backend and `useTutorial`    | Persisted per user, displayed and updated in dashboard.   |
+| Active tutorial target     | `DashboardPage`              | Passed down to whichever component may need highlighting. |
 
-It is responsible for:
-
-- Showing the current feed title:
-  - Active Calls
-  - Archived Calls
-- Showing the current visible range of calls
-- Searching calls by phone number
-- Opening and closing the filter modal
-- Storing applied filters
-- Storing draft filters while the filter modal is open
-- Applying confirmed filters to the feed
-- Showing active filter count
-- Sorting calls newest first
-- Paginating calls
-- Grouping the current page of calls by date
-- Rendering top and bottom pagination controls
-- Showing the correct row action:
-  - Archive
-  - Unarchive
-- Showing the correct bulk action:
-  - Archive All
-  - Unarchive All
-- Rendering the reload button in the feed footer
-- Passing each call to `CallItem`
-
-The calls it receives from `App.tsx` are already filtered by view:
-
-```txt
-Active view    -> non-archived calls
-Archived view  -> archived calls
-```
+This layout keeps state close to where it is used. App-wide state is high in the tree; feed-only
+state stays inside the feed.
 
 ---
 
-### `StatsCards.tsx`
+## Utilities
 
-`StatsCards.tsx` displays compact summary cards above the feed.
+### `src/utils/authStorage.ts`
 
-It is responsible for:
+Despite its historical name, this file no longer stores the active auth session in `localStorage`.
+It now provides auth-related helpers:
 
-- Counting calls from the current active or archived view
-- Showing the current view total:
-  - Active Calls
-  - Archived Calls
-- Counting inbound and outbound calls
-- Counting answered, missed, and voicemail calls
-- Rendering direction and type accents that match the feed colors
-- Staying unaffected by search, filters, sorting, and pagination
+- `clearActiveSession()` removes the legacy localStorage key for cleanup.
+- `buildSession(authResponse)` validates backend auth response data and returns `AuthSession`.
+- `getEmailValidationMessage(value)` returns the first inline email validation guide.
+- `isValidEmail(value)` delegates to the shared validation message helper.
+- `getPasswordValidationMessage(value)` enforces the password length guide.
+- `AUTH_SESSION_EXPIRED_EVENT` and `notifyAuthSessionExpired()` provide a browser event used when
+  protected API calls receive `401`.
 
----
+Email validation is practical public-internet validation. It supports common ASCII addresses,
+including dots, underscores, apostrophes, plus tags, and multi-label domains. It deliberately avoids
+quoted local parts, IP-literal domains, and SMTPUTF8 addresses.
 
-### `CallItem.tsx`
+### `src/utils/callUtils.ts`
 
-`CallItem.tsx` displays one call row inside the feed.
+This file contains the pure call-list transformations:
 
-It is responsible for:
+- `defaultFilters`
+- `getActiveFilterCount(filters)`
+- `filterCalls(calls, filters)`
+- `sortCallsNewestFirst(calls)`
+- `paginateCalls(calls, currentPage, pageSize)`
+- `groupCallsByDate(calls)`
+- `getAvailableCallDates(calls)`
+- `dateKeyToLocalDate(dateKey)`
+- `localDateToDateKey(date)`
+- `searchCallsByPhoneNumber(calls, searchTerm)`
 
-- Displaying the call direction
-- Displaying the call type
-- Displaying the from and to numbers
-- Displaying the call time
-- Displaying the call duration
-- Opening the call details modal when clicked
-- Running the current row action:
-  - Archive
-  - Unarchive
+These functions are easy to test because they do not touch React state or the DOM.
 
-`CallItem` does not decide whether it archives or unarchives a call.
+### `src/utils/formatters.ts`
 
-Instead, it receives:
-
-```jsx
-actionLabel;
-onAction;
-```
-
-This makes it reusable for both active and archived calls.
+Formatting helpers keep UI copy consistent. For example, call date group headings are formatted in
+one place instead of each component inventing its own date display.
 
 ---
 
-### `CallDetails.tsx`
+## Styling System
 
-`CallDetails.tsx` displays the selected call inside a centered modal.
+`src/index.css` is now an import hub rather than a single huge stylesheet.
 
-It is responsible for:
-
-- Showing a modal overlay
-- Displaying the selected call details in a table
-- Showing:
-  - Direction
-  - From
-  - To
-  - Type
-  - Duration
-  - Date
-  - Notes
-- Displaying a fallback message when no notes exist
-- Adding a note
-- Archiving an active selected call
-- Unarchiving an archived selected call
-- Deleting the selected call
-- Closing the modal
-
----
-
-### `ConfirmDialog.tsx`
-
-`ConfirmDialog.tsx` displays the reusable confirmation modal.
-
-It is responsible for:
-
-- Showing a title and message
-- Providing a cancel action
-- Providing a confirm action
-- Supporting danger styling for destructive actions
-- Disabling actions while the confirmed request is processing
-
----
-
-### `Toast.tsx`
-
-`Toast.tsx` displays short success notifications.
-
-It is responsible for:
-
-- Showing a toast message
-- Supporting success and error styles
-- Providing a dismiss button
-- Working with the auto-dismiss timer in `App.tsx`
-
----
-
-### `FilterModal.tsx`
-
-`FilterModal.tsx` displays the filtering interface inside a centered modal.
-
-It is responsible for:
-
-- Displaying call type filter checkboxes
-- Displaying direction filter checkboxes
-- Displaying date range inputs
-- Displaying the duration double slider
-- Updating draft filter values
-- Resetting draft filters
-- Cancelling without applying changes
-- Confirming filters and applying them to the feed
-
-The modal edits `draftFilters`.
-
-The feed only changes when the user confirms the filters.
-
----
-
-### `PaginationControls.tsx`
-
-`PaginationControls.tsx` displays reusable pagination controls.
-
-It is responsible for:
-
-- Showing the current page
-- Showing total pages
-- Moving to the previous page
-- Moving to the next page
-- Disabling previous/next buttons when needed
-
-It is rendered twice in the feed:
-
-```txt
-Top of feed
-Bottom of feed
-```
-
----
-
-## Utility Files
-
-### `callUtils.ts`
-
-`callUtils.ts` contains reusable call-data logic.
-
-It is responsible for:
-
-- Default filter settings
-- Counting active filters
-- Searching calls by phone number
-- Filtering calls by type, direction, date range, and duration range
-- Sorting calls newest first
-- Paginating calls
-- Grouping calls by date
-
-This keeps the main feed component cleaner.
-
----
-
-### `formatters.ts`
-
-`formatters.ts` contains reusable formatting helpers.
-
-It is responsible for:
-
-- Formatting date group headers
-- Formatting call row times
-- Formatting full call date/time values for the details modal
-
-Example formatting responsibilities:
-
-```txt
-2025-04-10              -> Thursday, 10 April 2025
-2025-04-10T14:32:00Z    -> 17:32
-2025-04-10T14:32:00Z    -> 10/04/2025, 17:32
-```
-
----
-
-## Testing
-
-The project uses **Vitest**, **React Testing Library**, **jest-dom**, and **jsdom**.
-
-Run the full test suite:
-
-```bash
-npm test
-```
-
-The current suite includes:
-
-- Integration tests for API-backed user flows in `App`
-- Auth API tests for login, signup, session loading, session refresh, logout, and validation behavior
-- API service tests for pagination, retry behavior, request methods, request bodies, and missing API configuration
-- Component snapshot tests for key rendered UI states
-
-The integration tests cover:
-
-- Initial call loading
-- API error states
-- Selecting call details
-- Adding notes
-- Optimistic note rollback on failure
-- Archiving and unarchiving calls
-- Optimistic archive rollback on failure
-- Bulk archive and unarchive confirmations
-- Reload confirmation
-- Delete confirmation
-- Search, filters, pagination, empty states, and theme toggling
-- Login, signup, protected routes, public-only routes, logout, and expired session redirects
-
-Test files live in:
-
-```txt
-src/test/
-```
-
----
-
-## Code Quality
-
-The project uses **ESLint** for linting and **Prettier** for formatting.
-
-Run linting:
-
-```bash
-npm run lint
-```
-
-Check formatting without changing files:
-
-```bash
-npm run format:check
-```
-
-Apply formatting:
-
-```bash
-npm run format
-```
-
-Prettier is configured with:
-
-```txt
-.prettierrc
-.prettierignore
-```
-
----
-
-## Continuous Integration / Deployment
-
-GitHub Actions is configured in:
-
-```txt
-.github/workflows/ci.yml
-```
-
-The CI workflow runs automatically on:
-
-- Pushes
-- Pull requests
-
-The pipeline:
-
-- Installs dependencies with `npm ci`
-- Checks formatting with `npm run format:check`
-- Runs linting with `npm run lint`
-- Runs tests with `npm test`
-- Builds the project with `npm run build`
-
-Continuous deployment is handled by **Vercel**:
-
-```txt
-https://call-center-frontend-fawn.vercel.app/
-```
-
-Vercel is connected to the frontend repository and deploys the Vite app automatically when changes are pushed to the production branch.
-
-Branch protection is also configured so protected merges require CI to pass before code is merged into `main`.
-
----
-
-## Main Data Flow
-
-### Initial calls state
-
-```txt
-Backend GET /calls?is_archived=false
-Backend GET /calls?is_archived=true
-  |
-App.tsx state
-  |
-CallFeed
-```
-
-When the app loads:
-
-```txt
-App requests active calls and archived calls
-  |
-API service combines the results
-  |
-App stores calls in React state
-```
-
----
-
-### Feed data flow
-
-```txt
-all calls in App.tsx
-  |
-filter by active/archived view
-  |
-StatsCards
-  |
-CallFeed
-  |
-search by phone number
-  |
-filter by modal filters
-  |
-sort newest first
-  |
-paginate
-  |
-group current page by date
-  |
-render CallItem rows
-```
-
-Phone search, date filtering, duration filtering, sorting, grouping, and UI pagination run on the frontend after calls are fetched.
-
-Statistics cards are calculated from the active/archived view before search, filtering, sorting, or pagination are applied.
-
----
-
-### Call details flow
-
-```txt
-User clicks CallItem
-  |
-App requests GET /calls/:callId
-  |
-selectedCallId is updated
-  |
-App finds selectedCall
-  |
-CallDetails modal opens
-```
-
----
-
-### Archive flow
-
-```txt
-User clicks Archive
-  |
-App optimistically marks the call as archived
-  |
-PATCH /calls/:callId/archive
-  |
-Backend response confirms the call state
-  |
-Toast confirms success
-```
-
-If the request fails:
-
-```txt
-Previous calls state is restored
-  |
-Error message is displayed
-```
-
----
-
-### Unarchive flow
-
-```txt
-User clicks Unarchive
-  |
-App optimistically marks the call as active
-  |
-PATCH /calls/:callId/unarchive
-  |
-Backend response confirms the call state
-  |
-Toast confirms success
-```
-
-If the request fails:
-
-```txt
-Previous calls state is restored
-  |
-Error message is displayed
-```
-
----
-
-### Delete flow
-
-```txt
-User clicks Delete call
-  |
-ConfirmDialog asks for confirmation
-  |
-App optimistically removes the call
-  |
-DELETE /calls/:callId
-  |
-Toast confirms success
-```
-
-If the request fails:
-
-```txt
-Previous calls state is restored
-  |
-Selected call is restored
-  |
-Error message is displayed
-```
-
----
-
-### Add note flow
-
-```txt
-User writes a note
-  |
-App optimistically adds a temporary note
-  |
-POST /calls/:callId/notes
-  |
-Backend response replaces the call with the confirmed version
-  |
-Toast confirms success
-```
-
-If the request fails:
-
-```txt
-Previous calls state is restored
-  |
-Error message is displayed
-```
-
----
-
-### Bulk action flow
-
-```txt
-User clicks Archive All or Unarchive All
-  |
-ConfirmDialog asks for confirmation
-  |
-Backend bulk endpoint runs
-  |
-App reloads calls from the backend
-  |
-Toast confirms success
-```
-
-Bulk actions reload backend data after completion to avoid mismatches if many records change at once.
-
----
-
-### Filter flow
-
-```txt
-User opens FilterModal
-  |
-draftFilters are edited
-  |
-Cancel closes modal without applying changes
-  |
-Confirm copies draftFilters into appliedFilters
-  |
-CallFeed recalculates visible calls
-```
-
----
-
-## Styling
-
-The app uses plain CSS in:
-
-```txt
-src/index.css
-```
-
-The CSS is organized around variables for easier future changes.
-
-Examples:
+It imports third-party datepicker styles first, then local files:
 
 ```css
---color-page-bg
---color-surface
---color-header-bg
---color-text-main
---color-border
---color-button-bg
+@import "react-datepicker/dist/react-datepicker.css";
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/app-shell.css";
+@import "./styles/account-drawer.css";
+@import "./styles/auth.css";
+@import "./styles/home.css";
+@import "./styles/dashboard.css";
+@import "./styles/calls.css";
+@import "./styles/feedback.css";
+@import "./styles/feed.css";
+@import "./styles/modals.css";
+@import "./styles/tutorial.css";
+@import "./styles/responsive.css";
 ```
 
-The app supports a manual light/dark mode toggle by changing the `data-theme` value on the main `.app` element.
+### CSS Modules By Purpose
 
-The feed controls use compact icon-style buttons that expand on hover.
+| File                 | Purpose                                                                   |
+| -------------------- | ------------------------------------------------------------------------- |
+| `tokens.css`         | Theme variables, colors, shadows, and shared design tokens.               |
+| `base.css`           | Global resets and base element styling.                                   |
+| `app-shell.css`      | App wrapper, header, fixed layout, and session timer.                     |
+| `home.css`           | Home page styles.                                                         |
+| `auth.css`           | Login/signup layout, fields, validation messages, and loading states.     |
+| `dashboard.css`      | Dashboard layout and stats area.                                          |
+| `feed.css`           | Feed header controls, search, page size, empty states, and reset area.    |
+| `calls.css`          | Call cards, date groups, call details, and call-related presentation.     |
+| `modals.css`         | Filter modal, datepicker overrides, confirmation modal, and modal layers. |
+| `account-drawer.css` | Account drawer, theme control, tutorial section, and badges.              |
+| `feedback.css`       | Toast and alert feedback styles.                                          |
+| `tutorial.css`       | Tutorial welcome dialog, tutorial panel, and element highlighting.        |
+| `responsive.css`     | Mobile and narrow viewport adjustments.                                   |
 
-The modal and toast styles are shared across:
+### Theme Switching
 
-- call details
-- filters
-- confirmation dialogs
-- success notifications
+The top-level app wrapper receives:
+
+```tsx
+<div className="app" data-theme={theme}>
+```
+
+CSS variables change based on `[data-theme="dark"]` or `[data-theme="light"]`. Components use those
+variables instead of hard-coded theme-specific colors.
+
+### Datepicker Styling
+
+`react-datepicker` ships with default CSS. The app imports that CSS first, then overrides classes in
+`modals.css` so the calendar matches the dashboard theme and keeps selected start/end dates visible
+in both light and dark modes.
+
+### Tutorial Highlighting
+
+Tutorial-aware elements receive:
+
+```tsx
+data-tutorial-active={activeTutorialTarget === "some-target" ? "true" : undefined}
+```
+
+The CSS targets `[data-tutorial-active="true"]` to apply the highlight. This keeps tutorial styling
+centralized and avoids special wrapper components around every UI element.
+
+---
+
+## Testing And Quality
+
+The test suite covers API behavior, pure utilities, component snapshots, and integrated user flows.
+
+| Test file                               | What it proves                                                                                                 |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `src/test/authApi.test.ts`              | Auth requests include credentials, parse session data, handle logout, and clear state on expiry.               |
+| `src/test/callsApi.test.ts`             | Call requests include credentials, build correct URLs, retry server errors, parse responses, and report `401`. |
+| `src/test/tutorialApi.test.ts`          | Tutorial requests include credentials, validate state, update progress, and surface errors.                    |
+| `src/test/authStorage.test.ts`          | Email validation, password validation, auth response validation, and legacy session cleanup helpers.           |
+| `src/test/callUtils.test.ts`            | Filtering, sorting, pagination, grouping, available dates, and date conversion helpers.                        |
+| `src/test/App.integration.test.tsx`     | User-facing flows across auth, dashboard, filters, calls, tutorial, and routing.                               |
+| `src/test/components.snapshot.test.tsx` | Snapshot coverage for stable presentational output.                                                            |
+| `src/test/setup.ts`                     | Shared Vitest and Testing Library setup.                                                                       |
+
+### Full Check Pipeline
+
+```bash
+npm run check
+```
+
+Runs:
+
+```text
+prettier --check
+tsc --noEmit
+eslint
+vitest run
+vite build
+```
+
+That gives coverage for formatting, types, lint rules, behavior, and production build validity.
 
 ---
 
 ## Error Handling
 
-The app handles API failures gracefully.
+### Auth Errors
 
-Examples:
+Login and signup validation errors appear inline when they are about the email or password field.
+Backend auth failures appear in the existing top-level auth alert.
 
-- Initial call loading failures show an inline error state
-- Failed single-call optimistic updates roll back to the previous state
-- Failed note creation removes the temporary note
-- Failed delete restores the deleted call
-- Failed API requests surface readable error messages
-- Server/network failures are retried before the final error is shown
+If an auth request returns `401`, the app treats the user as logged out.
+
+### Protected Request Expiry
+
+Calls and tutorial APIs notify the app when they receive `401`. `useAuthSession()` listens for the
+session-expired event and clears frontend auth state.
+
+This keeps each API module simple while still giving the app one shared response to expired
+sessions.
+
+### Calls Errors
+
+`useCalls()` stores call-related errors in `errorMessage`. Failed optimistic updates roll back to
+the previous call state.
+
+### Tutorial Errors
+
+Fetching tutorial state should never block dashboard use. Failed tutorial saves show a toast only
+when the user explicitly tries to skip or complete tutorial progress.
+
+### Confirmation Dialogs
+
+Dangerous or wide-impact actions ask for confirmation:
+
+- Delete one call.
+- Archive all active calls.
+- Unarchive all archived calls.
+- Reset or seed sample data.
 
 ---
 
 ## Future Improvements
 
-Possible future improvements:
+The frontend is in a good place, but the next useful improvements would be:
 
-- Search inside notes
-- Backend-supported phone search
-- Backend-supported date range filtering
-- Add more focused unit tests for utility edge cases
+- Add mailbox verification during signup.
+- Add richer user profile settings.
+- Add server-driven sorting/filtering for very large call histories.
+- Add cursor-based pagination when the backend supports it.
+- Add tutorial version migration notes if tutorial content changes often.
+- Add multi-tab session synchronization if users commonly keep the app open in several tabs.
+- Add accessibility audits for keyboard-only workflows around the tutorial and datepicker.
