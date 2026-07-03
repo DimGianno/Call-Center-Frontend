@@ -1,9 +1,11 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { wakeBackend } from "../api/healthApi";
 import { loginUser, signupUser } from "../api/authApi";
 import App from "../App";
 import type { AuthSession, Call, TutorialState } from "../types";
+import { resetBackendWakeupForTests } from "../hooks/useBackendWakeup";
 import {
   addCallNote,
   archiveAllCalls,
@@ -41,6 +43,12 @@ vi.mock("../api/authApi", () => {
   };
 });
 
+vi.mock("../api/healthApi", () => {
+  return {
+    wakeBackend: vi.fn(async () => {}),
+  };
+});
+
 vi.mock("../api/callsApi", () => {
   return {
     addCallNote: vi.fn(),
@@ -71,6 +79,7 @@ const fetchCallMock = vi.mocked(fetchCall);
 const resetCallsMock = vi.mocked(resetCalls);
 const unarchiveAllCallsMock = vi.mocked(unarchiveAllCalls);
 const unarchiveCallMock = vi.mocked(unarchiveCall);
+const wakeBackendMock = vi.mocked(wakeBackend);
 const loginUserMock = vi.mocked(loginUser);
 const signupUserMock = vi.mocked(signupUser);
 const fetchTutorialStateMock = vi.mocked(fetchTutorialState);
@@ -190,6 +199,7 @@ describe("App auth gate", () => {
   beforeEach(() => {
     window.localStorage.clear();
     vi.clearAllMocks();
+    resetBackendWakeupForTests();
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
     mockTutorialState();
     loginUserMock.mockResolvedValue({
@@ -219,21 +229,26 @@ describe("App auth gate", () => {
 
     expect(screen.getByRole("heading", { name: "Call Center Dashboard" })).toBeInTheDocument();
     expect(screen.getByText(/Track active and archived calls/i)).toBeInTheDocument();
+    await waitFor(() => expect(wakeBackendMock).toHaveBeenCalledTimes(1));
     expect(fetchAllCalls).not.toHaveBeenCalled();
   });
 
   it("navigates from the home page to login and signup routes", async () => {
     renderApp("/");
 
+    await waitFor(() => expect(wakeBackendMock).toHaveBeenCalledTimes(1));
+
     await userEvent.click(screen.getAllByRole("link", { name: "Login" })[0]);
 
     expect(window.location.pathname).toBe("/login");
     expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(wakeBackendMock).toHaveBeenCalledTimes(1);
 
     await userEvent.click(screen.getByRole("tab", { name: "Sign up" }));
 
     expect(window.location.pathname).toBe("/signup");
     expect(screen.getByLabelText("Name")).toBeInTheDocument();
+    expect(wakeBackendMock).toHaveBeenCalledTimes(1);
   });
 
   it("redirects unauthenticated dashboard visits to login without fetching calls", async () => {
@@ -249,6 +264,16 @@ describe("App auth gate", () => {
 
     expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Login" })).toHaveAttribute("aria-selected", "true");
+    await waitFor(() => expect(wakeBackendMock).toHaveBeenCalledTimes(1));
+    expect(fetchAllCalls).not.toHaveBeenCalled();
+  });
+
+  it("wakes the backend on the signup route", async () => {
+    renderApp("/signup");
+
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Sign up" })).toHaveAttribute("aria-selected", "true");
+    await waitFor(() => expect(wakeBackendMock).toHaveBeenCalledTimes(1));
     expect(fetchAllCalls).not.toHaveBeenCalled();
   });
 
