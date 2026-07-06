@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   addCallNote,
   archiveAllCalls,
@@ -34,6 +34,11 @@ function useCalls({
   const [callView, setCallView] = useState<CallView>("active");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const selectedCallIdRef = useRef(selectedCallId);
+
+  useEffect(() => {
+    selectedCallIdRef.current = selectedCallId;
+  }, [selectedCallId]);
 
   const loadCalls = useCallback(
     async ({ isRealtimeRefresh = false, showLoading = true }: LoadCallsOptions = {}) => {
@@ -47,26 +52,33 @@ function useCalls({
 
       try {
         const apiCalls = await fetchAllCalls();
-        setCalls(apiCalls);
+        let refreshedCalls = apiCalls;
+        const currentSelectedCallId = selectedCallIdRef.current;
 
-        if (isRealtimeRefresh) {
-          setSelectedCallId((currentSelectedCallId) => {
-            if (!currentSelectedCallId) {
-              return currentSelectedCallId;
-            }
-
-            const selectedCallStillExists = apiCalls.some((call) => {
-              return call.id === currentSelectedCallId;
-            });
-
-            if (selectedCallStillExists) {
-              return currentSelectedCallId;
-            }
-
-            showToast("Selected call was removed in another tab.", "error");
-            return null;
+        if (isRealtimeRefresh && currentSelectedCallId) {
+          const selectedCallStillExists = apiCalls.some((call) => {
+            return call.id === currentSelectedCallId;
           });
+
+          if (selectedCallStillExists) {
+            const selectedCall = await fetchCall(currentSelectedCallId).catch(() => null);
+
+            if (selectedCall) {
+              refreshedCalls = apiCalls.map((call) => {
+                if (call.id === currentSelectedCallId) {
+                  return selectedCall;
+                }
+
+                return call;
+              });
+            }
+          } else {
+            showToast("Selected call was removed in another tab.", "error");
+            setSelectedCallId(null);
+          }
         }
+
+        setCalls(refreshedCalls);
       } catch (error) {
         if (!isRealtimeRefresh) {
           setErrorMessage(getErrorMessage(error));

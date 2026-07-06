@@ -786,12 +786,22 @@ describe("App API-backed user flows", () => {
   });
 
   it("preserves a note draft while realtime updates refresh the selected call", async () => {
-    fetchCallMock.mockResolvedValue(activeCall);
+    const selectedCallWithNotes = {
+      ...activeCall,
+      notes: [{ id: "note-existing", content: "Existing note." }],
+    };
+    const refreshedSelectedCall = {
+      ...selectedCallWithNotes,
+      is_archived: true,
+    };
+
+    fetchCallMock
+      .mockResolvedValueOnce(selectedCallWithNotes)
+      .mockResolvedValueOnce(refreshedSelectedCall);
     fetchAllCallsMock.mockResolvedValueOnce([activeCall, archivedCall]).mockResolvedValueOnce([
       {
         ...activeCall,
-        duration: 180,
-        notes: [{ id: "note-remote", content: "Remote note." }],
+        is_archived: true,
       },
       archivedCall,
     ]);
@@ -809,8 +819,9 @@ describe("App API-backed user flows", () => {
       expect(fetchAllCallsMock).toHaveBeenCalledTimes(2);
     });
 
-    expect(screen.getByText("180 seconds")).toBeInTheDocument();
-    expect(screen.getByText("Remote note.")).toBeInTheDocument();
+    expect(fetchCallMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Existing note.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unarchive call" })).toBeInTheDocument();
     expect(screen.getByLabelText("Add note")).toHaveValue("Draft still in progress");
   });
 
