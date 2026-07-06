@@ -17,6 +17,7 @@ import {
   unarchiveAllCalls,
   unarchiveCall,
 } from "../api/callsApi";
+import { subscribeToCallChanges } from "../api/callEventsApi";
 import { fetchTutorialState, updateTutorialState } from "../api/tutorialApi";
 
 vi.mock("../api/authApi", () => {
@@ -63,6 +64,12 @@ vi.mock("../api/callsApi", () => {
   };
 });
 
+vi.mock("../api/callEventsApi", () => {
+  return {
+    subscribeToCallChanges: vi.fn(),
+  };
+});
+
 vi.mock("../api/tutorialApi", () => {
   return {
     fetchTutorialState: vi.fn(),
@@ -83,8 +90,22 @@ const wakeBackendMock = vi.mocked(wakeBackend);
 const getCurrentSessionMock = vi.mocked(getCurrentSession);
 const loginUserMock = vi.mocked(loginUser);
 const signupUserMock = vi.mocked(signupUser);
+const subscribeToCallChangesMock = vi.mocked(subscribeToCallChanges);
 const fetchTutorialStateMock = vi.mocked(fetchTutorialState);
 const updateTutorialStateMock = vi.mocked(updateTutorialState);
+
+type CallChangeHandler = Parameters<typeof subscribeToCallChanges>[0];
+
+let emitCallChange: CallChangeHandler;
+let unsubscribeCallChangesMock: () => void;
+
+function mockCallEventSubscription() {
+  unsubscribeCallChangesMock = vi.fn();
+  subscribeToCallChangesMock.mockImplementation((handler) => {
+    emitCallChange = handler;
+    return unsubscribeCallChangesMock;
+  });
+}
 
 function createSessionExpiresAt(durationMs = 600_000) {
   return new Date(Date.now() + durationMs).toISOString();
@@ -200,6 +221,7 @@ describe("App auth gate", () => {
   beforeEach(() => {
     window.localStorage.clear();
     vi.clearAllMocks();
+    mockCallEventSubscription();
     resetBackendWakeupForTests();
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
     mockTutorialState();
@@ -664,6 +686,7 @@ describe("App API-backed user flows", () => {
     window.localStorage.clear();
     seedAuthenticatedSession();
     vi.clearAllMocks();
+    mockCallEventSubscription();
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
     mockTutorialState();
   });
@@ -676,6 +699,138 @@ describe("App API-backed user flows", () => {
     expect(fetchAllCalls).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("+1 555-0200")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "View archived calls" })).toBeInTheDocument();
+  });
+
+  it("refreshes calls from realtime events while preserving archived view, search, and filters", async () => {
+    const matchingArchivedCall = createCall({
+      id: "archived-inbound",
+      direction: "inbound",
+      from: "+1 555-7777",
+      is_archived: true,
+    });
+    const filteredArchivedCall = createCall({
+      id: "archived-outbound",
+      direction: "outbound",
+      from: "+1 555-8888",
+      is_archived: true,
+    });
+
+    fetchAllCallsMock
+      .mockResolvedValueOnce([activeCall, matchingArchivedCall, filteredArchivedCall])
+      .mockResolvedValueOnce([
+        activeCall,
+        {
+          ...matchingArchivedCall,
+          duration: 90,
+        },
+        filteredArchivedCall,
+      ]);
+
+    renderApp();
+
+    await userEvent.click(await screen.findByRole("button", { name: "View archived calls" }));
+    await userEvent.type(screen.getByLabelText("Search calls by phone number"), "555");
+    await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Direction" }));
+    await userEvent.click(screen.getByLabelText("Outbound"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm filters" }));
+
+    expect(screen.getByText("+1 555-7777")).toBeInTheDocument();
+    expect(screen.queryByText("+1 555-8888")).not.toBeInTheDocument();
+
+    await act(async () => {
+      emitCallChange({ version: 1, action: "archive", callId: "call-1" });
+    });
+
+    await waitFor(() => {
+      expect(fetchAllCallsMock).toHaveBeenCalledTimes(2);
+    });
+
+    expect(screen.getByRole("button", { name: "View active calls" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Search calls by phone number")).toHaveValue("555");
+    expect(screen.getByRole("button", { name: "Open filters" })).toHaveTextContent("Filters (1)");
+    expect(screen.getByText("+1 555-7777")).toBeInTheDocument();
+    expect(screen.queryByText("+1 555-8888")).not.toBeInTheDocument();
+  });
+
+  it("preserves the current page when realtime updates still have that page", async () => {
+    const paginatedCalls = createCalls(12);
+
+    fetchAllCallsMock.mockResolvedValueOnce(paginatedCalls).mockResolvedValueOnce([
+      ...paginatedCalls.slice(0, 6),
+      {
+        ...paginatedCalls[6],
+        duration: 180,
+      },
+      ...paginatedCalls.slice(7),
+    ]);
+
+    renderApp();
+
+    expect(await screen.findByText("+1 555-1001")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Show 5 calls per page" }));
+    await userEvent.click(screen.getAllByRole("button", { name: "Go to next page" })[0]);
+
+    expect(screen.getAllByText("Page 2 of 3")[0]).toBeInTheDocument();
+
+    await act(async () => {
+      emitCallChange({ version: 1, action: "add_note", callId: "call-07" });
+    });
+
+    await waitFor(() => {
+      expect(fetchAllCallsMock).toHaveBeenCalledTimes(2);
+    });
+
+    expect(screen.getAllByText("Page 2 of 3")[0]).toBeInTheDocument();
+  });
+
+  it("preserves a note draft while realtime updates refresh the selected call", async () => {
+    fetchCallMock.mockResolvedValue(activeCall);
+    fetchAllCallsMock.mockResolvedValueOnce([activeCall, archivedCall]).mockResolvedValueOnce([
+      {
+        ...activeCall,
+        duration: 180,
+        notes: [{ id: "note-remote", content: "Remote note." }],
+      },
+      archivedCall,
+    ]);
+
+    renderApp();
+
+    await userEvent.click(await screen.findByText("+1 555-0100"));
+    await userEvent.type(await screen.findByLabelText("Add note"), "Draft still in progress");
+
+    await act(async () => {
+      emitCallChange({ version: 1, action: "add_note", callId: "call-1" });
+    });
+
+    await waitFor(() => {
+      expect(fetchAllCallsMock).toHaveBeenCalledTimes(2);
+    });
+
+    expect(screen.getByText("180 seconds")).toBeInTheDocument();
+    expect(screen.getByText("Remote note.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Add note")).toHaveValue("Draft still in progress");
+  });
+
+  it("closes selected call details when realtime refresh removes that call", async () => {
+    fetchCallMock.mockResolvedValue(activeCall);
+    fetchAllCallsMock.mockResolvedValueOnce([activeCall]).mockResolvedValueOnce([]);
+
+    renderApp();
+
+    await userEvent.click(await screen.findByText("+1 555-0100"));
+    expect(await screen.findByText("Selected Call Info:")).toBeInTheDocument();
+
+    await act(async () => {
+      emitCallChange({ version: 1, action: "delete", callId: "call-1" });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Selected Call Info:")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Selected call was removed in another tab.")).toBeInTheDocument();
   });
 
   it("shows the first-run tutorial welcome and lets users skip it", async () => {

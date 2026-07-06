@@ -5,7 +5,7 @@ A teaching-friendly React frontend for managing call-center records.
 The app supports signup, login, backend-owned HttpOnly cookie sessions, server session refresh,
 active and archived call feeds, call details, notes, archive/unarchive/delete actions, seeded sample
 data, reset sample data, search, filtering, pagination, light/dark themes, confirmation dialogs,
-toast feedback, and a guided tutorial for new users.
+toast feedback, same-account realtime call sync, and a guided tutorial for new users.
 
 This README is intentionally detailed. It is meant to help someone open the project, understand the
 moving pieces, and trace how a user action travels through routes, hooks, API modules, utilities,
@@ -71,6 +71,13 @@ Create a `.env` file in the project root:
 ```env
 VITE_API_URL=<backend-api-origin>
 ```
+
+During local development, `VITE_API_URL` can point directly at the backend, for example
+`http://localhost:3000`.
+
+In production builds the app calls `/api/*` on the current Vercel origin. `vercel.json` rewrites
+those requests to the Render backend through `BACKEND_PROXY_URL`, which keeps browser requests
+same-origin and lets mobile browsers keep sending the HttpOnly session cookie reliably.
 
 Start the development server:
 
@@ -149,6 +156,7 @@ below. Frontend requests that depend on authentication send cookies with `creden
 
 - Calls are fetched from the backend after the user reaches the dashboard.
 - The app loads active and archived calls so the UI can switch views without losing local context.
+- Other open tabs and devices for the same account refresh automatically when calls change.
 - Active and archived views share the same feed controls.
 - A call can be opened to show details.
 - Notes can be added from the call details modal.
@@ -333,11 +341,17 @@ Refreshing the timer calls the backend. The frontend does not extend the session
 
 ## API Layer
 
-All API modules read the base URL from:
+API modules use the shared base URL from `src/api/apiBaseUrl.ts`:
 
 ```ts
-import.meta.env.VITE_API_URL;
+export const API_BASE_URL = import.meta.env.PROD ? "/api" : import.meta.env.VITE_API_URL || "/api";
 ```
+
+This means:
+
+- local development can call a direct backend URL from `VITE_API_URL`
+- production calls `/api/*` on the Vercel frontend origin
+- Vercel rewrites `/api/*` to the Render backend through `BACKEND_PROXY_URL`
 
 Authenticated requests include:
 
@@ -347,6 +361,10 @@ credentials: "include";
 
 That option tells `fetch` to send cookies to the backend and accept cookie updates from auth
 responses, assuming the backend CORS policy allows the current origin.
+
+The same-origin Vercel proxy is important for mobile and tablet browsers. It avoids the browser
+treating `vercel.app -> onrender.com` as a third-party-cookie flow while still keeping the backend
+hosted on Render.
 
 ### Auth Endpoints
 
@@ -384,6 +402,30 @@ Implemented in `src/api/callsApi.ts`.
 server errors a limited number of times, parses JSON responses, and announces session expiry on
 `401`.
 
+### Realtime Call Events
+
+Implemented in `src/api/callEventsApi.ts`.
+
+`subscribeToCallChanges(onChange)` opens:
+
+```ts
+new EventSource(`${API_BASE_URL}/events/calls`, { withCredentials: true });
+```
+
+The backend emits `calls:changed` events after successful call mutations. The frontend treats those
+events as invalidation signals and calls `fetchAllCalls()` again instead of trying to patch local
+state from the event payload.
+
+The event payload is:
+
+```ts
+{
+  version: 1;
+  action: "archive" | "unarchive" | "delete" | "add_note" | "archive_all" | "unarchive_all" | "reset";
+  callId?: string;
+}
+```
+
 ### Tutorial Endpoints
 
 Implemented in `src/api/tutorialApi.ts`.
@@ -418,6 +460,7 @@ The dashboard call path is:
 DashboardPage
   -> useCalls
     -> callsApi
+    -> callEventsApi
       -> backend
     -> local calls state
   -> StatsCards
@@ -432,6 +475,10 @@ DashboardPage
 
 `useCalls()` calls `fetchAllCalls()` on mount. `fetchAllCalls()` loads active and archived calls so
 the dashboard can switch views using local state.
+
+`useCalls()` also subscribes to `calls:changed` events while the dashboard is mounted. When another
+tab or device changes calls for the same account, the hook silently refetches all calls without
+showing the main loading state.
 
 The hook stores:
 
@@ -480,6 +527,19 @@ and shows the error.
 
 Bulk actions and reset reload from the backend after the action finishes because they affect many
 records.
+
+### Realtime Refresh Behavior
+
+Realtime refreshes preserve dashboard context. The active/archived view, search text, filters, page
+size, and current page live outside the refreshed call array, so they remain in place while fresh
+call data arrives.
+
+The selected call details modal stays open when the selected call still exists after a refresh. If
+another tab or device deletes the selected call, or reset removes it, the modal closes and the app
+shows a subtle toast: `Selected call was removed in another tab.`
+
+Note drafts are owned by the call details form, so a realtime refresh does not clear typed note
+text. The draft is cleared only when the user's own note submit succeeds.
 
 ### Empty States
 
@@ -582,7 +642,9 @@ This keeps the tutorial package-free and avoids a third-party walkthrough depend
 │   ├── index.css
 │   ├── types.ts
 │   ├── api
+│   │   ├── apiBaseUrl.ts
 │   │   ├── authApi.ts
+│   │   ├── callEventsApi.ts
 │   │   ├── callsApi.ts
 │   │   └── tutorialApi.ts
 │   ├── components
@@ -671,21 +733,23 @@ This keeps the tutorial package-free and avoids a third-party walkthrough depend
 
 ### API Modules
 
-| File             | Responsibility                                                                                          |
-| ---------------- | ------------------------------------------------------------------------------------------------------- |
-| `authApi.ts`     | Login, signup, refresh, logout, auth response parsing, and frontend session creation.                   |
-| `callsApi.ts`    | All call-related backend requests, retry handling, JSON parsing, and `401` session expiry notification. |
-| `tutorialApi.ts` | Fetches and updates backend-backed tutorial progress.                                                   |
+| File               | Responsibility                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| `apiBaseUrl.ts`    | Chooses direct local API URL or production same-origin `/api` proxy base.                               |
+| `authApi.ts`       | Login, signup, refresh, logout, auth response parsing, and frontend session creation.                   |
+| `callEventsApi.ts` | Authenticated EventSource subscription for same-account realtime call refreshes.                        |
+| `callsApi.ts`      | All call-related backend requests, retry handling, JSON parsing, and `401` session expiry notification. |
+| `tutorialApi.ts`   | Fetches and updates backend-backed tutorial progress.                                                   |
 
 ### Hooks
 
-| File                  | Responsibility                                                                                                   |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `useAuthSession.ts`   | Owns auth session state, startup refresh, login, signup, logout, timer refresh, and expiry behavior.             |
-| `useCalls.ts`         | Owns loaded calls, selected call, active/archived view, optimistic call actions, reset, and errors.              |
-| `useTutorial.ts`      | Owns tutorial state, welcome dialog visibility, active flow, completed click events, skip, and completion saves. |
-| `useConfirmDialog.ts` | Stores the active confirmation dialog config.                                                                    |
-| `useToast.ts`         | Stores transient success/error toast messages and removes them after a delay.                                    |
+| File                  | Responsibility                                                                                                          |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `useAuthSession.ts`   | Owns auth session state, startup refresh, login, signup, logout, timer refresh, and expiry behavior.                    |
+| `useCalls.ts`         | Owns loaded calls, selected call, active/archived view, realtime refreshes, optimistic call actions, reset, and errors. |
+| `useTutorial.ts`      | Owns tutorial state, welcome dialog visibility, active flow, completed click events, skip, and completion saves.        |
+| `useConfirmDialog.ts` | Stores the active confirmation dialog config.                                                                           |
+| `useToast.ts`         | Stores transient success/error toast messages and removes them after a delay.                                           |
 
 ### Components
 
@@ -854,7 +918,7 @@ The test suite covers API behavior, pure utilities, component snapshots, and int
 | `src/test/tutorialApi.test.ts`          | Tutorial requests include credentials, validate state, update progress, and surface errors.                    |
 | `src/test/authStorage.test.ts`          | Email validation, password validation, auth response validation, and legacy session cleanup helpers.           |
 | `src/test/callUtils.test.ts`            | Filtering, sorting, pagination, grouping, available dates, and date conversion helpers.                        |
-| `src/test/App.integration.test.tsx`     | User-facing flows across auth, dashboard, filters, calls, tutorial, and routing.                               |
+| `src/test/App.integration.test.tsx`     | User-facing flows across auth, dashboard, filters, calls, realtime refreshes, tutorial, and routing.           |
 | `src/test/components.snapshot.test.tsx` | Snapshot coverage for stable presentational output.                                                            |
 | `src/test/setup.ts`                     | Shared Vitest and Testing Library setup.                                                                       |
 
@@ -925,5 +989,4 @@ The frontend is in a good place, but the next useful improvements would be:
 - Add server-driven sorting/filtering for very large call histories.
 - Add cursor-based pagination when the backend supports it.
 - Add tutorial version migration notes if tutorial content changes often.
-- Add multi-tab session synchronization if users commonly keep the app open in several tabs.
 - Add accessibility audits for keyboard-only workflows around the tutorial and datepicker.

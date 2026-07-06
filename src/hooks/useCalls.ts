@@ -10,11 +10,17 @@ import {
   unarchiveAllCalls,
   unarchiveCall,
 } from "../api/callsApi";
+import { subscribeToCallChanges } from "../api/callEventsApi";
 import type { Call, CallView, OpenConfirmDialog, ShowToast } from "../types";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
+
+type LoadCallsOptions = {
+  isRealtimeRefresh?: boolean;
+  showLoading?: boolean;
+};
 
 function useCalls({
   showToast,
@@ -29,22 +35,62 @@ function useCalls({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const loadCalls = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage("");
+  const loadCalls = useCallback(
+    async ({ isRealtimeRefresh = false, showLoading = true }: LoadCallsOptions = {}) => {
+      if (showLoading) {
+        setIsLoading(true);
+      }
 
-    try {
-      const apiCalls = await fetchAllCalls();
-      setCalls(apiCalls);
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      if (!isRealtimeRefresh) {
+        setErrorMessage("");
+      }
+
+      try {
+        const apiCalls = await fetchAllCalls();
+        setCalls(apiCalls);
+
+        if (isRealtimeRefresh) {
+          setSelectedCallId((currentSelectedCallId) => {
+            if (!currentSelectedCallId) {
+              return currentSelectedCallId;
+            }
+
+            const selectedCallStillExists = apiCalls.some((call) => {
+              return call.id === currentSelectedCallId;
+            });
+
+            if (selectedCallStillExists) {
+              return currentSelectedCallId;
+            }
+
+            showToast("Selected call was removed in another tab.", "error");
+            return null;
+          });
+        }
+      } catch (error) {
+        if (!isRealtimeRefresh) {
+          setErrorMessage(getErrorMessage(error));
+        }
+      } finally {
+        if (showLoading) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [showToast],
+  );
 
   useEffect(() => {
     loadCalls();
+  }, [loadCalls]);
+
+  useEffect(() => {
+    return subscribeToCallChanges(() => {
+      void loadCalls({
+        isRealtimeRefresh: true,
+        showLoading: false,
+      });
+    });
   }, [loadCalls]);
 
   function updateCallInState(updatedCall: Call) {

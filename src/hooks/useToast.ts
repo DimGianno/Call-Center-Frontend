@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ToastMessage, ToastType } from "../types";
 
 function useToast(autoDismissMs = 3500) {
@@ -16,17 +16,17 @@ function useToast(autoDismissMs = 3500) {
     return () => clearTimeout(timeoutId);
   }, [autoDismissMs, toast]);
 
-  function showToast(message: string, type: ToastType = "success") {
+  const showToast = useCallback((message: string, type: ToastType = "success") => {
     setToast({
       id: Date.now(),
       message,
       type,
     });
-  }
+  }, []);
 
-  function dismissToast() {
+  const dismissToast = useCallback(() => {
     setToast(null);
-  }
+  }, []);
 
   return {
     toast,
