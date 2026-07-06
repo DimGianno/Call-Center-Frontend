@@ -124,11 +124,25 @@ describe("tutorialApi", () => {
     await expect(fetchTutorialState()).rejects.toThrow("Invalid tutorial response.");
   });
 
-  it("requires VITE_API_URL", async () => {
+  it("uses the same-origin API proxy when VITE_API_URL is missing", async () => {
     const { fetchTutorialState } = await importTutorialApi({ apiUrl: "" });
+    const fetchMock = vi.mocked(fetch);
+    const tutorialState = {
+      version: 1,
+      hasSeenWelcome: false,
+      completedAt: null,
+      skippedAt: null,
+      completedTopics: [],
+    };
 
-    await expect(fetchTutorialState()).rejects.toThrow(
-      "Missing VITE_API_URL environment variable.",
+    fetchMock.mockResolvedValueOnce(jsonResponse(tutorialState));
+
+    await expect(fetchTutorialState()).resolves.toEqual(tutorialState);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/users/me/tutorial",
+      expect.objectContaining({
+        credentials: "include",
+      }),
     );
   });
 });

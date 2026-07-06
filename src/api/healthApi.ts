@@ -1,10 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+import { API_BASE_URL } from "./apiBaseUrl";
 
 export async function wakeBackend(): Promise<void> {
-  if (!API_BASE_URL) {
-    return;
-  }
-
   try {
     await fetch(`${API_BASE_URL}/health`, {
       method: "GET",

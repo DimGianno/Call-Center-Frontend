@@ -1,17 +1,12 @@
 import { buildSession, clearActiveSession } from "../utils/authStorage";
 import type { AuthResponse, AuthSession, LoginCredentials, SignupCredentials } from "../types";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+import { API_BASE_URL } from "./apiBaseUrl";
 
 interface AuthApiError extends Error {
   status?: number;
 }
 
 async function authRequest(path: string, body?: LoginCredentials | SignupCredentials) {
-  if (!API_BASE_URL) {
-    throw new Error("Missing VITE_API_URL environment variable.");
-  }
-
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     credentials: "include",

@@ -194,11 +194,18 @@ describe("callsApi", () => {
     );
   });
 
-  it("throws a helpful error when the API URL is missing", async () => {
+  it("uses the same-origin API proxy when VITE_API_URL is missing", async () => {
     const { fetchCall } = await importCallsApi({ apiUrl: "" });
     const fetchMock = vi.mocked(fetch);
 
-    await expect(fetchCall("call-1")).rejects.toThrow("Missing VITE_API_URL environment variable.");
-    expect(fetchMock).not.toHaveBeenCalled();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: "call-1" }));
+
+    await expect(fetchCall("call-1")).resolves.toEqual({ id: "call-1" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/calls/call-1",
+      expect.objectContaining({
+        credentials: "include",
+      }),
+    );
   });
 });

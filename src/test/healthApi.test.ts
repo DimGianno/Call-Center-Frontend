@@ -58,12 +58,19 @@ describe("healthApi", () => {
     await expect(wakeBackend()).resolves.toBeUndefined();
   });
 
-  it("does nothing when the API URL is missing", async () => {
+  it("uses the same-origin API proxy when VITE_API_URL is missing", async () => {
     const { wakeBackend } = await importHealthApi({ apiUrl: "" });
     const fetchMock = vi.mocked(fetch);
 
+    fetchMock.mockResolvedValueOnce({ ok: true } as Response);
+
     await expect(wakeBackend()).resolves.toBeUndefined();
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/health",
+      expect.objectContaining({
+        method: "GET",
+      }),
+    );
   });
 });

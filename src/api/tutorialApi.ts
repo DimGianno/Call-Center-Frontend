@@ -1,17 +1,12 @@
 import type { TutorialState, TutorialStateUpdate } from "../types";
 import { notifyAuthSessionExpired } from "../utils/authStorage";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+import { API_BASE_URL } from "./apiBaseUrl";
 
 interface TutorialApiError extends Error {
   status?: number;
 }
 
 async function tutorialRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
-  if (!API_BASE_URL) {
-    throw new Error("Missing VITE_API_URL environment variable.");
-  }
-
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     credentials: "include",

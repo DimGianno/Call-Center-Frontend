@@ -1,7 +1,7 @@
 import type { Call, CallsPageResponse, ResetCallsResult } from "../types";
 import { notifyAuthSessionExpired } from "../utils/authStorage";
+import { API_BASE_URL } from "./apiBaseUrl";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
 const MAX_RETRY_ATTEMPTS = 2;
 const RETRY_DELAY_MS = 400;
 
@@ -11,10 +11,6 @@ interface ApiError extends Error {
 }
 
 async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
-  if (!API_BASE_URL) {
-    throw new Error("Missing VITE_API_URL environment variable.");
-  }
-
   const { headers, ...requestOptions } = options;
   let lastError: unknown;
 
