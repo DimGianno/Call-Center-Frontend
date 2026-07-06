@@ -10,7 +10,7 @@ import {
   unarchiveAllCalls,
   unarchiveCall,
 } from "../api/callsApi";
-import { subscribeToCallChanges } from "../api/callEventsApi";
+import { type CallChangeEvent, subscribeToCallChanges } from "../api/callEventsApi";
 import type { Call, CallView, OpenConfirmDialog, ShowToast } from "../types";
 
 function getErrorMessage(error: unknown) {
@@ -18,6 +18,7 @@ function getErrorMessage(error: unknown) {
 }
 
 type LoadCallsOptions = {
+  event?: CallChangeEvent;
   isRealtimeRefresh?: boolean;
   showLoading?: boolean;
 };
@@ -41,7 +42,7 @@ function useCalls({
   }, [selectedCallId]);
 
   const loadCalls = useCallback(
-    async ({ isRealtimeRefresh = false, showLoading = true }: LoadCallsOptions = {}) => {
+    async ({ event, isRealtimeRefresh = false, showLoading = true }: LoadCallsOptions = {}) => {
       if (showLoading) {
         setIsLoading(true);
       }
@@ -71,6 +72,10 @@ function useCalls({
 
                 return call;
               });
+
+              if (event?.action === "add_note" && event.callId === currentSelectedCallId) {
+                showToast("A note was added to this call in another tab.");
+              }
             }
           } else {
             showToast("Selected call was removed in another tab.", "error");
@@ -97,8 +102,9 @@ function useCalls({
   }, [loadCalls]);
 
   useEffect(() => {
-    return subscribeToCallChanges(() => {
+    return subscribeToCallChanges((event) => {
       void loadCalls({
+        event,
         isRealtimeRefresh: true,
         showLoading: false,
       });

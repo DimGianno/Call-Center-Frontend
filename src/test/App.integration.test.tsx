@@ -822,6 +822,7 @@ describe("App API-backed user flows", () => {
     expect(fetchCallMock).toHaveBeenCalledTimes(2);
     expect(screen.getByText("Existing note.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Unarchive call" })).toBeInTheDocument();
+    expect(screen.getByText("A note was added to this call in another tab.")).toBeInTheDocument();
     expect(screen.getByLabelText("Add note")).toHaveValue("Draft still in progress");
   });
 
