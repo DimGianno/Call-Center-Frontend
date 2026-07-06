@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { wakeBackend } from "../api/healthApi";
-import { loginUser, signupUser } from "../api/authApi";
+import { getCurrentSession, loginUser, signupUser } from "../api/authApi";
 import App from "../App";
 import type { AuthSession, Call, TutorialState } from "../types";
 import { resetBackendWakeupForTests } from "../hooks/useBackendWakeup";
@@ -80,6 +80,7 @@ const resetCallsMock = vi.mocked(resetCalls);
 const unarchiveAllCallsMock = vi.mocked(unarchiveAllCalls);
 const unarchiveCallMock = vi.mocked(unarchiveCall);
 const wakeBackendMock = vi.mocked(wakeBackend);
+const getCurrentSessionMock = vi.mocked(getCurrentSession);
 const loginUserMock = vi.mocked(loginUser);
 const signupUserMock = vi.mocked(signupUser);
 const fetchTutorialStateMock = vi.mocked(fetchTutorialState);
@@ -266,6 +267,57 @@ describe("App auth gate", () => {
     expect(screen.getByRole("tab", { name: "Login" })).toHaveAttribute("aria-selected", "true");
     await waitFor(() => expect(wakeBackendMock).toHaveBeenCalledTimes(1));
     expect(fetchAllCalls).not.toHaveBeenCalled();
+  });
+
+  it("keeps login usable while the startup session check is still pending", async () => {
+    let resolveStartupSession: (session: AuthSession | null) => void = () => {};
+    getCurrentSessionMock.mockImplementationOnce(
+      () =>
+        new Promise<AuthSession | null>((resolve) => {
+          resolveStartupSession = resolve;
+        }),
+    );
+
+    renderApp("/login");
+
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toBeEnabled();
+    expect(screen.getByLabelText("Password")).toBeEnabled();
+    expect(screen.queryByText("Loading session...")).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveStartupSession(null);
+      await Promise.resolve();
+    });
+  });
+
+  it("does not let a late startup session check overwrite a successful login", async () => {
+    let resolveStartupSession: (session: AuthSession | null) => void = () => {};
+    getCurrentSessionMock.mockImplementationOnce(
+      () =>
+        new Promise<AuthSession | null>((resolve) => {
+          resolveStartupSession = resolve;
+        }),
+    );
+
+    renderApp("/login");
+
+    await userEvent.type(await screen.findByLabelText("Email"), "stored@example.com");
+    await userEvent.type(screen.getByLabelText("Password"), "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(loginUser).toHaveBeenCalledWith({
+      email: "stored@example.com",
+      password: "password123",
+    });
+
+    await act(async () => {
+      resolveStartupSession(null);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/dashboard");
   });
 
   it("wakes the backend on the signup route", async () => {

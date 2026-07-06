@@ -39,7 +39,7 @@ function AppRoutes() {
         <Route
           path="/login"
           element={
-            <PublicOnlyRoute isAuthReady={auth.isAuthReady} session={auth.session}>
+            <PublicOnlyRoute session={auth.session}>
               <AuthPage
                 mode="login"
                 notice={auth.authNotice}
@@ -54,7 +54,7 @@ function AppRoutes() {
         <Route
           path="/signup"
           element={
-            <PublicOnlyRoute isAuthReady={auth.isAuthReady} session={auth.session}>
+            <PublicOnlyRoute session={auth.session}>
               <AuthPage
                 mode="signup"
                 notice={auth.authNotice}

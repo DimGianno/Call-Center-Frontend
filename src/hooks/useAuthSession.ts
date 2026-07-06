@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getCurrentSession,
@@ -22,6 +22,7 @@ function getRemainingSessionSeconds(session: AuthSession) {
 
 function useAuthSession() {
   const navigate = useNavigate();
+  const authMutationIdRef = useRef(0);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [authNotice, setAuthNotice] = useState("");
@@ -41,6 +42,7 @@ function useAuthSession() {
     let isMounted = true;
 
     async function loadSession() {
+      const loadSessionMutationId = authMutationIdRef.current;
       let currentSession: AuthSession | null;
 
       try {
@@ -53,10 +55,13 @@ function useAuthSession() {
         return;
       }
 
-      setSession(currentSession);
-      setRemainingSessionSeconds(
-        currentSession ? getRemainingSessionSeconds(currentSession) : SESSION_DURATION_SECONDS,
-      );
+      if (loadSessionMutationId === authMutationIdRef.current) {
+        setSession(currentSession);
+        setRemainingSessionSeconds(
+          currentSession ? getRemainingSessionSeconds(currentSession) : SESSION_DURATION_SECONDS,
+        );
+      }
+
       setIsAuthReady(true);
     }
 
@@ -94,6 +99,7 @@ function useAuthSession() {
   const handleLogin = useCallback(
     async (credentials: LoginCredentials) => {
       const nextSession = await loginUser(credentials);
+      authMutationIdRef.current += 1;
       setAuthNotice("");
       setRemainingSessionSeconds(getRemainingSessionSeconds(nextSession));
       setSession(nextSession);
@@ -105,6 +111,7 @@ function useAuthSession() {
   const handleSignup = useCallback(
     async (credentials: SignupCredentials) => {
       const nextSession = await signupUser(credentials);
+      authMutationIdRef.current += 1;
       setAuthNotice("");
       setRemainingSessionSeconds(getRemainingSessionSeconds(nextSession));
       setSession(nextSession);
@@ -115,6 +122,7 @@ function useAuthSession() {
 
   const handleLogout = useCallback(
     async (message = "") => {
+      authMutationIdRef.current += 1;
       await logoutUser();
       expireFrontendSession(message);
     },
