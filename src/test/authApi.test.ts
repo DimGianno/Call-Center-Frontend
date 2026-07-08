@@ -2,6 +2,34 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const API_URL = "https://api.example.test";
 const sessionExpiresAt = "2026-06-07T08:40:00.000Z";
+const emailVerification = {
+  verified: false,
+  verifiedAt: null,
+  requiredAt: "2026-06-14T08:40:00.000Z",
+  gracePeriodExpired: false,
+};
+
+function authUser(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "user-1",
+    name: "Dimitrios",
+    email: "user@example.com",
+    email_verified_at: null,
+    email_verification_required_at: "2026-06-14T08:40:00.000Z",
+    email_verification_sent_at: null,
+    ...overrides,
+  };
+}
+
+function authResponse(overrides: Record<string, unknown> = {}) {
+  return {
+    user: authUser(),
+    accessToken: "temporary-compatibility-token",
+    emailVerification,
+    sessionExpiresAt,
+    ...overrides,
+  };
+}
 
 function jsonResponse(data: unknown, status = 200): Response {
   return {
@@ -40,16 +68,13 @@ describe("authApi", () => {
     const fetchMock = vi.mocked(fetch);
 
     fetchMock.mockResolvedValueOnce(
-      jsonResponse({
-        user: {
-          id: "user-1",
-          name: "Dimitrios",
-          email: "user@example.com",
-          created_at: "2026-01-01T10:00:00.000Z",
-        },
-        accessToken: "temporary-compatibility-token",
-        sessionExpiresAt,
-      }),
+      jsonResponse(
+        authResponse({
+          user: authUser({
+            created_at: "2026-01-01T10:00:00.000Z",
+          }),
+        }),
+      ),
     );
 
     const session = await loginUser({
@@ -73,10 +98,14 @@ describe("authApi", () => {
         id: "user-1",
         name: "Dimitrios",
         email: "user@example.com",
+        email_verified_at: null,
+        email_verification_required_at: "2026-06-14T08:40:00.000Z",
+        email_verification_sent_at: null,
         created_at: "2026-01-01T10:00:00.000Z",
       },
       name: "Dimitrios",
       email: "user@example.com",
+      emailVerification,
       sessionExpiresAt,
     });
     expect(window.localStorage.getItem("call-center-demo-session")).toBeNull();
@@ -87,15 +116,15 @@ describe("authApi", () => {
     const fetchMock = vi.mocked(fetch);
 
     fetchMock.mockResolvedValueOnce(
-      jsonResponse({
-        user: {
-          id: "user-2",
-          name: "Alex Agent",
-          email: "alex@example.com",
-        },
-        accessToken: "temporary-compatibility-token",
-        sessionExpiresAt,
-      }),
+      jsonResponse(
+        authResponse({
+          user: authUser({
+            id: "user-2",
+            name: "Alex Agent",
+            email: "alex@example.com",
+          }),
+        }),
+      ),
     );
 
     await signupUser({
@@ -123,14 +152,11 @@ describe("authApi", () => {
     const fetchMock = vi.mocked(fetch);
 
     fetchMock.mockResolvedValueOnce(
-      jsonResponse({
-        user: {
-          id: "user-1",
-          name: "Dimitrios",
-          email: "user@example.com",
-        },
-        sessionExpiresAt,
-      }),
+      jsonResponse(
+        authResponse({
+          accessToken: undefined,
+        }),
+      ),
     );
 
     await expect(getCurrentSession()).resolves.toEqual(
@@ -211,6 +237,41 @@ describe("authApi", () => {
       }),
     );
     expect(window.localStorage.getItem("call-center-demo-session")).toBeNull();
+  });
+
+  it("calls the backend resend verification endpoint", async () => {
+    const { resendVerificationEmail } = await importAuthApi();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ message: "Sent" }));
+
+    await resendVerificationEmail();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_URL}/auth/resend-verification`,
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+      }),
+    );
+  });
+
+  it("calls the backend verify email endpoint with a token", async () => {
+    const { verifyEmailToken } = await importAuthApi();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ message: "Verified" }));
+
+    await verifyEmailToken("verification-token");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_URL}/auth/verify-email`,
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ token: "verification-token" }),
+      }),
+    );
   });
 
   it("surfaces backend auth errors", async () => {

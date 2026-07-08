@@ -19,6 +19,10 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function isNullableIsoDate(value: unknown): value is string | null {
+  return value === null || (typeof value === "string" && Number.isFinite(Date.parse(value)));
+}
+
 function isAuthUser(value: unknown): value is AuthResponse["user"] {
   if (!isRecord(value)) {
     return false;
@@ -29,7 +33,23 @@ function isAuthUser(value: unknown): value is AuthResponse["user"] {
     isNonEmptyString(value.name) &&
     typeof value.email === "string" &&
     isValidEmail(value.email) &&
+    isNullableIsoDate(value.email_verified_at) &&
+    isNullableIsoDate(value.email_verification_required_at) &&
+    isNullableIsoDate(value.email_verification_sent_at) &&
     (value.created_at === undefined || typeof value.created_at === "string")
+  );
+}
+
+function isEmailVerificationStatus(value: unknown): value is AuthResponse["emailVerification"] {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.verified === "boolean" &&
+    isNullableIsoDate(value.verifiedAt) &&
+    isNullableIsoDate(value.requiredAt) &&
+    typeof value.gracePeriodExpired === "boolean"
   );
 }
 
@@ -38,7 +58,11 @@ function isAuthResponse(value: unknown): value is AuthResponse {
     return false;
   }
 
-  return isAuthUser(value.user) && isValidSessionExpiresAt(value.sessionExpiresAt);
+  return (
+    isAuthUser(value.user) &&
+    isEmailVerificationStatus(value.emailVerification) &&
+    isValidSessionExpiresAt(value.sessionExpiresAt)
+  );
 }
 
 function isValidSessionExpiresAt(value: unknown): value is string {
@@ -54,6 +78,7 @@ export function buildSession(authResponse: AuthResponse): AuthSession {
     user: authResponse.user,
     name: authResponse.user.name,
     email: authResponse.user.email,
+    emailVerification: authResponse.emailVerification,
     sessionExpiresAt: authResponse.sessionExpiresAt,
   };
 }

@@ -3,10 +3,13 @@ import type { AuthResponse, AuthSession, LoginCredentials, SignupCredentials } f
 import { API_BASE_URL } from "./apiBaseUrl";
 
 interface AuthApiError extends Error {
+  code?: string;
   status?: number;
 }
 
-async function authRequest(path: string, body?: LoginCredentials | SignupCredentials) {
+export const EMAIL_VERIFICATION_REQUIRED_CODE = "EMAIL_VERIFICATION_REQUIRED";
+
+async function authRequest(path: string, body?: unknown) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     credentials: "include",
@@ -19,7 +22,7 @@ async function authRequest(path: string, body?: LoginCredentials | SignupCredent
   const data = await parseJsonResponse(response);
 
   if (!response.ok) {
-    throw createAuthApiError(getApiErrorMessage(data), response.status);
+    throw createAuthApiError(getApiErrorMessage(data), response.status, getApiErrorCode(data));
   }
 
   return data;
@@ -34,8 +37,9 @@ async function authSessionRequest(
   return buildSession(data as AuthResponse);
 }
 
-function createAuthApiError(message: string, status: number): AuthApiError {
+function createAuthApiError(message: string, status: number, code?: string): AuthApiError {
   const error = new Error(message) as AuthApiError;
+  error.code = code;
   error.status = status;
   return error;
 }
@@ -67,8 +71,28 @@ function getApiErrorMessage(data: unknown) {
   return "Something went wrong while contacting the API.";
 }
 
+function getApiErrorCode(data: unknown) {
+  if (data && typeof data === "object") {
+    const responseData = data as Record<string, unknown>;
+
+    if (typeof responseData.code === "string") {
+      return responseData.code;
+    }
+  }
+
+  return undefined;
+}
+
 function isUnauthorizedError(error: unknown) {
   return error instanceof Error && "status" in error && (error as AuthApiError).status === 401;
+}
+
+export function isEmailVerificationRequiredError(error: unknown) {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    (error as AuthApiError).code === EMAIL_VERIFICATION_REQUIRED_CODE
+  );
 }
 
 export async function getCurrentSession(): Promise<AuthSession | null> {
@@ -90,6 +114,14 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthSess
 
 export async function signupUser(credentials: SignupCredentials): Promise<AuthSession> {
   return authSessionRequest("/auth/signup", credentials);
+}
+
+export async function resendVerificationEmail() {
+  await authRequest("/auth/resend-verification");
+}
+
+export async function verifyEmailToken(token: string) {
+  await authRequest("/auth/verify-email", { token });
 }
 
 export async function logoutUser() {

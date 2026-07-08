@@ -2,9 +2,15 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { wakeBackend } from "../api/healthApi";
-import { getCurrentSession, loginUser, signupUser } from "../api/authApi";
+import {
+  getCurrentSession,
+  loginUser,
+  resendVerificationEmail,
+  signupUser,
+  verifyEmailToken,
+} from "../api/authApi";
 import App from "../App";
-import type { AuthSession, Call, TutorialState } from "../types";
+import type { AuthSession, AuthUser, Call, TutorialState } from "../types";
 import { resetBackendWakeupForTests } from "../hooks/useBackendWakeup";
 import {
   addCallNote,
@@ -40,7 +46,9 @@ vi.mock("../api/authApi", () => {
       window.localStorage.setItem("call-center-demo-session", JSON.stringify(refreshedSession));
       return refreshedSession;
     }),
+    resendVerificationEmail: vi.fn(),
     signupUser: vi.fn(),
+    verifyEmailToken: vi.fn(),
   };
 });
 
@@ -89,7 +97,9 @@ const unarchiveCallMock = vi.mocked(unarchiveCall);
 const wakeBackendMock = vi.mocked(wakeBackend);
 const getCurrentSessionMock = vi.mocked(getCurrentSession);
 const loginUserMock = vi.mocked(loginUser);
+const resendVerificationEmailMock = vi.mocked(resendVerificationEmail);
 const signupUserMock = vi.mocked(signupUser);
+const verifyEmailTokenMock = vi.mocked(verifyEmailToken);
 const subscribeToCallChangesMock = vi.mocked(subscribeToCallChanges);
 const fetchTutorialStateMock = vi.mocked(fetchTutorialState);
 const updateTutorialStateMock = vi.mocked(updateTutorialState);
@@ -109,6 +119,36 @@ function mockCallEventSubscription() {
 
 function createSessionExpiresAt(durationMs = 600_000) {
   return new Date(Date.now() + durationMs).toISOString();
+}
+
+function createAuthUser(overrides: Partial<AuthUser> = {}): AuthUser {
+  return {
+    id: "user-1",
+    name: "Test Agent",
+    email: "agent@example.com",
+    email_verified_at: null,
+    email_verification_required_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    email_verification_sent_at: null,
+    ...overrides,
+  };
+}
+
+function createAuthSession(overrides: Partial<AuthSession> = {}): AuthSession {
+  const user = overrides.user ?? createAuthUser();
+
+  return {
+    user,
+    name: user.name,
+    email: user.email,
+    emailVerification: {
+      verified: user.email_verified_at !== null,
+      verifiedAt: user.email_verified_at,
+      requiredAt: user.email_verification_required_at,
+      gracePeriodExpired: false,
+    },
+    sessionExpiresAt: createSessionExpiresAt(),
+    ...overrides,
+  };
 }
 
 function createTutorialState(overrides: Partial<TutorialState> = {}): TutorialState {
@@ -193,17 +233,7 @@ function createCalls(count: number) {
 function seedAuthenticatedSession(overrides: Partial<AuthSession> = {}) {
   window.localStorage.setItem(
     "call-center-demo-session",
-    JSON.stringify({
-      user: {
-        id: "user-1",
-        name: "Test Agent",
-        email: "agent@example.com",
-      },
-      name: "Test Agent",
-      email: "agent@example.com",
-      sessionExpiresAt: createSessionExpiresAt(),
-      ...overrides,
-    }),
+    JSON.stringify(createAuthSession(overrides)),
   );
 }
 
@@ -225,26 +255,26 @@ describe("App auth gate", () => {
     resetBackendWakeupForTests();
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
     mockTutorialState();
-    loginUserMock.mockResolvedValue({
-      user: {
-        id: "user-login",
-        name: "Stored Agent",
-        email: "stored@example.com",
-      },
-      name: "Stored Agent",
-      email: "stored@example.com",
-      sessionExpiresAt: createSessionExpiresAt(),
-    });
-    signupUserMock.mockResolvedValue({
-      user: {
-        id: "user-signup",
-        name: "Alex Agent",
-        email: "alex@example.com",
-      },
-      name: "Alex Agent",
-      email: "alex@example.com",
-      sessionExpiresAt: createSessionExpiresAt(),
-    });
+    resendVerificationEmailMock.mockResolvedValue(undefined);
+    verifyEmailTokenMock.mockResolvedValue(undefined);
+    loginUserMock.mockResolvedValue(
+      createAuthSession({
+        user: createAuthUser({
+          id: "user-login",
+          name: "Stored Agent",
+          email: "stored@example.com",
+        }),
+      }),
+    );
+    signupUserMock.mockResolvedValue(
+      createAuthSession({
+        user: createAuthUser({
+          id: "user-signup",
+          name: "Alex Agent",
+          email: "alex@example.com",
+        }),
+      }),
+    );
   });
 
   it("renders the home page at the root route", async () => {
@@ -525,16 +555,15 @@ describe("App auth gate", () => {
     expect(screen.getByRole("button", { name: "Just a moment..." })).toBeInTheDocument();
 
     await act(async () => {
-      resolveLogin({
-        user: {
-          id: "user-login",
-          name: "Stored Agent",
-          email: "stored@example.com",
-        },
-        name: "Stored Agent",
-        email: "stored@example.com",
-        sessionExpiresAt: createSessionExpiresAt(),
-      });
+      resolveLogin(
+        createAuthSession({
+          user: createAuthUser({
+            id: "user-login",
+            name: "Stored Agent",
+            email: "stored@example.com",
+          }),
+        }),
+      );
       await Promise.resolve();
     });
   });
@@ -546,6 +575,30 @@ describe("App auth gate", () => {
 
     expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/dashboard");
+  });
+
+  it("shows an email verification banner and resends verification email", async () => {
+    seedAuthenticatedSession();
+
+    renderApp("/dashboard");
+
+    expect(await screen.findByText("Verify your email address")).toBeInTheDocument();
+    expect(
+      screen.getByText(/We sent a verification link to agent@example.com/i),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Resend email" }));
+
+    expect(resendVerificationEmailMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Verification email sent. Check your inbox.")).toBeInTheDocument();
+  });
+
+  it("verifies an email token from the verification page", async () => {
+    renderApp("/verify-email?token=email-token");
+
+    expect(await screen.findByText(/Your email has been verified/i)).toBeInTheDocument();
+    expect(verifyEmailTokenMock).toHaveBeenCalledWith("email-token");
+    expect(screen.getByRole("link", { name: "Go to login" })).toHaveAttribute("href", "/login");
   });
 
   it("shows validation and login errors without entering the dashboard", async () => {
@@ -689,6 +742,8 @@ describe("App API-backed user flows", () => {
     mockCallEventSubscription();
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
     mockTutorialState();
+    resendVerificationEmailMock.mockResolvedValue(undefined);
+    verifyEmailTokenMock.mockResolvedValue(undefined);
   });
 
   it("loads calls from the API and renders the active call feed", async () => {

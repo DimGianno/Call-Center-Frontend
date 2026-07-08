@@ -2,10 +2,11 @@
 
 A teaching-friendly React frontend for managing call-center records.
 
-The app supports signup, login, backend-owned HttpOnly cookie sessions, server session refresh,
-active and archived call feeds, call details, notes, archive/unarchive/delete actions, seeded sample
-data, reset sample data, search, filtering, pagination, light/dark themes, confirmation dialogs,
-toast feedback, same-account realtime call sync, and a guided tutorial for new users.
+The app supports signup, login, email verification, backend-owned HttpOnly cookie sessions, server
+session refresh, active and archived call feeds, call details, notes, archive/unarchive/delete
+actions, seeded sample data, reset sample data, search, filtering, pagination, light/dark themes,
+confirmation dialogs, toast feedback, same-account realtime call sync, and a guided tutorial for new
+users.
 
 This README is intentionally detailed. It is meant to help someone open the project, understand the
 moving pieces, and trace how a user action travels through routes, hooks, API modules, utilities,
@@ -17,6 +18,7 @@ and UI components.
 
 - [Tech Stack](#tech-stack)
 - [Project Setup](#project-setup)
+- [Deployment Domains And Env](#deployment-domains-and-env)
 - [Scripts](#scripts)
 - [Current Feature Set](#current-feature-set)
 - [How The App Starts](#how-the-app-starts)
@@ -69,7 +71,7 @@ npm install
 Create a `.env` file in the project root:
 
 ```env
-VITE_API_URL=<backend-api-origin>
+VITE_API_URL=http://localhost:3000
 ```
 
 During local development, `VITE_API_URL` can point directly at the backend, for example
@@ -108,6 +110,38 @@ below. Frontend requests that depend on authentication send cookies with `creden
 
 ---
 
+## Deployment Domains And Env
+
+Live deployments use these custom domains:
+
+| Environment | Frontend                                  | Backend                                       |
+| ----------- | ----------------------------------------- | --------------------------------------------- |
+| Production  | https://call-center.dimgianno.com         | https://api.call-center.dimgianno.com         |
+| Staging     | https://call-center-staging.dimgianno.com | https://api-staging.call-center.dimgianno.com |
+
+Vercel should proxy frontend `/api/*` requests to the matching Render backend with
+`BACKEND_PROXY_URL`.
+
+Production Vercel environment:
+
+```env
+BACKEND_PROXY_URL=https://api.call-center.dimgianno.com
+```
+
+Staging or preview Vercel environment:
+
+```env
+BACKEND_PROXY_URL=https://api-staging.call-center.dimgianno.com
+```
+
+Do not include a trailing slash in `BACKEND_PROXY_URL`. After changing Vercel environment
+variables, redeploy the affected environment so `vercel.json` uses the new value.
+
+Deployed production builds always call `/api/*` on the current frontend origin. `VITE_API_URL` is
+only needed for local development, and `VITE_API_BASE_URL` is not used by this app.
+
+---
+
 ## Scripts
 
 | Script                 | What it does                                                     |
@@ -133,6 +167,9 @@ below. Frontend requests that depend on authentication send cookies with `creden
 
 - Users can sign up and log in from the auth screens.
 - Login and signup submit to the backend, which sets an HttpOnly `session` cookie.
+- Signup sends an email verification link, while allowing a 7-day grace period.
+- Unverified dashboard sessions show a verification banner with a resend action.
+- `/verify-email?token=...` verifies email tokens and shows success or expired-link states.
 - The frontend does not store or depend on an access token in `localStorage`.
 - Auth responses still include `accessToken` for temporary backend compatibility, but frontend state
   is built from `user` and `sessionExpiresAt`.
@@ -260,13 +297,14 @@ The important parts are:
 
 The route tree is:
 
-| Path         | Route behavior                                                          |
-| ------------ | ----------------------------------------------------------------------- |
-| `/`          | Home page.                                                              |
-| `/login`     | Public-only login page. Redirects authenticated users to `/dashboard`.  |
-| `/signup`    | Public-only signup page. Redirects authenticated users to `/dashboard`. |
-| `/dashboard` | Protected dashboard. Redirects unauthenticated users to `/login`.       |
-| `*`          | Redirects unknown routes to `/`.                                        |
+| Path            | Route behavior                                                          |
+| --------------- | ----------------------------------------------------------------------- |
+| `/`             | Home page.                                                              |
+| `/login`        | Public-only login page. Redirects authenticated users to `/dashboard`.  |
+| `/signup`       | Public-only signup page. Redirects authenticated users to `/dashboard`. |
+| `/verify-email` | Public email verification result page.                                  |
+| `/dashboard`    | Protected dashboard. Redirects unauthenticated users to `/login`.       |
+| `*`             | Redirects unknown routes to `/`.                                        |
 
 `AppRoutes` owns the current theme and uses `useAuthSession()` to get the current auth state and auth
 handlers. It passes the minimum required props down into pages.
@@ -304,6 +342,7 @@ interface AuthSession {
   user: AuthUser;
   name: string;
   email: string;
+  emailVerification: EmailVerificationStatus;
   sessionExpiresAt: string;
 }
 ```
@@ -370,13 +409,15 @@ hosted on Render.
 
 Implemented in `src/api/authApi.ts`.
 
-| Frontend function         | HTTP request         | Purpose                                           |
-| ------------------------- | -------------------- | ------------------------------------------------- |
-| `loginUser(credentials)`  | `POST /auth/login`   | Logs in and receives user/session expiry.         |
-| `signupUser(credentials)` | `POST /auth/signup`  | Creates account and receives user/session expiry. |
-| `refreshSession()`        | `POST /auth/refresh` | Refreshes a valid cookie session.                 |
-| `getCurrentSession()`     | `POST /auth/refresh` | Startup helper that returns `null` on `401`.      |
-| `logoutUser()`            | `POST /auth/logout`  | Clears the backend session and frontend state.    |
+| Frontend function           | HTTP request                     | Purpose                                           |
+| --------------------------- | -------------------------------- | ------------------------------------------------- |
+| `loginUser(credentials)`    | `POST /auth/login`               | Logs in and receives user/session expiry.         |
+| `signupUser(credentials)`   | `POST /auth/signup`              | Creates account and receives user/session expiry. |
+| `refreshSession()`          | `POST /auth/refresh`             | Refreshes a valid cookie session.                 |
+| `getCurrentSession()`       | `POST /auth/refresh`             | Startup helper that returns `null` on `401`.      |
+| `resendVerificationEmail()` | `POST /auth/resend-verification` | Requests another verification email.              |
+| `verifyEmailToken(token)`   | `POST /auth/verify-email`        | Verifies a link token from `/verify-email`.       |
+| `logoutUser()`              | `POST /auth/logout`              | Clears the backend session and frontend state.    |
 
 Auth responses are parsed and validated before they become frontend session state.
 
@@ -668,7 +709,8 @@ This keeps the tutorial package-free and avoids a third-party walkthrough depend
 │   ├── pages
 │   │   ├── AuthPage.tsx
 │   │   ├── DashboardPage.tsx
-│   │   └── HomePage.tsx
+│   │   ├── HomePage.tsx
+│   │   └── VerifyEmailPage.tsx
 │   ├── routes
 │   │   ├── ProtectedRoute.tsx
 │   │   └── PublicOnlyRoute.tsx
@@ -718,11 +760,12 @@ This keeps the tutorial package-free and avoids a third-party walkthrough depend
 
 ### Pages
 
-| File                | Responsibility                                                                                              |
-| ------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `HomePage.tsx`      | Public landing/home screen with navigation to auth or dashboard depending on session state.                 |
-| `AuthPage.tsx`      | Chooses login or signup mode and renders `AuthScreen`.                                                      |
-| `DashboardPage.tsx` | Composes dashboard hooks and UI: stats, feed, details, account drawer, tutorial, toasts, and confirmations. |
+| File                  | Responsibility                                                                                              |
+| --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `HomePage.tsx`        | Public landing/home screen with navigation to auth or dashboard depending on session state.                 |
+| `AuthPage.tsx`        | Chooses login or signup mode and renders `AuthScreen`.                                                      |
+| `DashboardPage.tsx`   | Composes dashboard hooks and UI: stats, feed, details, account drawer, tutorial, toasts, and confirmations. |
+| `VerifyEmailPage.tsx` | Verifies email tokens from links and shows success or invalid/expired states.                               |
 
 ### Routes
 
@@ -753,19 +796,20 @@ This keeps the tutorial package-free and avoids a third-party walkthrough depend
 
 ### Components
 
-| File                     | Responsibility                                                                                                     |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `AuthScreen.tsx`         | Login/signup form, inline email/password validation, loading messages, and submit handling.                        |
-| `AccountDrawer.tsx`      | User drawer, theme toggle, foldable tutorial section, tutorial status badges, and logout.                          |
-| `StatsCards.tsx`         | Summary cards derived from the current call data.                                                                  |
-| `CallFeed.tsx`           | Search, filters, view toggle, bulk actions, pagination, empty states, seed/reset actions, and call list rendering. |
-| `CallItem.tsx`           | One call row/card with route, type, time, duration, and archive/unarchive action.                                  |
-| `CallDetails.tsx`        | Details modal, notes list, note form, archive/unarchive, and delete.                                               |
-| `FilterModal.tsx`        | Foldable filter groups, date-range calendar, duration sliders, reset/cancel/confirm buttons.                       |
-| `PaginationControls.tsx` | Previous/next controls and page count text.                                                                        |
-| `ConfirmDialog.tsx`      | Reusable confirmation modal for data-changing actions.                                                             |
-| `Toast.tsx`              | Toast message presentation.                                                                                        |
-| `TutorialOverlay.tsx`    | Welcome dialog, tutorial step panel, click requirements, progress dots, and active target selection.               |
+| File                          | Responsibility                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `AuthScreen.tsx`              | Login/signup form, inline email/password validation, loading messages, and submit handling.                        |
+| `EmailVerificationBanner.tsx` | Dashboard notice for unverified users with verification deadline and resend action.                                |
+| `AccountDrawer.tsx`           | User drawer, theme toggle, foldable tutorial section, tutorial status badges, and logout.                          |
+| `StatsCards.tsx`              | Summary cards derived from the current call data.                                                                  |
+| `CallFeed.tsx`                | Search, filters, view toggle, bulk actions, pagination, empty states, seed/reset actions, and call list rendering. |
+| `CallItem.tsx`                | One call row/card with route, type, time, duration, and archive/unarchive action.                                  |
+| `CallDetails.tsx`             | Details modal, notes list, note form, archive/unarchive, and delete.                                               |
+| `FilterModal.tsx`             | Foldable filter groups, date-range calendar, duration sliders, reset/cancel/confirm buttons.                       |
+| `PaginationControls.tsx`      | Previous/next controls and page count text.                                                                        |
+| `ConfirmDialog.tsx`           | Reusable confirmation modal for data-changing actions.                                                             |
+| `Toast.tsx`                   | Toast message presentation.                                                                                        |
+| `TutorialOverlay.tsx`         | Welcome dialog, tutorial step panel, click requirements, progress dots, and active target selection.               |
 
 ---
 

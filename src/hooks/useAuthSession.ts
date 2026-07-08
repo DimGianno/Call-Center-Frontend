@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getCurrentSession,
+  isEmailVerificationRequiredError,
   loginUser,
   logoutUser,
   refreshSession,
@@ -47,7 +48,11 @@ function useAuthSession() {
 
       try {
         currentSession = await getCurrentSession();
-      } catch {
+      } catch (error) {
+        if (isEmailVerificationRequiredError(error)) {
+          setAuthNotice("Please verify your email address to continue.");
+        }
+
         currentSession = null;
       }
 
@@ -154,9 +159,18 @@ function useAuthSession() {
       return;
     }
 
-    const refreshedSession = await refreshSession();
-    setSession(refreshedSession);
-    setRemainingSessionSeconds(getRemainingSessionSeconds(refreshedSession));
+    try {
+      const refreshedSession = await refreshSession();
+      setSession(refreshedSession);
+      setRemainingSessionSeconds(getRemainingSessionSeconds(refreshedSession));
+    } catch (error) {
+      if (isEmailVerificationRequiredError(error)) {
+        expireFrontendSession("Please verify your email address to continue.");
+        return;
+      }
+
+      throw error;
+    }
   }
 
   return {

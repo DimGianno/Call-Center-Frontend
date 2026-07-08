@@ -4,6 +4,7 @@ import type { Theme } from "./types";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import HomePage from "./pages/HomePage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 import useAuthSession from "./hooks/useAuthSession";
@@ -65,6 +66,10 @@ function AppRoutes() {
               />
             </PublicOnlyRoute>
           }
+        />
+        <Route
+          path="/verify-email"
+          element={<VerifyEmailPage onToggleTheme={handleToggleTheme} theme={theme} />}
         />
         <Route
           path="/dashboard"

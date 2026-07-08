@@ -15,19 +15,31 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  email_verified_at: string | null;
+  email_verification_required_at: string | null;
+  email_verification_sent_at: string | null;
   created_at?: string;
+}
+
+export interface EmailVerificationStatus {
+  verified: boolean;
+  verifiedAt: string | null;
+  requiredAt: string | null;
+  gracePeriodExpired: boolean;
 }
 
 export interface AuthSession {
   user: AuthUser;
   name: string;
   email: string;
+  emailVerification: EmailVerificationStatus;
   sessionExpiresAt: string;
 }
 
 export interface AuthResponse {
   user: AuthUser;
   accessToken?: string;
+  emailVerification: EmailVerificationStatus;
   sessionExpiresAt: string;
 }
 

@@ -4,6 +4,7 @@ import AccountDrawer from "../components/AccountDrawer";
 import CallDetails from "../components/CallDetails";
 import CallFeed from "../components/CallFeed";
 import ConfirmDialog from "../components/ConfirmDialog";
+import EmailVerificationBanner from "../components/EmailVerificationBanner";
 import StatsCards from "../components/StatsCards";
 import Toast from "../components/Toast";
 import { TutorialOverlay, TutorialWelcomeDialog } from "../components/TutorialOverlay";
@@ -143,6 +144,12 @@ function DashboardPage({
             <p>{calls.errorMessage}</p>
           </div>
         )}
+
+        <EmailVerificationBanner
+          email={session.email}
+          emailVerification={session.emailVerification}
+          showToast={showToast}
+        />
 
         {calls.isLoading ? (
           <div className="empty-state">
