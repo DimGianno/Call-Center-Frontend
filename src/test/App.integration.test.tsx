@@ -1,9 +1,17 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { loginUser, signupUser } from "../api/authApi";
+import { wakeBackend } from "../api/healthApi";
+import {
+  getCurrentSession,
+  loginUser,
+  resendVerificationEmail,
+  signupUser,
+  verifyEmailToken,
+} from "../api/authApi";
 import App from "../App";
-import type { AuthSession, Call } from "../types";
+import type { AuthSession, AuthUser, Call, TutorialState } from "../types";
+import { resetBackendWakeupForTests } from "../hooks/useBackendWakeup";
 import {
   addCallNote,
   archiveAllCalls,
@@ -15,6 +23,8 @@ import {
   unarchiveAllCalls,
   unarchiveCall,
 } from "../api/callsApi";
+import { subscribeToCallChanges } from "../api/callEventsApi";
+import { fetchTutorialState, updateTutorialState } from "../api/tutorialApi";
 
 vi.mock("../api/authApi", () => {
   return {
@@ -26,12 +36,25 @@ vi.mock("../api/authApi", () => {
     logoutUser: vi.fn(async () => {
       window.localStorage.removeItem("call-center-demo-session");
     }),
-    refreshSession: vi.fn(async (session: AuthSession) => {
-      const refreshedSession = { ...session, startedAt: Date.now() };
+    refreshSession: vi.fn(async () => {
+      const storedSession = window.localStorage.getItem("call-center-demo-session");
+      const session = storedSession ? (JSON.parse(storedSession) as AuthSession) : null;
+      const refreshedSession = {
+        ...(session as AuthSession),
+        sessionExpiresAt: new Date(Date.now() + 600_000).toISOString(),
+      };
       window.localStorage.setItem("call-center-demo-session", JSON.stringify(refreshedSession));
       return refreshedSession;
     }),
+    resendVerificationEmail: vi.fn(),
     signupUser: vi.fn(),
+    verifyEmailToken: vi.fn(),
+  };
+});
+
+vi.mock("../api/healthApi", () => {
+  return {
+    wakeBackend: vi.fn(async () => {}),
   };
 });
 
@@ -49,6 +72,19 @@ vi.mock("../api/callsApi", () => {
   };
 });
 
+vi.mock("../api/callEventsApi", () => {
+  return {
+    subscribeToCallChanges: vi.fn(),
+  };
+});
+
+vi.mock("../api/tutorialApi", () => {
+  return {
+    fetchTutorialState: vi.fn(),
+    updateTutorialState: vi.fn(),
+  };
+});
+
 const addCallNoteMock = vi.mocked(addCallNote);
 const archiveAllCallsMock = vi.mocked(archiveAllCalls);
 const archiveCallMock = vi.mocked(archiveCall);
@@ -58,8 +94,88 @@ const fetchCallMock = vi.mocked(fetchCall);
 const resetCallsMock = vi.mocked(resetCalls);
 const unarchiveAllCallsMock = vi.mocked(unarchiveAllCalls);
 const unarchiveCallMock = vi.mocked(unarchiveCall);
+const wakeBackendMock = vi.mocked(wakeBackend);
+const getCurrentSessionMock = vi.mocked(getCurrentSession);
 const loginUserMock = vi.mocked(loginUser);
+const resendVerificationEmailMock = vi.mocked(resendVerificationEmail);
 const signupUserMock = vi.mocked(signupUser);
+const verifyEmailTokenMock = vi.mocked(verifyEmailToken);
+const subscribeToCallChangesMock = vi.mocked(subscribeToCallChanges);
+const fetchTutorialStateMock = vi.mocked(fetchTutorialState);
+const updateTutorialStateMock = vi.mocked(updateTutorialState);
+
+type CallChangeHandler = Parameters<typeof subscribeToCallChanges>[0];
+
+let emitCallChange: CallChangeHandler;
+let unsubscribeCallChangesMock: () => void;
+
+function mockCallEventSubscription() {
+  unsubscribeCallChangesMock = vi.fn();
+  subscribeToCallChangesMock.mockImplementation((handler) => {
+    emitCallChange = handler;
+    return unsubscribeCallChangesMock;
+  });
+}
+
+function createSessionExpiresAt(durationMs = 600_000) {
+  return new Date(Date.now() + durationMs).toISOString();
+}
+
+function createAuthUser(overrides: Partial<AuthUser> = {}): AuthUser {
+  return {
+    id: "user-1",
+    name: "Test Agent",
+    email: "agent@example.com",
+    email_verified_at: null,
+    email_verification_required_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    email_verification_sent_at: null,
+    ...overrides,
+  };
+}
+
+function createAuthSession(overrides: Partial<AuthSession> = {}): AuthSession {
+  const user = overrides.user ?? createAuthUser();
+
+  return {
+    user,
+    name: user.name,
+    email: user.email,
+    emailVerification: {
+      verified: user.email_verified_at !== null,
+      verifiedAt: user.email_verified_at,
+      requiredAt: user.email_verification_required_at,
+      gracePeriodExpired: false,
+    },
+    sessionExpiresAt: createSessionExpiresAt(),
+    ...overrides,
+  };
+}
+
+function createTutorialState(overrides: Partial<TutorialState> = {}): TutorialState {
+  return {
+    version: 1,
+    hasSeenWelcome: true,
+    completedAt: "2026-07-01T10:00:00.000Z",
+    skippedAt: null,
+    completedTopics: ["seeding", "ui", "call-feed", "call-item"],
+    ...overrides,
+  };
+}
+
+function mockTutorialState(overrides: Partial<TutorialState> = {}) {
+  const tutorialState = createTutorialState(overrides);
+
+  fetchTutorialStateMock.mockResolvedValue(tutorialState);
+  updateTutorialStateMock.mockImplementation(async (update) => {
+    return {
+      ...tutorialState,
+      ...update,
+      completedTopics: update.completedTopics ?? tutorialState.completedTopics,
+    };
+  });
+
+  return tutorialState;
+}
 
 const activeCall: Call = {
   id: "call-1",
@@ -117,18 +233,7 @@ function createCalls(count: number) {
 function seedAuthenticatedSession(overrides: Partial<AuthSession> = {}) {
   window.localStorage.setItem(
     "call-center-demo-session",
-    JSON.stringify({
-      user: {
-        id: "user-1",
-        name: "Test Agent",
-        email: "agent@example.com",
-      },
-      accessToken: "test-token",
-      name: "Test Agent",
-      email: "agent@example.com",
-      startedAt: Date.now(),
-      ...overrides,
-    }),
+    JSON.stringify(createAuthSession(overrides)),
   );
 }
 
@@ -146,29 +251,30 @@ describe("App auth gate", () => {
   beforeEach(() => {
     window.localStorage.clear();
     vi.clearAllMocks();
+    mockCallEventSubscription();
+    resetBackendWakeupForTests();
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
-    loginUserMock.mockResolvedValue({
-      user: {
-        id: "user-login",
-        name: "Stored Agent",
-        email: "stored@example.com",
-      },
-      accessToken: "login-token",
-      name: "Stored Agent",
-      email: "stored@example.com",
-      startedAt: Date.now(),
-    });
-    signupUserMock.mockResolvedValue({
-      user: {
-        id: "user-signup",
-        name: "Alex Agent",
-        email: "alex@example.com",
-      },
-      accessToken: "signup-token",
-      name: "Alex Agent",
-      email: "alex@example.com",
-      startedAt: Date.now(),
-    });
+    mockTutorialState();
+    resendVerificationEmailMock.mockResolvedValue(undefined);
+    verifyEmailTokenMock.mockResolvedValue(undefined);
+    loginUserMock.mockResolvedValue(
+      createAuthSession({
+        user: createAuthUser({
+          id: "user-login",
+          name: "Stored Agent",
+          email: "stored@example.com",
+        }),
+      }),
+    );
+    signupUserMock.mockResolvedValue(
+      createAuthSession({
+        user: createAuthUser({
+          id: "user-signup",
+          name: "Alex Agent",
+          email: "alex@example.com",
+        }),
+      }),
+    );
   });
 
   it("renders the home page at the root route", async () => {
@@ -176,21 +282,26 @@ describe("App auth gate", () => {
 
     expect(screen.getByRole("heading", { name: "Call Center Dashboard" })).toBeInTheDocument();
     expect(screen.getByText(/Track active and archived calls/i)).toBeInTheDocument();
+    await waitFor(() => expect(wakeBackendMock).toHaveBeenCalledTimes(1));
     expect(fetchAllCalls).not.toHaveBeenCalled();
   });
 
   it("navigates from the home page to login and signup routes", async () => {
     renderApp("/");
 
+    await waitFor(() => expect(wakeBackendMock).toHaveBeenCalledTimes(1));
+
     await userEvent.click(screen.getAllByRole("link", { name: "Login" })[0]);
 
     expect(window.location.pathname).toBe("/login");
     expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(wakeBackendMock).toHaveBeenCalledTimes(1);
 
     await userEvent.click(screen.getByRole("tab", { name: "Sign up" }));
 
     expect(window.location.pathname).toBe("/signup");
     expect(screen.getByLabelText("Name")).toBeInTheDocument();
+    expect(wakeBackendMock).toHaveBeenCalledTimes(1);
   });
 
   it("redirects unauthenticated dashboard visits to login without fetching calls", async () => {
@@ -206,7 +317,161 @@ describe("App auth gate", () => {
 
     expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Login" })).toHaveAttribute("aria-selected", "true");
+    await waitFor(() => expect(wakeBackendMock).toHaveBeenCalledTimes(1));
     expect(fetchAllCalls).not.toHaveBeenCalled();
+  });
+
+  it("keeps login usable while the startup session check is still pending", async () => {
+    let resolveStartupSession: (session: AuthSession | null) => void = () => {};
+    getCurrentSessionMock.mockImplementationOnce(
+      () =>
+        new Promise<AuthSession | null>((resolve) => {
+          resolveStartupSession = resolve;
+        }),
+    );
+
+    renderApp("/login");
+
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toBeEnabled();
+    expect(screen.getByLabelText("Password")).toBeEnabled();
+    expect(screen.queryByText("Loading session...")).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveStartupSession(null);
+      await Promise.resolve();
+    });
+  });
+
+  it("does not let a late startup session check overwrite a successful login", async () => {
+    let resolveStartupSession: (session: AuthSession | null) => void = () => {};
+    getCurrentSessionMock.mockImplementationOnce(
+      () =>
+        new Promise<AuthSession | null>((resolve) => {
+          resolveStartupSession = resolve;
+        }),
+    );
+
+    renderApp("/login");
+
+    await userEvent.type(await screen.findByLabelText("Email"), "stored@example.com");
+    await userEvent.type(screen.getByLabelText("Password"), "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(loginUser).toHaveBeenCalledWith({
+      email: "stored@example.com",
+      password: "password123",
+    });
+
+    await act(async () => {
+      resolveStartupSession(null);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/dashboard");
+  });
+
+  it("wakes the backend on the signup route", async () => {
+    renderApp("/signup");
+
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Sign up" })).toHaveAttribute("aria-selected", "true");
+    await waitFor(() => expect(wakeBackendMock).toHaveBeenCalledTimes(1));
+    expect(fetchAllCalls).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["login", "/login"],
+    ["signup", "/signup"],
+  ])("shows live email guidance on the %s page", async (_mode, route) => {
+    renderApp(route);
+
+    const emailInput = await screen.findByLabelText("Email");
+    const emailGuidance = document.getElementById("auth-email-guidance");
+
+    expect(emailInput).toHaveAttribute("aria-invalid", "false");
+    expect(emailInput).not.toHaveAttribute("aria-describedby");
+    expect(emailGuidance).not.toHaveClass("is-visible");
+    expect(emailGuidance).toHaveAttribute("aria-hidden", "true");
+
+    await userEvent.type(emailInput, "agent");
+
+    expect(
+      screen.getByText("Use one @ and a complete address, such as name@example.com."),
+    ).toBeInTheDocument();
+    expect(emailInput).toHaveAttribute("aria-invalid", "true");
+    expect(emailInput).toHaveAttribute("aria-describedby", "auth-email-guidance");
+    expect(emailGuidance).toHaveClass("is-visible");
+    expect(emailGuidance).toHaveAttribute("aria-hidden", "false");
+
+    await userEvent.type(emailInput, "@example");
+
+    expect(
+      screen.getByText("Add a complete domain after @, such as example.com."),
+    ).toBeInTheDocument();
+
+    await userEvent.type(emailInput, ".com");
+
+    expect(emailInput).toHaveAttribute("aria-invalid", "false");
+    expect(emailInput).not.toHaveAttribute("aria-describedby");
+    expect(emailGuidance).not.toHaveClass("is-visible");
+    expect(emailGuidance).toHaveAttribute("aria-hidden", "true");
+
+    const passwordInput = screen.getByLabelText("Password");
+    const passwordGuidance = document.getElementById("auth-password-guidance");
+
+    await userEvent.type(passwordInput, "short");
+
+    expect(screen.getByText("Password must be at least 8 characters.")).toBeInTheDocument();
+    expect(passwordInput).toHaveAttribute("aria-invalid", "true");
+    expect(passwordInput).toHaveAttribute("aria-describedby", "auth-password-guidance");
+    expect(passwordGuidance).toHaveClass("is-visible");
+    expect(passwordGuidance).toHaveAttribute("aria-hidden", "false");
+
+    await userEvent.type(passwordInput, "123");
+
+    expect(passwordInput).toHaveAttribute("aria-invalid", "false");
+    expect(passwordInput).not.toHaveAttribute("aria-describedby");
+    expect(passwordGuidance).not.toHaveClass("is-visible");
+    expect(passwordGuidance).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("shows inline email and password guidance after an empty login submission", async () => {
+    renderApp("/login");
+
+    await screen.findByRole("heading", { name: "Dashboard Access" });
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(screen.getByText("Email is required.")).toBeInTheDocument();
+    expect(screen.getByText("Password must be at least 8 characters.")).toBeInTheDocument();
+    expect(loginUserMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks malformed email submission and submits a trimmed valid email", async () => {
+    renderApp("/login");
+
+    const emailInput = await screen.findByLabelText("Email");
+    const passwordInput = screen.getByLabelText("Password");
+
+    await userEvent.type(emailInput, "user..name@example.com");
+    await userEvent.type(passwordInput, "password123");
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(loginUserMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        "The part before @ cannot start or end with a dot or contain consecutive dots.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(emailInput, { target: { value: "  stored@example.com  " } });
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    expect(loginUserMock).toHaveBeenCalledWith({
+      email: "stored@example.com",
+      password: "password123",
+    });
   });
 
   it("signs up through the backend auth API, enters the dashboard, and starts the timer", async () => {
@@ -250,6 +515,59 @@ describe("App auth gate", () => {
     expect(screen.getByRole("dialog", { name: "Stored Agent" })).toBeInTheDocument();
   });
 
+  it("shows rotating loading feedback while waiting for login", async () => {
+    renderApp("/login");
+
+    const emailInput = await screen.findByLabelText("Email");
+    let resolveLogin: (session: AuthSession) => void = () => {};
+    loginUserMock.mockImplementationOnce(
+      () =>
+        new Promise<AuthSession>((resolve) => {
+          resolveLogin = resolve;
+        }),
+    );
+    vi.useFakeTimers();
+
+    fireEvent.change(emailInput, {
+      target: { value: "stored@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    const submitButton = screen.getByRole("button", { name: "Waking up the server..." });
+
+    expect(submitButton).toBeDisabled();
+    expect(submitButton).toHaveAttribute("aria-busy", "true");
+    expect(submitButton.querySelector(".auth-loading-spinner")).not.toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(2600);
+    });
+
+    expect(screen.getByRole("button", { name: "Almost there..." })).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(2600);
+    });
+
+    expect(screen.getByRole("button", { name: "Just a moment..." })).toBeInTheDocument();
+
+    await act(async () => {
+      resolveLogin(
+        createAuthSession({
+          user: createAuthUser({
+            id: "user-login",
+            name: "Stored Agent",
+            email: "stored@example.com",
+          }),
+        }),
+      );
+      await Promise.resolve();
+    });
+  });
+
   it("redirects logged-in users away from public auth routes", async () => {
     seedAuthenticatedSession();
 
@@ -257,6 +575,30 @@ describe("App auth gate", () => {
 
     expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/dashboard");
+  });
+
+  it("shows an email verification banner and resends verification email", async () => {
+    seedAuthenticatedSession();
+
+    renderApp("/dashboard");
+
+    expect(await screen.findByText("Verify your email address")).toBeInTheDocument();
+    expect(
+      screen.getByText(/We sent a verification link to agent@example.com/i),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Resend email" }));
+
+    expect(resendVerificationEmailMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Verification email sent. Check your inbox.")).toBeInTheDocument();
+  });
+
+  it("verifies an email token from the verification page", async () => {
+    renderApp("/verify-email?token=email-token");
+
+    expect(await screen.findByText(/Your email has been verified/i)).toBeInTheDocument();
+    expect(verifyEmailTokenMock).toHaveBeenCalledWith("email-token");
+    expect(screen.getByRole("link", { name: "Go to login" })).toHaveAttribute("href", "/login");
   });
 
   it("shows validation and login errors without entering the dashboard", async () => {
@@ -374,6 +716,22 @@ describe("App auth gate", () => {
     expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/login");
   });
+
+  it("treats server-side session expiry as a logout", async () => {
+    seedAuthenticatedSession();
+
+    renderApp("/dashboard");
+
+    expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new Event("call-center-auth-session-expired"));
+    });
+
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(screen.getByText("Your session expired. Please log in again.")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/login");
+  });
 });
 
 describe("App API-backed user flows", () => {
@@ -381,7 +739,11 @@ describe("App API-backed user flows", () => {
     window.localStorage.clear();
     seedAuthenticatedSession();
     vi.clearAllMocks();
+    mockCallEventSubscription();
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
+    mockTutorialState();
+    resendVerificationEmailMock.mockResolvedValue(undefined);
+    verifyEmailTokenMock.mockResolvedValue(undefined);
   });
 
   it("loads calls from the API and renders the active call feed", async () => {
@@ -394,13 +756,348 @@ describe("App API-backed user flows", () => {
     expect(screen.getByRole("button", { name: "View archived calls" })).toBeInTheDocument();
   });
 
+  it("refreshes calls from realtime events while preserving archived view, search, and filters", async () => {
+    const matchingArchivedCall = createCall({
+      id: "archived-inbound",
+      direction: "inbound",
+      from: "+1 555-7777",
+      is_archived: true,
+    });
+    const filteredArchivedCall = createCall({
+      id: "archived-outbound",
+      direction: "outbound",
+      from: "+1 555-8888",
+      is_archived: true,
+    });
+
+    fetchAllCallsMock
+      .mockResolvedValueOnce([activeCall, matchingArchivedCall, filteredArchivedCall])
+      .mockResolvedValueOnce([
+        activeCall,
+        {
+          ...matchingArchivedCall,
+          duration: 90,
+        },
+        filteredArchivedCall,
+      ]);
+
+    renderApp();
+
+    await userEvent.click(await screen.findByRole("button", { name: "View archived calls" }));
+    await userEvent.type(screen.getByLabelText("Search calls by phone number"), "555");
+    await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Direction" }));
+    await userEvent.click(screen.getByLabelText("Outbound"));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm filters" }));
+
+    expect(screen.getByText("+1 555-7777")).toBeInTheDocument();
+    expect(screen.queryByText("+1 555-8888")).not.toBeInTheDocument();
+
+    await act(async () => {
+      emitCallChange({ version: 1, action: "archive", callId: "call-1" });
+    });
+
+    await waitFor(() => {
+      expect(fetchAllCallsMock).toHaveBeenCalledTimes(2);
+    });
+
+    expect(screen.getByRole("button", { name: "View active calls" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Search calls by phone number")).toHaveValue("555");
+    expect(screen.getByRole("button", { name: "Open filters" })).toHaveTextContent("Filters (1)");
+    expect(screen.getByText("+1 555-7777")).toBeInTheDocument();
+    expect(screen.queryByText("+1 555-8888")).not.toBeInTheDocument();
+  });
+
+  it("preserves the current page when realtime updates still have that page", async () => {
+    const paginatedCalls = createCalls(12);
+
+    fetchAllCallsMock.mockResolvedValueOnce(paginatedCalls).mockResolvedValueOnce([
+      ...paginatedCalls.slice(0, 6),
+      {
+        ...paginatedCalls[6],
+        duration: 180,
+      },
+      ...paginatedCalls.slice(7),
+    ]);
+
+    renderApp();
+
+    expect(await screen.findByText("+1 555-1001")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Show 5 calls per page" }));
+    await userEvent.click(screen.getAllByRole("button", { name: "Go to next page" })[0]);
+
+    expect(screen.getAllByText("Page 2 of 3")[0]).toBeInTheDocument();
+
+    await act(async () => {
+      emitCallChange({ version: 1, action: "add_note", callId: "call-07" });
+    });
+
+    await waitFor(() => {
+      expect(fetchAllCallsMock).toHaveBeenCalledTimes(2);
+    });
+
+    expect(screen.getAllByText("Page 2 of 3")[0]).toBeInTheDocument();
+  });
+
+  it("preserves a note draft while realtime updates refresh the selected call", async () => {
+    const selectedCallWithNotes = {
+      ...activeCall,
+      notes: [{ id: "note-existing", content: "Existing note." }],
+    };
+    const refreshedSelectedCall = {
+      ...selectedCallWithNotes,
+      is_archived: true,
+    };
+
+    fetchCallMock
+      .mockResolvedValueOnce(selectedCallWithNotes)
+      .mockResolvedValueOnce(refreshedSelectedCall);
+    fetchAllCallsMock.mockResolvedValueOnce([activeCall, archivedCall]).mockResolvedValueOnce([
+      {
+        ...activeCall,
+        is_archived: true,
+      },
+      archivedCall,
+    ]);
+
+    renderApp();
+
+    await userEvent.click(await screen.findByText("+1 555-0100"));
+    await userEvent.type(await screen.findByLabelText("Add note"), "Draft still in progress");
+
+    await act(async () => {
+      emitCallChange({ version: 1, action: "add_note", callId: "call-1" });
+    });
+
+    await waitFor(() => {
+      expect(fetchAllCallsMock).toHaveBeenCalledTimes(2);
+    });
+
+    expect(fetchCallMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Existing note.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unarchive call" })).toBeInTheDocument();
+    expect(screen.getByText("A note was added to this call in another tab.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Add note")).toHaveValue("Draft still in progress");
+  });
+
+  it("closes selected call details when realtime refresh removes that call", async () => {
+    fetchCallMock.mockResolvedValue(activeCall);
+    fetchAllCallsMock.mockResolvedValueOnce([activeCall]).mockResolvedValueOnce([]);
+
+    renderApp();
+
+    await userEvent.click(await screen.findByText("+1 555-0100"));
+    expect(await screen.findByText("Selected Call Info:")).toBeInTheDocument();
+
+    await act(async () => {
+      emitCallChange({ version: 1, action: "delete", callId: "call-1" });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Selected Call Info:")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Selected call was removed in another tab.")).toBeInTheDocument();
+  });
+
+  it("shows the first-run tutorial welcome and lets users skip it", async () => {
+    mockTutorialState({
+      hasSeenWelcome: false,
+      completedAt: null,
+      skippedAt: null,
+      completedTopics: [],
+    });
+
+    renderApp();
+
+    expect(
+      await screen.findByRole("dialog", { name: "Welcome to your call center dashboard" }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Not now" }));
+
+    await waitFor(() => {
+      expect(updateTutorialStateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          version: 1,
+          hasSeenWelcome: true,
+          skippedAt: expect.any(String),
+        }),
+      );
+    });
+    expect(
+      screen.queryByRole("dialog", { name: "Welcome to your call center dashboard" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show the first-run tutorial welcome for returning users", async () => {
+    renderApp();
+
+    expect(await screen.findByText("+1 555-0100")).toBeInTheDocument();
+    expect(fetchTutorialStateMock).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("dialog", { name: "Welcome to your call center dashboard" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("completes the full tutorial after safe click-along actions", async () => {
+    fetchCallMock.mockResolvedValue(activeCall);
+    mockTutorialState({
+      hasSeenWelcome: false,
+      completedAt: null,
+      skippedAt: null,
+      completedTopics: [],
+    });
+
+    renderApp();
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Start tutorial",
+      }),
+    );
+
+    expect(screen.getByRole("dialog", { name: "Understand the layout" })).toBeInTheDocument();
+    expect(document.querySelector('[data-tutorial-active="true"]')).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Seed sample calls" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Read the session timer" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.querySelector('[data-tutorial-active="true"]')).not.toBeNull();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Open account settings" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    expect(
+      await screen.findByRole("dialog", { name: "Use the account drawer" }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Close account settings" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Close account settings" }));
+
+    expect(await screen.findByRole("dialog", { name: "Read the stats cards" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Search calls" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Change page size" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(
+      screen.getByRole("dialog", { name: "Switch active and archived calls" }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Open filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    expect(await screen.findByRole("dialog", { name: "Filter calls" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Close filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Close filter modal" }));
+
+    expect(await screen.findByRole("dialog", { name: "Bulk actions" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Use pagination" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Reset sample data" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Read the call feed" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Open call details" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+    await userEvent.click(screen.getByText("+1 555-0100"));
+    expect(await screen.findByText("Selected Call Info:")).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Review a call" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: "Update a call" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Finish" }));
+
+    await waitFor(() => {
+      expect(updateTutorialStateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          version: 1,
+          hasSeenWelcome: true,
+          completedAt: expect.any(String),
+          completedTopics: ["seeding", "ui", "call-feed", "call-item"],
+        }),
+      );
+    });
+  });
+
+  it("lets users rerun tutorial topics from the account drawer", async () => {
+    renderApp();
+
+    await screen.findByText("+1 555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+
+    const tutorialsToggle = screen.getByRole("button", { name: "Tutorials Completed" });
+    const tutorialList = document.getElementById("drawer-tutorial-list");
+
+    expect(tutorialsToggle).toHaveAttribute("aria-expanded", "false");
+    expect(tutorialList).toHaveClass("is-collapsed");
+    expect(screen.queryByRole("button", { name: /Full tutorial/i })).not.toBeInTheDocument();
+
+    await userEvent.click(tutorialsToggle);
+
+    expect(tutorialsToggle).toHaveAttribute("aria-expanded", "true");
+    expect(tutorialList).toHaveClass("is-open");
+    expect(screen.getByRole("button", { name: "Full tutorial Completed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Seeding calls Completed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "UI Completed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Call feed Completed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Call item Completed" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "UI Completed" }));
+
+    expect(screen.getByRole("dialog", { name: "Understand the layout" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Test Agent" })).not.toBeInTheDocument();
+  });
+
+  it("marks unfinished tutorial topics as not started in the account drawer", async () => {
+    mockTutorialState({
+      completedAt: null,
+      completedTopics: ["ui"],
+      skippedAt: "2026-07-01T11:00:00.000Z",
+    });
+
+    renderApp();
+
+    await screen.findByText("+1 555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    await userEvent.click(screen.getByRole("button", { name: "Tutorials" }));
+
+    expect(screen.getByRole("button", { name: "Full tutorial Not started" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Seeding calls Not started" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "UI Completed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Call feed Not started" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Call item Not started" })).toBeInTheDocument();
+  });
+
   it("shows an API error when calls fail to load", async () => {
     fetchAllCallsMock.mockRejectedValue(new Error("Unable to load calls."));
 
     renderApp();
 
     expect(await screen.findByText("Unable to load calls.")).toBeInTheDocument();
-    expect(screen.getByText("No calls available.")).toBeInTheDocument();
+    expect(screen.getByText("No active calls available.")).toBeInTheDocument();
   });
 
   it("shows an API error when selected call details fail to load", async () => {
@@ -487,7 +1184,7 @@ describe("App API-backed user flows", () => {
     await userEvent.click(within(callCard).getByRole("button", { name: "Archive this call" }));
 
     expect(archiveCall).toHaveBeenCalledWith("call-1");
-    expect(await screen.findByText("No calls available.")).toBeInTheDocument();
+    expect(await screen.findByText("No active calls available.")).toBeInTheDocument();
     expect(screen.getByText("Call archived successfully.")).toBeInTheDocument();
   });
 
@@ -519,7 +1216,7 @@ describe("App API-backed user flows", () => {
     await userEvent.click(within(callCard).getByRole("button", { name: "Unarchive this call" }));
 
     expect(unarchiveCall).toHaveBeenCalledWith("call-2");
-    expect(await screen.findByText("No calls available.")).toBeInTheDocument();
+    expect(await screen.findByText("No archived calls available.")).toBeInTheDocument();
     expect(screen.getByText("Call unarchived successfully.")).toBeInTheDocument();
   });
 
@@ -558,7 +1255,7 @@ describe("App API-backed user flows", () => {
 
     expect(archiveAllCalls).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(fetchAllCalls).toHaveBeenCalledTimes(2));
-    expect(screen.getByText("No calls available.")).toBeInTheDocument();
+    expect(screen.getByText("No active calls available.")).toBeInTheDocument();
     expect(screen.getByText("All active calls archived successfully.")).toBeInTheDocument();
   });
 
@@ -618,7 +1315,7 @@ describe("App API-backed user flows", () => {
     );
 
     expect(deleteCall).toHaveBeenCalledWith("call-1");
-    expect(await screen.findByText("No calls available.")).toBeInTheDocument();
+    expect(await screen.findByText("No active calls available.")).toBeInTheDocument();
     expect(screen.getByText("Call deleted successfully.")).toBeInTheDocument();
     expect(screen.queryByText("Selected Call Info:")).not.toBeInTheDocument();
   });
@@ -653,11 +1350,100 @@ describe("App API-backed user flows", () => {
 
     await screen.findByText("+1 555-0100");
     await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    expect(screen.getByRole("button", { name: "Call Type" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(document.getElementById("filter-section-call-type")).toHaveAttribute("hidden");
+    await userEvent.click(screen.getByRole("button", { name: "Call Type" }));
+    expect(screen.getByRole("button", { name: "Call Type" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(document.getElementById("filter-section-call-type")).not.toHaveAttribute("hidden");
     await userEvent.click(screen.getByLabelText("Answered"));
+    await userEvent.click(screen.getByRole("button", { name: "Call Type" }));
+    expect(screen.getByRole("button", { name: "Call Type" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Call Type" }));
     await userEvent.click(screen.getByRole("button", { name: "Confirm filters" }));
 
     expect(screen.getByText("+1 555-0300")).toBeInTheDocument();
     expect(screen.queryByText("+1 555-0100")).not.toBeInTheDocument();
+  });
+
+  it("filters calls with the calendar date range picker", async () => {
+    const olderCall = createCall({
+      id: "call-older",
+      from: "+1 555-0600",
+      to: "+1 555-0660",
+      created_at: "2026-06-06T10:00:00.000Z",
+    });
+    const newerCall = createCall({
+      id: "call-newer",
+      from: "+1 555-1000",
+      to: "+1 555-1010",
+      created_at: "2026-06-10T11:30:00.000Z",
+    });
+    fetchAllCallsMock.mockResolvedValue([activeCall, olderCall, newerCall]);
+
+    const { container } = renderApp();
+
+    function getCalendarDay(day: number) {
+      const dayElement = container.querySelector(
+        `.date-range-calendar .react-datepicker__day--${String(day).padStart(3, "0")}`,
+      );
+
+      expect(dayElement).not.toBeNull();
+
+      return dayElement as HTMLElement;
+    }
+
+    await screen.findByText("+1 555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    await userEvent.click(screen.getByRole("button", { name: "Date Range" }));
+
+    const newerDate = getCalendarDay(10);
+    const activeDate = getCalendarDay(7);
+    const olderDate = getCalendarDay(6);
+    const unavailableDate = getCalendarDay(8);
+
+    expect(newerDate).not.toHaveClass("react-datepicker__day--disabled");
+    expect(activeDate).not.toHaveClass("react-datepicker__day--disabled");
+    expect(olderDate).not.toHaveClass("react-datepicker__day--disabled");
+    expect(unavailableDate).toHaveClass("react-datepicker__day--disabled");
+    expect(screen.getByText("Any date")).toBeInTheDocument();
+
+    await userEvent.click(activeDate);
+
+    await userEvent.click(screen.getByRole("button", { name: "Confirm filters" }));
+
+    expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
+    expect(screen.queryByText("+1 555-0600")).not.toBeInTheDocument();
+    expect(screen.queryByText("+1 555-1000")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    await userEvent.click(screen.getByRole("button", { name: "Date Range" }));
+    await userEvent.click(screen.getByRole("button", { name: "Clear date range" }));
+    await userEvent.click(getCalendarDay(10));
+    await userEvent.click(getCalendarDay(7));
+
+    await userEvent.click(screen.getByRole("button", { name: "Confirm filters" }));
+
+    expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
+    expect(screen.getByText("+1 555-1000")).toBeInTheDocument();
+    expect(screen.queryByText("+1 555-0600")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    await userEvent.click(screen.getByRole("button", { name: "Date Range" }));
+    await userEvent.click(screen.getByRole("button", { name: "Clear date range" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirm filters" }));
+
+    expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
+    expect(screen.getByText("+1 555-0600")).toBeInTheDocument();
+    expect(screen.getByText("+1 555-1000")).toBeInTheDocument();
   });
 
   it("changes page size and navigates through paginated calls", async () => {
@@ -689,12 +1475,31 @@ describe("App API-backed user flows", () => {
     expect(container.firstChild).toHaveAttribute("data-theme", "light");
   });
 
-  it("shows an empty state when the API returns no calls", async () => {
-    fetchAllCallsMock.mockResolvedValue([]);
+  it("guides new users to seed sample calls", async () => {
+    resetCallsMock.mockResolvedValue({ insertedCount: 150 });
+    fetchAllCallsMock.mockResolvedValueOnce([]).mockResolvedValueOnce([activeCall]);
 
     renderApp();
 
-    expect(await screen.findByText("No calls available.")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Get started with sample calls" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/confirm to populate the dashboard with demo call data/i),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Seed sample calls" }));
+
+    expect(screen.getByRole("dialog")).toHaveTextContent("Seed sample calls?");
+    expect(screen.getByRole("dialog")).toHaveTextContent(
+      "This will populate your dashboard with sample call data.",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Seed calls" }));
+
+    expect(resetCallsMock).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(fetchAllCallsMock).toHaveBeenCalledTimes(2));
+    expect(screen.getByText("+1 555-0100")).toBeInTheDocument();
+    expect(screen.getByText("Sample calls added successfully.")).toBeInTheDocument();
   });
 
   it("shows an empty state when search or filters hide every call", async () => {
@@ -719,6 +1524,7 @@ describe("App API-backed user flows", () => {
 
     await screen.findByText("+1 555-0100");
     await userEvent.click(screen.getByRole("button", { name: "Open filters" }));
+    await userEvent.click(screen.getByRole("button", { name: "Duration" }));
     fireEvent.change(screen.getByLabelText("Minimum call duration in seconds"), {
       target: { value: "200" },
     });

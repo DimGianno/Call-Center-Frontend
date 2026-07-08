@@ -1,0 +1,76 @@
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: min(420px, calc(100vw - 48px));
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid #16a34a;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-popup);
+  color: var(--color-text-main);
+}
+
+.toast p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.toast-success {
+  border-left-color: #16a34a;
+}
+
+.toast-error {
+  border-left-color: #dc2626;
+}
+
+.toast-dismiss {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.toast-dismiss:hover {
+  color: var(--color-text-heading);
+}
+
+.email-verification-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  background: var(--color-voicemail-bg);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-voicemail-text);
+  border-radius: var(--radius-card);
+  color: var(--color-voicemail-text);
+}
+
+.email-verification-banner strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.email-verification-banner p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.email-verification-banner .secondary-button {
+  flex: 0 0 auto;
+}

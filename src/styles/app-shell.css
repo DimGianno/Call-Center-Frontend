@@ -1,0 +1,125 @@
+.app {
+  min-height: 100vh;
+  background: var(--color-page-bg);
+  color: var(--color-text-main);
+}
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  width: 100%;
+  min-height: var(--header-height);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 8px 24px;
+  background: var(--color-header-bg);
+  color: var(--color-text-inverse);
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-inverse);
+}
+
+.session-control {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.session-time {
+  min-width: 58px;
+  padding: 0 10px;
+  color: var(--color-text-inverse);
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.session-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0;
+  height: 30px;
+  margin-left: 0;
+  padding: 0;
+  border: 0 solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    width 0.2s ease,
+    margin-left 0.2s ease,
+    opacity 0.16s ease,
+    border-width 0.2s ease;
+}
+
+.session-control:hover .session-refresh-button,
+.session-control:focus-within .session-refresh-button {
+  width: 30px;
+  margin-left: 2px;
+  border-width: 1px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.session-refresh-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.header-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.signed-in-user {
+  max-width: 180px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-button {
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.header-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}

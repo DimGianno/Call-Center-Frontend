@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { AuthMode, LoginCredentials, SignupCredentials, Theme } from "../types";
 import AuthScreen from "../components/AuthScreen";
+import useBackendWakeup from "../hooks/useBackendWakeup";
 
 interface AuthPageProps {
   mode: AuthMode;
@@ -13,6 +14,7 @@ interface AuthPageProps {
 
 function AuthPage({ mode, notice, onLogin, onSignup, onToggleTheme, theme }: AuthPageProps) {
   const navigate = useNavigate();
+  useBackendWakeup();
 
   function handleModeChange(nextMode: AuthMode) {
     navigate(nextMode === "signup" ? "/signup" : "/login");

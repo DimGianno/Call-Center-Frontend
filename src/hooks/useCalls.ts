@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   addCallNote,
   archiveAllCalls,
@@ -10,11 +10,18 @@ import {
   unarchiveAllCalls,
   unarchiveCall,
 } from "../api/callsApi";
+import { type CallChangeEvent, subscribeToCallChanges } from "../api/callEventsApi";
 import type { Call, CallView, OpenConfirmDialog, ShowToast } from "../types";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
+
+type LoadCallsOptions = {
+  event?: CallChangeEvent;
+  isRealtimeRefresh?: boolean;
+  showLoading?: boolean;
+};
 
 function useCalls({
   showToast,
@@ -28,23 +35,80 @@ function useCalls({
   const [callView, setCallView] = useState<CallView>("active");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const selectedCallIdRef = useRef(selectedCallId);
 
-  const loadCalls = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage("");
+  useEffect(() => {
+    selectedCallIdRef.current = selectedCallId;
+  }, [selectedCallId]);
 
-    try {
-      const apiCalls = await fetchAllCalls();
-      setCalls(apiCalls);
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const loadCalls = useCallback(
+    async ({ event, isRealtimeRefresh = false, showLoading = true }: LoadCallsOptions = {}) => {
+      if (showLoading) {
+        setIsLoading(true);
+      }
+
+      if (!isRealtimeRefresh) {
+        setErrorMessage("");
+      }
+
+      try {
+        const apiCalls = await fetchAllCalls();
+        let refreshedCalls = apiCalls;
+        const currentSelectedCallId = selectedCallIdRef.current;
+
+        if (isRealtimeRefresh && currentSelectedCallId) {
+          const selectedCallStillExists = apiCalls.some((call) => {
+            return call.id === currentSelectedCallId;
+          });
+
+          if (selectedCallStillExists) {
+            const selectedCall = await fetchCall(currentSelectedCallId).catch(() => null);
+
+            if (selectedCall) {
+              refreshedCalls = apiCalls.map((call) => {
+                if (call.id === currentSelectedCallId) {
+                  return selectedCall;
+                }
+
+                return call;
+              });
+
+              if (event?.action === "add_note" && event.callId === currentSelectedCallId) {
+                showToast("A note was added to this call in another tab.");
+              }
+            }
+          } else {
+            showToast("Selected call was removed in another tab.", "error");
+            setSelectedCallId(null);
+          }
+        }
+
+        setCalls(refreshedCalls);
+      } catch (error) {
+        if (!isRealtimeRefresh) {
+          setErrorMessage(getErrorMessage(error));
+        }
+      } finally {
+        if (showLoading) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [showToast],
+  );
 
   useEffect(() => {
     loadCalls();
+  }, [loadCalls]);
+
+  useEffect(() => {
+    return subscribeToCallChanges((event) => {
+      void loadCalls({
+        event,
+        isRealtimeRefresh: true,
+        showLoading: false,
+      });
+    });
   }, [loadCalls]);
 
   function updateCallInState(updatedCall: Call) {
@@ -60,11 +124,14 @@ function useCalls({
   }
 
   function handleResetCalls() {
+    const isSeedingCalls = calls.length === 0;
+
     openConfirmDialog({
-      title: "Reset calls?",
-      message:
-        "This will delete all calls, restore the sample call data, and close any selected call.",
-      confirmLabel: "Reset calls",
+      title: isSeedingCalls ? "Seed sample calls?" : "Reset calls?",
+      message: isSeedingCalls
+        ? "This will populate your dashboard with sample call data."
+        : "This will delete all calls, restore the sample call data, and close any selected call.",
+      confirmLabel: isSeedingCalls ? "Seed calls" : "Reset calls",
       onConfirm: async () => {
         setErrorMessage("");
 
@@ -72,7 +139,11 @@ function useCalls({
           const resetResult = await resetCalls();
           setSelectedCallId(null);
           await loadCalls();
-          showToast(resetResult?.message ?? "Calls reset successfully.");
+          showToast(
+            isSeedingCalls
+              ? "Sample calls added successfully."
+              : (resetResult?.message ?? "Calls reset successfully."),
+          );
         } catch (error) {
           setErrorMessage(getErrorMessage(error));
         }
@@ -280,10 +351,13 @@ function useCalls({
     return call.id === selectedCallId;
   });
 
+  const hasAnyCalls = calls.length > 0;
+
   return {
     callView,
     errorMessage,
     isLoading,
+    hasAnyCalls,
     selectedCall,
     visibleCalls,
     setCallView,

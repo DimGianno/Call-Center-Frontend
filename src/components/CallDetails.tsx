@@ -5,8 +5,11 @@ import { formatCallDateTime } from "../utils/formatters";
 
 interface CallDetailsProps {
   call: Call;
+  isTutorialActionsActive?: boolean;
+  isTutorialSummaryActive?: boolean;
   onClose: () => void;
   onAddNote: (callId: string, content: string) => Promise<boolean>;
+  onTutorialNoteTyped?: () => void;
   onArchiveCall: (callId: string) => Promise<boolean>;
   onUnarchiveCall: (callId: string) => Promise<boolean>;
   onDeleteCall: (callId: string) => boolean;
@@ -16,8 +19,11 @@ type PendingAction = "" | "note" | "archive" | "delete";
 
 function CallDetails({
   call,
+  isTutorialActionsActive = false,
+  isTutorialSummaryActive = false,
   onClose,
   onAddNote,
+  onTutorialNoteTyped,
   onArchiveCall,
   onUnarchiveCall,
   onDeleteCall,
@@ -83,7 +89,10 @@ function CallDetails({
           </button>
         </div>
 
-        <table className="details-table">
+        <table
+          className="details-table"
+          data-tutorial-active={isTutorialSummaryActive ? "true" : undefined}
+        >
           <tbody>
             <tr>
               <th>
@@ -140,47 +149,58 @@ function CallDetails({
           </tbody>
         </table>
 
-        <form className="details-note-form" onSubmit={handleAddNote}>
-          <label htmlFor="call-note">Add note</label>
-          <textarea
-            id="call-note"
-            value={noteContent}
-            placeholder="Write a note for this call..."
-            disabled={isBusy}
-            onChange={(event) => setNoteContent(event.target.value)}
-          />
-          <button
-            className="primary-button"
-            type="submit"
-            disabled={isBusy || noteContent.trim() === ""}
-          >
-            {isSubmittingNote ? "Adding..." : "Add note"}
-          </button>
-        </form>
+        <div
+          className="call-update-section"
+          data-tutorial-active={isTutorialActionsActive ? "true" : undefined}
+        >
+          <form className="details-note-form" onSubmit={handleAddNote}>
+            <label htmlFor="call-note">Add note</label>
+            <textarea
+              id="call-note"
+              value={noteContent}
+              placeholder="Write a note for this call..."
+              disabled={isBusy}
+              onChange={(event) => {
+                setNoteContent(event.target.value);
 
-        <div className="details-actions">
-          <button
-            className="secondary-button"
-            type="button"
-            disabled={isBusy}
-            onClick={handleArchiveToggle}
-          >
-            {isArchiveActionPending
-              ? call.is_archived
-                ? "Unarchiving..."
-                : "Archiving..."
-              : call.is_archived
-                ? "Unarchive call"
-                : "Archive call"}
-          </button>
-          <button
-            className="danger-button"
-            type="button"
-            disabled={isBusy}
-            onClick={handleDeleteCall}
-          >
-            {isDeleting ? "Deleting..." : "Delete call"}
-          </button>
+                if (event.target.value.trim() !== "") {
+                  onTutorialNoteTyped?.();
+                }
+              }}
+            />
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={isBusy || noteContent.trim() === ""}
+            >
+              {isSubmittingNote ? "Adding..." : "Add note"}
+            </button>
+          </form>
+
+          <div className="details-actions">
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={isBusy}
+              onClick={handleArchiveToggle}
+            >
+              {isArchiveActionPending
+                ? call.is_archived
+                  ? "Unarchiving..."
+                  : "Archiving..."
+                : call.is_archived
+                  ? "Unarchive call"
+                  : "Archive call"}
+            </button>
+            <button
+              className="danger-button"
+              type="button"
+              disabled={isBusy}
+              onClick={handleDeleteCall}
+            >
+              {isDeleting ? "Deleting..." : "Delete call"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

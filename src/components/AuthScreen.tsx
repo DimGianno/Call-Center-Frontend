@@ -1,12 +1,18 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import type { AuthMode, LoginCredentials, SignupCredentials, Theme } from "../types";
-import { validateAuthForm } from "../utils/authStorage";
+import {
+  getEmailValidationMessage,
+  getPasswordValidationMessage,
+  validateAuthForm,
+} from "../utils/authStorage";
 
 const AUTH_MODES = {
   login: "login",
   signup: "signup",
 } as const;
+
+const AUTH_LOADING_MESSAGES = ["Waking up the server...", "Almost there...", "Just a moment..."];
 
 interface AuthScreenProps {
   mode?: AuthMode;
@@ -32,13 +38,40 @@ function AuthScreen({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
+  const [hasInteractedWithEmail, setHasInteractedWithEmail] = useState(false);
+  const [hasInteractedWithPassword, setHasInteractedWithPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const isSignup = authMode === AUTH_MODES.signup;
+  const emailValidationMessage = getEmailValidationMessage(email);
+  const passwordValidationMessage = getPasswordValidationMessage(password);
+  const showEmailValidation = hasInteractedWithEmail && emailValidationMessage !== "";
+  const showPasswordValidation = hasInteractedWithPassword && passwordValidationMessage !== "";
+  const submitButtonLabel = isSubmitting
+    ? AUTH_LOADING_MESSAGES[loadingMessageIndex]
+    : isSignup
+      ? "Create account"
+      : "Login";
 
   useEffect(() => {
     setAuthMode(mode);
     setFormError("");
   }, [mode]);
+
+  useEffect(() => {
+    if (!isSubmitting) {
+      setLoadingMessageIndex(0);
+      return;
+    }
+
+    const loadingMessageTimer = window.setInterval(() => {
+      setLoadingMessageIndex((currentIndex) => {
+        return (currentIndex + 1) % AUTH_LOADING_MESSAGES.length;
+      });
+    }, 2600);
+
+    return () => window.clearInterval(loadingMessageTimer);
+  }, [isSubmitting]);
 
   function handleModeChange(nextMode: AuthMode) {
     setAuthMode(nextMode);
@@ -51,26 +84,34 @@ function AuthScreen({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setHasInteractedWithEmail(true);
+    setHasInteractedWithPassword(true);
+
+    const normalizedEmail = email.trim();
 
     const validationMessage = validateAuthForm({
       name,
-      email,
+      email: normalizedEmail,
       password,
       isSignup,
     });
 
     if (validationMessage) {
-      setFormError(validationMessage);
+      const isFieldValidationMessage =
+        validationMessage === emailValidationMessage ||
+        validationMessage === passwordValidationMessage;
+      setFormError(isFieldValidationMessage ? "" : validationMessage);
       return;
     }
 
     try {
       setIsSubmitting(true);
+      setEmail(normalizedEmail);
 
       if (isSignup) {
-        await onSignup({ name, email, password });
+        await onSignup({ name, email: normalizedEmail, password });
       } else {
-        await onLogin({ email, password });
+        await onLogin({ email: normalizedEmail, password });
       }
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Something went wrong.");
@@ -135,10 +176,10 @@ function AuthScreen({
           </div>
         )}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className="auth-form" noValidate onSubmit={handleSubmit}>
           {isSignup && (
-            <label className="auth-field" htmlFor="auth-name">
-              <span>Name</span>
+            <div className="auth-field">
+              <label htmlFor="auth-name">Name</label>
               <input
                 id="auth-name"
                 type="text"
@@ -147,39 +188,82 @@ function AuthScreen({
                 disabled={isSubmitting}
                 onChange={(event) => setName(event.target.value)}
               />
-            </label>
+            </div>
           )}
 
-          <label className="auth-field" htmlFor="auth-email">
-            <span>Email</span>
+          <div className={showEmailValidation ? "auth-field has-error" : "auth-field"}>
+            <label htmlFor="auth-email">Email</label>
             <input
               id="auth-email"
               type="email"
               value={email}
+              aria-describedby={showEmailValidation ? "auth-email-guidance" : undefined}
+              aria-invalid={showEmailValidation}
               autoComplete="email"
               disabled={isSubmitting}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setHasInteractedWithEmail(true);
+                setFormError("");
+              }}
             />
-          </label>
+            <span
+              id="auth-email-guidance"
+              className={
+                showEmailValidation ? "auth-field-guidance is-visible" : "auth-field-guidance"
+              }
+              aria-atomic="true"
+              aria-hidden={!showEmailValidation}
+              aria-live="polite"
+            >
+              <span className="auth-field-guidance-text">
+                {emailValidationMessage ||
+                  "Use one @ and a complete address, such as name@example.com."}
+              </span>
+            </span>
+          </div>
 
-          <label className="auth-field" htmlFor="auth-password">
-            <span>Password</span>
+          <div className={showPasswordValidation ? "auth-field has-error" : "auth-field"}>
+            <label htmlFor="auth-password">Password</label>
             <input
               id="auth-password"
               type="password"
               value={password}
+              aria-describedby={showPasswordValidation ? "auth-password-guidance" : undefined}
+              aria-invalid={showPasswordValidation}
               autoComplete={isSignup ? "new-password" : "current-password"}
               disabled={isSubmitting}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setHasInteractedWithPassword(true);
+                setFormError("");
+              }}
             />
-          </label>
+            <span
+              id="auth-password-guidance"
+              className={
+                showPasswordValidation ? "auth-field-guidance is-visible" : "auth-field-guidance"
+              }
+              aria-atomic="true"
+              aria-hidden={!showPasswordValidation}
+              aria-live="polite"
+            >
+              <span className="auth-field-guidance-text">
+                {passwordValidationMessage || "Password must be at least 8 characters."}
+              </span>
+            </span>
+          </div>
 
           <button
             className="primary-button auth-submit-button"
             type="submit"
             disabled={isSubmitting}
+            aria-busy={isSubmitting}
           >
-            {isSubmitting ? "Working..." : isSignup ? "Create account" : "Login"}
+            <span className="auth-submit-content" aria-atomic="true" aria-live="polite">
+              {isSubmitting && <span className="auth-loading-spinner" aria-hidden="true" />}
+              <span>{submitButtonLabel}</span>
+            </span>
           </button>
         </form>
       </section>

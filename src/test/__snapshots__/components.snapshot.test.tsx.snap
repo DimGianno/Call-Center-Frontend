@@ -58,7 +58,7 @@ exports[`component snapshots > matches the call item snapshot 1`] = `
 exports[`component snapshots > matches the danger processing confirmation dialog snapshot 1`] = `
 <DocumentFragment>
   <div
-    class="modal-overlay"
+    class="modal-overlay confirm-modal-overlay"
   >
     <div
       aria-modal="true"
@@ -112,7 +112,7 @@ exports[`component snapshots > matches the danger processing confirmation dialog
 exports[`component snapshots > matches the normal confirmation dialog snapshot 1`] = `
 <DocumentFragment>
   <div
-    class="modal-overlay"
+    class="modal-overlay confirm-modal-overlay"
   >
     <div
       aria-modal="true"

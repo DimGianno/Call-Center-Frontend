@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { AuthSession, Theme } from "../types";
+import useBackendWakeup from "../hooks/useBackendWakeup";
 
 interface HomePageProps {
   onToggleTheme: () => void;
@@ -8,6 +9,8 @@ interface HomePageProps {
 }
 
 function HomePage({ onToggleTheme, session, theme }: HomePageProps) {
+  useBackendWakeup();
+
   return (
     <main className="home-page">
       <header className="home-nav">

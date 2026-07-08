@@ -1,0 +1,213 @@
+.call-card {
+  display: grid;
+  grid-template-columns: 105px 1fr 135px 92px;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  margin-bottom: 8px;
+  padding: 10px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.call-card:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+}
+
+.call-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.direction {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.direction.inbound {
+  color: var(--color-inbound);
+}
+
+.direction.outbound {
+  color: var(--color-outbound);
+}
+
+.call-type {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.call-type.answered {
+  background: var(--color-answered-bg);
+  color: var(--color-answered-text);
+}
+
+.call-type.missed {
+  background: var(--color-missed-bg);
+  color: var(--color-missed-text);
+}
+
+.call-type.voicemail {
+  background: var(--color-voicemail-bg);
+  color: var(--color-voicemail-text);
+}
+
+.call-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--color-text-main);
+  font-size: 14px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.call-route span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.call-route .arrow {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.call-time {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.archive-button,
+.close-button,
+.pagination-button,
+.secondary-button,
+.primary-button,
+.danger-button {
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.archive-button,
+.close-button,
+.pagination-button,
+.secondary-button {
+  background: var(--color-button-bg);
+  color: var(--color-button-text);
+}
+
+.archive-button:hover,
+.close-button:hover,
+.pagination-button:hover:not(:disabled),
+.secondary-button:hover {
+  background: var(--color-button-bg-hover);
+  border-color: var(--color-border-hover);
+  color: var(--color-button-text-hover);
+}
+
+.archive-button,
+.close-button {
+  border-radius: 7px;
+}
+
+.archive-button {
+  padding: 7px 12px;
+}
+
+.close-button {
+  padding: 6px 10px;
+}
+
+.pagination-button,
+.secondary-button,
+.primary-button,
+.danger-button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.primary-button {
+  background: var(--color-header-bg);
+  border-color: var(--color-header-bg);
+  color: var(--color-text-inverse);
+}
+
+.primary-button:hover {
+  opacity: 0.9;
+}
+
+.danger-button {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.pagination-button:disabled,
+.primary-button:disabled,
+.secondary-button:disabled,
+.danger-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.empty-state {
+  padding: 32px 20px;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.seed-calls-state {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.seed-calls-state h2 {
+  margin: 0;
+  color: var(--color-text-heading);
+  font-size: 18px;
+}
+
+.seed-calls-state p {
+  max-width: 560px;
+  line-height: 1.5;
+}
+
+.seed-calls-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 4px;
+}

@@ -15,21 +15,81 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  email_verified_at: string | null;
+  email_verification_required_at: string | null;
+  email_verification_sent_at: string | null;
   created_at?: string;
+}
+
+export interface EmailVerificationStatus {
+  verified: boolean;
+  verifiedAt: string | null;
+  requiredAt: string | null;
+  gracePeriodExpired: boolean;
 }
 
 export interface AuthSession {
   user: AuthUser;
-  accessToken: string;
   name: string;
   email: string;
-  startedAt: number;
+  emailVerification: EmailVerificationStatus;
+  sessionExpiresAt: string;
 }
 
 export interface AuthResponse {
   user: AuthUser;
-  accessToken: string;
+  accessToken?: string;
+  emailVerification: EmailVerificationStatus;
+  sessionExpiresAt: string;
 }
+
+export type TutorialTopicId = "full" | "seeding" | "ui" | "call-feed" | "call-item";
+
+export type TutorialTargetId =
+  | "dashboard-layout"
+  | "seed-calls"
+  | "stats-cards"
+  | "call-feed"
+  | "search-control"
+  | "page-size-control"
+  | "view-toggle-button"
+  | "bulk-action-button"
+  | "pagination-controls"
+  | "call-card"
+  | "call-details"
+  | "call-details-summary"
+  | "call-update-actions"
+  | "note-field"
+  | "filters-button"
+  | "filter-modal"
+  | "filter-close-button"
+  | "session-timer"
+  | "account-button"
+  | "account-drawer"
+  | "account-close-button"
+  | "call-date-groups"
+  | "reset-data-button";
+
+export type TutorialEventId =
+  | "account-closed"
+  | "account-opened"
+  | "archived-view-opened"
+  | "call-details-opened"
+  | "filters-closed"
+  | "filters-opened"
+  | "note-typed"
+  | "page-size-changed"
+  | "search-typed";
+
+export interface TutorialState {
+  version: number;
+  hasSeenWelcome: boolean;
+  completedAt: string | null;
+  skippedAt: string | null;
+  completedTopics: string[];
+}
+
+export type TutorialStateUpdate = Partial<TutorialState>;
 
 export type CallDirection = "inbound" | "outbound";
 

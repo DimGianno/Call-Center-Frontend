@@ -1,4 +1,12 @@
 import type { Call, CallDirection, CallFilters, CallType, PaginatedCalls } from "../types";
+import { formatDateHeader } from "./formatters";
+
+export interface AvailableCallDate {
+  value: string;
+  label: string;
+}
+
+const dateKeyPattern = /^\d{4}-\d{2}-\d{2}$/;
 
 export const defaultFilters = {
   callTypes: {
@@ -117,6 +125,45 @@ export function groupCallsByDate(calls: Call[]) {
 
     return groups;
   }, {});
+}
+
+export function getAvailableCallDates(calls: Call[]): AvailableCallDate[] {
+  const uniqueDates = new Set<string>();
+
+  calls.forEach((call) => {
+    const dateKey = call.created_at.slice(0, 10);
+
+    if (dateKeyPattern.test(dateKey)) {
+      uniqueDates.add(dateKey);
+    }
+  });
+
+  return Array.from(uniqueDates)
+    .sort((firstDate, secondDate) => secondDate.localeCompare(firstDate))
+    .map((dateKey) => {
+      return {
+        value: dateKey,
+        label: formatDateHeader(dateKey),
+      };
+    });
+}
+
+export function dateKeyToLocalDate(dateKey: string): Date | null {
+  if (!dateKeyPattern.test(dateKey)) {
+    return null;
+  }
+
+  const [year, month, day] = dateKey.split("-").map(Number);
+
+  return new Date(year, month - 1, day);
+}
+
+export function localDateToDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 export function searchCallsByPhoneNumber(calls: Call[], searchTerm: string) {
