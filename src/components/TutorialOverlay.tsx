@@ -7,6 +7,11 @@ interface TutorialWelcomeDialogProps {
   onSkip: () => void | Promise<void>;
 }
 
+interface TutorialReleaseDialogProps {
+  onDismiss: () => void | Promise<void>;
+  onStart: () => void;
+}
+
 interface TutorialOverlayProps {
   activeFlow: TutorialTopicId;
   completedEvents: Record<TutorialEventId, boolean>;
@@ -183,11 +188,21 @@ const tutorialSteps: TutorialStep[] = [
     requiresCallCards: true,
   },
   {
+    id: "note-delete-actions",
+    topic: "call-item",
+    targetId: "note-delete-actions",
+    title: "Delete a note",
+    body: "Each existing note has a trash button. Selecting it opens a confirmation before permanently deleting that note; this tutorial does not delete anything.",
+    emptyBody:
+      "After you seed calls and open one, the notes area shows a trash button beside each existing note. Deletion always asks for confirmation.",
+    requiresCallCards: true,
+  },
+  {
     id: "call-update-actions",
     topic: "call-item",
     targetId: "call-update-actions",
     title: "Update a call",
-    body: "The bottom section lets you add a note, archive or unarchive the call, and delete it. These actions change data, so the tutorial only presents them.",
+    body: "The bottom section lets you add a note, archive or unarchive the call, and delete the call. Note deletion is available beside each existing note. These actions change data, so the tutorial only presents them.",
     emptyBody:
       "After you seed calls and open one, the bottom section lets you add notes, archive, unarchive, or delete.",
     requiresCallCards: true,
@@ -227,6 +242,37 @@ function TutorialWelcomeDialog({ onStart, onSkip }: TutorialWelcomeDialogProps) 
           </button>
           <button className="primary-button" type="button" onClick={onStart}>
             Start tutorial
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function TutorialReleaseDialog({ onDismiss, onStart }: TutorialReleaseDialogProps) {
+  useBodyScrollLock();
+
+  return (
+    <div className="tutorial-welcome-layer">
+      <section
+        className="tutorial-welcome-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tutorial-release-title"
+      >
+        <p className="tutorial-kicker">New feature</p>
+        <h2 id="tutorial-release-title">Delete individual call notes</h2>
+        <p>
+          Call Details now lets you permanently delete one note at a time after confirmation. The
+          Call item tutorial has been updated to show where this control lives.
+        </p>
+
+        <div className="tutorial-actions">
+          <button className="secondary-button" type="button" onClick={onDismiss}>
+            Not now
+          </button>
+          <button className="primary-button" type="button" onClick={onStart}>
+            Show me
           </button>
         </div>
       </section>
@@ -381,4 +427,4 @@ function TutorialOverlay({
   );
 }
 
-export { TutorialOverlay, TutorialWelcomeDialog };
+export { TutorialOverlay, TutorialReleaseDialog, TutorialWelcomeDialog };

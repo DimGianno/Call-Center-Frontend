@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { TUTORIAL_VERSION } from "../hooks/useTutorial";
 import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import type {
   AuthSession,
@@ -35,7 +34,7 @@ const tutorialOptions: Array<{ description: string; label: string; topicId: Tuto
     topicId: "call-feed",
   },
   {
-    description: "Open details, notes, archive, delete, and item fields.",
+    description: "Open details, add or delete notes, archive, delete, and item fields.",
     label: "Call item",
     topicId: "call-item",
   },
@@ -59,7 +58,7 @@ function getTutorialStatus(
   tutorialState: TutorialState | null,
 ): "completed" | "new" | "not-started" {
   if (topicId === "full") {
-    if (tutorialState?.version !== undefined && tutorialState.version !== TUTORIAL_VERSION) {
+    if ((tutorialState?.newTopics.length ?? 0) > 0) {
       return "new";
     }
 
@@ -70,7 +69,7 @@ function getTutorialStatus(
     return isFirstRunTutorialState(tutorialState) ? "new" : "not-started";
   }
 
-  if (tutorialState?.version !== undefined && tutorialState.version !== TUTORIAL_VERSION) {
+  if (tutorialState?.newTopics.includes(topicId)) {
     return "new";
   }
 
@@ -103,7 +102,7 @@ function areAllTutorialCategoriesComplete(tutorialState: TutorialState | null) {
 }
 
 function getTutorialHeaderStatus(tutorialState: TutorialState | null): "completed" | "new" | null {
-  if (tutorialState?.version !== undefined && tutorialState.version !== TUTORIAL_VERSION) {
+  if ((tutorialState?.newTopics.length ?? 0) > 0) {
     return "new";
   }
 

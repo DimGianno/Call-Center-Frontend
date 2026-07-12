@@ -41,6 +41,7 @@ describe("tutorialApi", () => {
       completedAt: null,
       skippedAt: null,
       completedTopics: [],
+      newTopics: ["call-item"],
     };
 
     fetchMock.mockResolvedValueOnce(jsonResponse(tutorialState));
@@ -64,6 +65,7 @@ describe("tutorialApi", () => {
       completedAt: "2026-07-01T10:00:00.000Z",
       skippedAt: null,
       completedTopics: ["seeding"],
+      newTopics: ["call-item"],
     };
     const update = {
       version: 1,
@@ -133,6 +135,7 @@ describe("tutorialApi", () => {
       completedAt: null,
       skippedAt: null,
       completedTopics: [],
+      newTopics: ["call-item"],
     };
 
     fetchMock.mockResolvedValueOnce(jsonResponse(tutorialState));
