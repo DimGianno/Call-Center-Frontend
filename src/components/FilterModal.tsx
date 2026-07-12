@@ -3,6 +3,7 @@ import DatePicker from "react-datepicker";
 import type { CallDirection, CallFilters, CallType, TutorialTargetId } from "../types";
 import { dateKeyToLocalDate, localDateToDateKey, type AvailableCallDate } from "../utils/callUtils";
 import { formatDateHeader } from "../utils/formatters";
+import Modal from "./Modal";
 
 interface FilterModalProps {
   draftFilters: CallFilters;
@@ -224,270 +225,267 @@ function FilterModal({
   const hasSelectedDateRange = draftFilters.dateFrom !== "" || draftFilters.dateTo !== "";
 
   return (
-    <div className="modal-overlay">
-      <div
-        className="filter-modal"
-        data-tutorial-active={activeTutorialTarget === "filter-modal" ? "true" : undefined}
-      >
-        <div className="modal-header">
-          <h2>Filter Calls</h2>
+    <Modal
+      className="filter-modal"
+      isTutorialActive={activeTutorialTarget === "filter-modal"}
+      labelledBy="filter-modal-title"
+    >
+      <div className="modal-header">
+        <h2 id="filter-modal-title">Filter Calls</h2>
 
+        <button
+          className="close-button"
+          onClick={onClose}
+          title="Close filter modal"
+          aria-label="Close filter modal"
+          data-tutorial-active={activeTutorialTarget === "filter-close-button" ? "true" : undefined}
+        >
+          Close
+        </button>
+      </div>
+
+      <div className="filter-section">
+        <h3>
           <button
-            className="close-button"
-            onClick={onClose}
-            title="Close filter modal"
-            aria-label="Close filter modal"
-            data-tutorial-active={
-              activeTutorialTarget === "filter-close-button" ? "true" : undefined
-            }
+            className="filter-section-toggle"
+            type="button"
+            aria-expanded={openSections.callType}
+            aria-controls="filter-section-call-type"
+            onClick={() => toggleFilterSection("callType")}
           >
-            Close
+            <span>Call Type</span>
+            <span aria-hidden="true" className="filter-section-chevron">
+              {openSections.callType ? "−" : "+"}
+            </span>
           </button>
-        </div>
+        </h3>
 
-        <div className="filter-section">
-          <h3>
-            <button
-              className="filter-section-toggle"
-              type="button"
-              aria-expanded={openSections.callType}
-              aria-controls="filter-section-call-type"
-              onClick={() => toggleFilterSection("callType")}
-            >
-              <span>Call Type</span>
-              <span aria-hidden="true" className="filter-section-chevron">
-                {openSections.callType ? "−" : "+"}
-              </span>
-            </button>
-          </h3>
+        <div
+          id="filter-section-call-type"
+          className="filter-section-body"
+          hidden={!openSections.callType}
+        >
+          <div className="filter-option-row">
+            <label className="filter-option">
+              <input
+                type="checkbox"
+                checked={draftFilters.callTypes.answered}
+                onChange={(event) => handleCallTypeChange("answered", event.target.checked)}
+              />
+              Answered
+            </label>
 
-          <div
-            id="filter-section-call-type"
-            className="filter-section-body"
-            hidden={!openSections.callType}
-          >
-            <div className="filter-option-row">
-              <label className="filter-option">
-                <input
-                  type="checkbox"
-                  checked={draftFilters.callTypes.answered}
-                  onChange={(event) => handleCallTypeChange("answered", event.target.checked)}
-                />
-                Answered
-              </label>
+            <label className="filter-option">
+              <input
+                type="checkbox"
+                checked={draftFilters.callTypes.missed}
+                onChange={(event) => handleCallTypeChange("missed", event.target.checked)}
+              />
+              Missed
+            </label>
 
-              <label className="filter-option">
-                <input
-                  type="checkbox"
-                  checked={draftFilters.callTypes.missed}
-                  onChange={(event) => handleCallTypeChange("missed", event.target.checked)}
-                />
-                Missed
-              </label>
-
-              <label className="filter-option">
-                <input
-                  type="checkbox"
-                  checked={draftFilters.callTypes.voicemail}
-                  onChange={(event) => handleCallTypeChange("voicemail", event.target.checked)}
-                />
-                Voicemail
-              </label>
-            </div>
+            <label className="filter-option">
+              <input
+                type="checkbox"
+                checked={draftFilters.callTypes.voicemail}
+                onChange={(event) => handleCallTypeChange("voicemail", event.target.checked)}
+              />
+              Voicemail
+            </label>
           </div>
-        </div>
-
-        <div className="filter-section">
-          <h3>
-            <button
-              className="filter-section-toggle"
-              type="button"
-              aria-expanded={openSections.direction}
-              aria-controls="filter-section-direction"
-              onClick={() => toggleFilterSection("direction")}
-            >
-              <span>Direction</span>
-              <span aria-hidden="true" className="filter-section-chevron">
-                {openSections.direction ? "−" : "+"}
-              </span>
-            </button>
-          </h3>
-
-          <div
-            id="filter-section-direction"
-            className="filter-section-body"
-            hidden={!openSections.direction}
-          >
-            <div className="filter-option-row">
-              <label className="filter-option">
-                <input
-                  type="checkbox"
-                  checked={draftFilters.directions.inbound}
-                  onChange={(event) => handleDirectionChange("inbound", event.target.checked)}
-                />
-                Inbound
-              </label>
-
-              <label className="filter-option">
-                <input
-                  type="checkbox"
-                  checked={draftFilters.directions.outbound}
-                  onChange={(event) => handleDirectionChange("outbound", event.target.checked)}
-                />
-                Outbound
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div className="filter-section">
-          <h3>
-            <button
-              className="filter-section-toggle"
-              type="button"
-              aria-expanded={openSections.dateRange}
-              aria-controls="filter-section-date-range"
-              onClick={() => toggleFilterSection("dateRange")}
-            >
-              <span>Date Range</span>
-              <span aria-hidden="true" className="filter-section-chevron">
-                {openSections.dateRange ? "−" : "+"}
-              </span>
-            </button>
-          </h3>
-
-          <div
-            id="filter-section-date-range"
-            className="filter-section-body"
-            hidden={!openSections.dateRange}
-          >
-            <div className="date-range-picker">
-              <div className="date-range-summary" aria-live="polite">
-                <span>Selected range</span>
-                <strong>{getDateRangeLabel()}</strong>
-              </div>
-
-              {availableCallDates.length > 0 ? (
-                <div className="date-calendar-shell" aria-label="Dates with calls">
-                  <DatePicker
-                    inline
-                    selectsRange
-                    selected={selectedStartDate}
-                    startDate={selectedStartDate}
-                    endDate={calendarEndDate}
-                    openToDate={selectedStartDate ?? maxAvailableDate ?? undefined}
-                    minDate={minAvailableDate ?? undefined}
-                    maxDate={maxAvailableDate ?? undefined}
-                    includeDates={availableDateObjects}
-                    filterDate={isDateSelectable}
-                    highlightDates={availableDateObjects}
-                    showMonthDropdown
-                    showYearDropdown
-                    dropdownMode="select"
-                    shouldCloseOnSelect={false}
-                    calendarClassName="date-range-calendar"
-                    onChange={handleDateRangeChange}
-                  />
-                </div>
-              ) : (
-                <p className="date-range-empty">No call dates available.</p>
-              )}
-
-              <button
-                className="secondary-button date-range-clear-button"
-                type="button"
-                disabled={!hasSelectedDateRange}
-                onClick={handleClearDateRange}
-              >
-                Clear date range
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="filter-section">
-          <h3>
-            <button
-              className="filter-section-toggle"
-              type="button"
-              aria-expanded={openSections.duration}
-              aria-controls="filter-section-duration"
-              onClick={() => toggleFilterSection("duration")}
-            >
-              <span>Duration</span>
-              <span aria-hidden="true" className="filter-section-chevron">
-                {openSections.duration ? "−" : "+"}
-              </span>
-            </button>
-          </h3>
-
-          <div
-            id="filter-section-duration"
-            className="filter-section-body"
-            hidden={!openSections.duration}
-          >
-            <div className="duration-slider">
-              <div className="duration-slider-values">
-                <span>{formatDurationLabel(durationMin)}</span>
-                <span>{formatDurationLabel(durationMax, true)}</span>
-              </div>
-
-              <div
-                className="duration-slider-track"
-                style={
-                  {
-                    "--duration-min": `${durationMinPercent}%`,
-                    "--duration-max": `${durationMaxPercent}%`,
-                  } as DurationSliderStyle
-                }
-              >
-                <input
-                  type="range"
-                  min="0"
-                  max={durationSliderMax}
-                  step="5"
-                  value={durationMin}
-                  aria-label="Minimum call duration in seconds"
-                  onChange={(event) => handleDurationMinChange(event.target.value)}
-                />
-                <input
-                  type="range"
-                  min="0"
-                  max={durationSliderMax}
-                  step="5"
-                  value={durationMax}
-                  aria-label="Maximum call duration in seconds"
-                  onChange={(event) => handleDurationMaxChange(event.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="filter-actions">
-          <button
-            className="secondary-button"
-            onClick={onReset}
-            title="Reset filters"
-            aria-label="Reset filters"
-          >
-            Reset filters
-          </button>
-          <button className="secondary-button" onClick={onClose} title="Cancel" aria-label="Cancel">
-            Cancel
-          </button>
-
-          <button
-            className="primary-button"
-            onClick={onConfirm}
-            title="Confirm filters"
-            aria-label="Confirm filters"
-          >
-            Confirm filters
-          </button>
         </div>
       </div>
-    </div>
+
+      <div className="filter-section">
+        <h3>
+          <button
+            className="filter-section-toggle"
+            type="button"
+            aria-expanded={openSections.direction}
+            aria-controls="filter-section-direction"
+            onClick={() => toggleFilterSection("direction")}
+          >
+            <span>Direction</span>
+            <span aria-hidden="true" className="filter-section-chevron">
+              {openSections.direction ? "−" : "+"}
+            </span>
+          </button>
+        </h3>
+
+        <div
+          id="filter-section-direction"
+          className="filter-section-body"
+          hidden={!openSections.direction}
+        >
+          <div className="filter-option-row">
+            <label className="filter-option">
+              <input
+                type="checkbox"
+                checked={draftFilters.directions.inbound}
+                onChange={(event) => handleDirectionChange("inbound", event.target.checked)}
+              />
+              Inbound
+            </label>
+
+            <label className="filter-option">
+              <input
+                type="checkbox"
+                checked={draftFilters.directions.outbound}
+                onChange={(event) => handleDirectionChange("outbound", event.target.checked)}
+              />
+              Outbound
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="filter-section">
+        <h3>
+          <button
+            className="filter-section-toggle"
+            type="button"
+            aria-expanded={openSections.dateRange}
+            aria-controls="filter-section-date-range"
+            onClick={() => toggleFilterSection("dateRange")}
+          >
+            <span>Date Range</span>
+            <span aria-hidden="true" className="filter-section-chevron">
+              {openSections.dateRange ? "−" : "+"}
+            </span>
+          </button>
+        </h3>
+
+        <div
+          id="filter-section-date-range"
+          className="filter-section-body"
+          hidden={!openSections.dateRange}
+        >
+          <div className="date-range-picker">
+            <div className="date-range-summary" aria-live="polite">
+              <span>Selected range</span>
+              <strong>{getDateRangeLabel()}</strong>
+            </div>
+
+            {availableCallDates.length > 0 ? (
+              <div className="date-calendar-shell" aria-label="Dates with calls">
+                <DatePicker
+                  inline
+                  selectsRange
+                  selected={selectedStartDate}
+                  startDate={selectedStartDate}
+                  endDate={calendarEndDate}
+                  openToDate={selectedStartDate ?? maxAvailableDate ?? undefined}
+                  minDate={minAvailableDate ?? undefined}
+                  maxDate={maxAvailableDate ?? undefined}
+                  includeDates={availableDateObjects}
+                  filterDate={isDateSelectable}
+                  highlightDates={availableDateObjects}
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
+                  shouldCloseOnSelect={false}
+                  calendarClassName="date-range-calendar"
+                  onChange={handleDateRangeChange}
+                />
+              </div>
+            ) : (
+              <p className="date-range-empty">No call dates available.</p>
+            )}
+
+            <button
+              className="secondary-button date-range-clear-button"
+              type="button"
+              disabled={!hasSelectedDateRange}
+              onClick={handleClearDateRange}
+            >
+              Clear date range
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="filter-section">
+        <h3>
+          <button
+            className="filter-section-toggle"
+            type="button"
+            aria-expanded={openSections.duration}
+            aria-controls="filter-section-duration"
+            onClick={() => toggleFilterSection("duration")}
+          >
+            <span>Duration</span>
+            <span aria-hidden="true" className="filter-section-chevron">
+              {openSections.duration ? "−" : "+"}
+            </span>
+          </button>
+        </h3>
+
+        <div
+          id="filter-section-duration"
+          className="filter-section-body"
+          hidden={!openSections.duration}
+        >
+          <div className="duration-slider">
+            <div className="duration-slider-values">
+              <span>{formatDurationLabel(durationMin)}</span>
+              <span>{formatDurationLabel(durationMax, true)}</span>
+            </div>
+
+            <div
+              className="duration-slider-track"
+              style={
+                {
+                  "--duration-min": `${durationMinPercent}%`,
+                  "--duration-max": `${durationMaxPercent}%`,
+                } as DurationSliderStyle
+              }
+            >
+              <input
+                type="range"
+                min="0"
+                max={durationSliderMax}
+                step="5"
+                value={durationMin}
+                aria-label="Minimum call duration in seconds"
+                onChange={(event) => handleDurationMinChange(event.target.value)}
+              />
+              <input
+                type="range"
+                min="0"
+                max={durationSliderMax}
+                step="5"
+                value={durationMax}
+                aria-label="Maximum call duration in seconds"
+                onChange={(event) => handleDurationMaxChange(event.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="modal-actions filter-actions">
+        <button
+          className="secondary-button"
+          onClick={onReset}
+          title="Reset filters"
+          aria-label="Reset filters"
+        >
+          Reset filters
+        </button>
+        <button className="secondary-button" onClick={onClose} title="Cancel" aria-label="Cancel">
+          Cancel
+        </button>
+
+        <button
+          className="primary-button"
+          onClick={onConfirm}
+          title="Confirm filters"
+          aria-label="Confirm filters"
+        >
+          Confirm filters
+        </button>
+      </div>
+    </Modal>
   );
 }
 

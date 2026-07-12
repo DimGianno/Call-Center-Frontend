@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import type { TutorialEventId, TutorialTargetId, TutorialTopicId } from "../types";
 
 interface TutorialWelcomeDialogProps {
@@ -203,6 +204,8 @@ function getStepsForFlow(activeFlow: TutorialTopicId, hasAnyCalls: boolean) {
 }
 
 function TutorialWelcomeDialog({ onStart, onSkip }: TutorialWelcomeDialogProps) {
+  useBodyScrollLock();
+
   return (
     <div className="tutorial-welcome-layer">
       <section

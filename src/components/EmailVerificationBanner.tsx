@@ -50,7 +50,7 @@ function EmailVerificationBanner({
 
   return (
     <section className="email-verification-banner" aria-label="Email verification notice">
-      <div>
+      <div className="email-verification-content">
         <strong>Verify your email address</strong>
         <p>
           We sent a verification link to {email}.

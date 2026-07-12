@@ -44,7 +44,7 @@ https://call-center-frontend-fawn.vercel.app/
 Backend API documentation:
 
 ```txt
-https://call-center-backend-7z8r.onrender.com/api-docs/
+https://api.call-center.dimgianno.com/api-docs/
 ```
 
 Backend GitHub repository:

@@ -60,15 +60,18 @@ exports[`component snapshots > matches the danger processing confirmation dialog
   <div
     class="modal-overlay confirm-modal-overlay"
   >
-    <div
+    <section
+      aria-labelledby="confirm-dialog-title"
       aria-modal="true"
-      class="confirm-dialog"
+      class="modal-surface confirm-dialog"
       role="dialog"
     >
       <div
         class="modal-header"
       >
-        <h2>
+        <h2
+          id="confirm-dialog-title"
+        >
           Delete this call?
         </h2>
         <button
@@ -87,7 +90,7 @@ exports[`component snapshots > matches the danger processing confirmation dialog
         This call will be permanently removed from the dashboard.
       </p>
       <div
-        class="confirm-actions"
+        class="modal-actions confirm-actions"
       >
         <button
           class="secondary-button"
@@ -104,7 +107,7 @@ exports[`component snapshots > matches the danger processing confirmation dialog
           Working...
         </button>
       </div>
-    </div>
+    </section>
   </div>
 </DocumentFragment>
 `;
@@ -114,15 +117,18 @@ exports[`component snapshots > matches the normal confirmation dialog snapshot 1
   <div
     class="modal-overlay confirm-modal-overlay"
   >
-    <div
+    <section
+      aria-labelledby="confirm-dialog-title"
       aria-modal="true"
-      class="confirm-dialog"
+      class="modal-surface confirm-dialog"
       role="dialog"
     >
       <div
         class="modal-header"
       >
-        <h2>
+        <h2
+          id="confirm-dialog-title"
+        >
           Reload calls?
         </h2>
         <button
@@ -140,7 +146,7 @@ exports[`component snapshots > matches the normal confirmation dialog snapshot 1
         This will refresh the list from the backend and close any selected call.
       </p>
       <div
-        class="confirm-actions"
+        class="modal-actions confirm-actions"
       >
         <button
           class="secondary-button"
@@ -155,7 +161,7 @@ exports[`component snapshots > matches the normal confirmation dialog snapshot 1
           Reload calls
         </button>
       </div>
-    </div>
+    </section>
   </div>
 </DocumentFragment>
 `;
@@ -325,7 +331,9 @@ exports[`component snapshots > matches the success toast snapshot 1`] = `
     class="toast toast-success"
     role="status"
   >
-    <p>
+    <p
+      class="toast-message"
+    >
       Call archived successfully.
     </p>
     <button

@@ -9,7 +9,7 @@ interface ToastProps {
 function Toast({ message, type = "success", onDismiss }: ToastProps) {
   return (
     <div className={`toast toast-${type}`} role="status" aria-live="polite">
-      <p>{message}</p>
+      <p className="toast-message">{message}</p>
       <button
         type="button"
         className="toast-dismiss"
