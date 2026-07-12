@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { TUTORIAL_VERSION } from "../hooks/useTutorial";
+import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import type {
   AuthSession,
   Theme,
@@ -151,6 +152,7 @@ function AccountDrawer({
 }: AccountDrawerProps) {
   const [isTutorialSectionOpen, setIsTutorialSectionOpen] = useState(false);
   const tutorialHeaderStatus = getTutorialHeaderStatus(tutorialState);
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) {

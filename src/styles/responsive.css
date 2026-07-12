@@ -80,6 +80,11 @@
     padding: 18px;
   }
 
+  .email-verification-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .drawer-tutorial-list {
     grid-template-columns: 1fr;
   }
@@ -224,8 +229,8 @@
   }
 
   .modal-overlay {
+    --modal-gutter: 16px;
     align-items: flex-start;
-    padding: 16px;
   }
 
   .toast {
@@ -236,10 +241,7 @@
     align-items: flex-start;
   }
 
-  .call-details-modal,
-  .filter-modal,
-  .confirm-dialog {
-    max-height: calc(100vh - 32px);
+  .modal-surface {
     padding: 18px;
   }
 

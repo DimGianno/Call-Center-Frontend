@@ -71,14 +71,14 @@ npm install
 Create a `.env` file in the project root:
 
 ```env
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=http://localhost:3000/api
 ```
 
-During local development, `VITE_API_URL` can point directly at the backend, for example
-`http://localhost:3000`.
+During local development, `VITE_API_URL` can point directly at the backend API base, for example
+`http://localhost:3000/api`.
 
 In production builds the app calls `/api/*` on the current Vercel origin. `vercel.json` rewrites
-those requests to the Render backend through `BACKEND_PROXY_URL`, which keeps browser requests
+those requests to the backend through `BACKEND_PROXY_URL`, which keeps browser requests
 same-origin and lets mobile browsers keep sending the HttpOnly session cookie reliably.
 
 Start the development server:
@@ -119,7 +119,7 @@ Live deployments use these custom domains:
 | Production  | https://call-center.dimgianno.com         | https://api.call-center.dimgianno.com         |
 | Staging     | https://call-center-staging.dimgianno.com | https://api-staging.call-center.dimgianno.com |
 
-Vercel should proxy frontend `/api/*` requests to the matching Render backend with
+Vercel should proxy frontend `/api/*` requests to the matching backend with
 `BACKEND_PROXY_URL`.
 
 Production Vercel environment:
@@ -134,7 +134,8 @@ Staging or preview Vercel environment:
 BACKEND_PROXY_URL=https://api-staging.call-center.dimgianno.com
 ```
 
-Do not include a trailing slash in `BACKEND_PROXY_URL`. After changing Vercel environment
+Do not include `/api` or a trailing slash in `BACKEND_PROXY_URL`; the Vercel rewrite adds the API
+prefix. After changing Vercel environment
 variables, redeploy the affected environment so `vercel.json` uses the new value.
 
 Deployed production builds always call `/api/*` on the current frontend origin. `VITE_API_URL` is
@@ -390,7 +391,7 @@ This means:
 
 - local development can call a direct backend URL from `VITE_API_URL`
 - production calls `/api/*` on the Vercel frontend origin
-- Vercel rewrites `/api/*` to the Render backend through `BACKEND_PROXY_URL`
+- Vercel rewrites `/api/*` to the backend through `BACKEND_PROXY_URL`
 
 Authenticated requests include:
 
@@ -401,9 +402,8 @@ credentials: "include";
 That option tells `fetch` to send cookies to the backend and accept cookie updates from auth
 responses, assuming the backend CORS policy allows the current origin.
 
-The same-origin Vercel proxy is important for mobile and tablet browsers. It avoids the browser
-treating `vercel.app -> onrender.com` as a third-party-cookie flow while still keeping the backend
-hosted on Render.
+The same-origin Vercel proxy is important for mobile and tablet browsers. It avoids a cross-origin
+cookie flow while still keeping the backend address configurable per Vercel environment.
 
 ### Auth Endpoints
 

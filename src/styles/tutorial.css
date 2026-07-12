@@ -42,25 +42,39 @@
 }
 
 .tutorial-welcome-layer {
+  --tutorial-gutter: 24px;
   position: fixed;
   inset: 0;
   z-index: 220;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--tutorial-gutter);
   background: rgba(15, 23, 42, 0.5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .tutorial-welcome-dialog,
 .tutorial-panel {
-  width: min(460px, 100%);
+  width: min(460px, calc(100% - 48px));
+  max-height: calc(100dvh - 48px);
+  min-width: 0;
   padding: 22px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-popup);
   background: var(--color-surface);
   color: var(--color-text-main);
   box-shadow: var(--shadow-popup);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
+}
+
+.tutorial-welcome-dialog {
+  width: min(460px, 100%);
+  max-height: calc(100dvh - var(--tutorial-gutter) - var(--tutorial-gutter));
 }
 
 .tutorial-welcome-dialog h2,
@@ -145,6 +159,7 @@
 .tutorial-actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 20px;
 }
@@ -155,6 +170,7 @@
   }
 
   .tutorial-welcome-layer {
+    --tutorial-gutter: 16px;
     align-items: flex-start;
     padding: 16px;
   }
@@ -164,6 +180,7 @@
     bottom: 16px;
     left: 16px;
     width: auto;
+    max-height: calc(100dvh - 32px);
   }
 
   .tutorial-panel.is-docked-top {

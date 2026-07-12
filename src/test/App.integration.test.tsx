@@ -1309,10 +1309,8 @@ describe("App API-backed user flows", () => {
     await screen.findByText("Selected Call Info:");
     await userEvent.click(screen.getByRole("button", { name: "Delete call" }));
 
-    expect(screen.getByRole("dialog")).toHaveTextContent("Delete this call?");
-    await userEvent.click(
-      within(screen.getByRole("dialog")).getByRole("button", { name: "Delete call" }),
-    );
+    const deleteDialog = screen.getByRole("dialog", { name: "Delete this call?" });
+    await userEvent.click(within(deleteDialog).getByRole("button", { name: "Delete call" }));
 
     expect(deleteCall).toHaveBeenCalledWith("call-1");
     expect(await screen.findByText("No active calls available.")).toBeInTheDocument();

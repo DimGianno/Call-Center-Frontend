@@ -1,41 +1,47 @@
 .modal-overlay {
+  --modal-gutter: 24px;
   position: fixed;
   inset: 0;
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--modal-gutter);
   background: rgba(15, 23, 42, 0.45);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .confirm-modal-overlay {
   z-index: 240;
 }
 
-.call-details-modal,
-.filter-modal,
-.confirm-dialog {
-  max-height: calc(100vh - 48px);
+.modal-surface {
+  width: min(100%, var(--modal-max-width));
+  max-height: calc(100dvh - var(--modal-gutter) - var(--modal-gutter));
+  min-width: 0;
   padding: 24px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-popup);
   box-shadow: var(--shadow-popup);
   color: var(--color-text-main);
+  overflow-x: hidden;
   overflow-y: auto;
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
 }
 
 .call-details-modal {
-  width: min(720px, 100%);
+  --modal-max-width: 720px;
 }
 
 .filter-modal {
-  width: min(620px, 100%);
+  --modal-max-width: 620px;
 }
 
 .confirm-dialog {
-  width: min(460px, 100%);
+  --modal-max-width: 460px;
 }
 
 .modal-header {
@@ -47,9 +53,15 @@
 }
 
 .modal-header h2 {
+  min-width: 0;
   margin: 0;
   color: var(--color-text-heading);
   font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.modal-header .close-button {
+  flex: 0 0 auto;
 }
 
 .details-table {
@@ -82,11 +94,14 @@
 
 .details-table td {
   color: var(--color-text-main);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .details-notes {
   margin: 0;
   padding-left: 18px;
+  overflow-wrap: anywhere;
 }
 
 .details-notes li {
@@ -112,6 +127,8 @@
 }
 
 .details-note-form textarea {
+  width: 100%;
+  max-width: 100%;
   min-height: 96px;
   resize: vertical;
   padding: 12px;
@@ -133,7 +150,6 @@
 
 .details-actions {
   display: flex;
-  flex-wrap: wrap;
   gap: 10px;
   margin-top: 16px;
 }
@@ -143,6 +159,12 @@
   color: var(--color-text-main);
   font-size: 15px;
   line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.modal-actions {
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .confirm-actions {
@@ -261,15 +283,18 @@
 }
 
 .date-range-summary strong {
+  min-width: 0;
   color: var(--color-text-heading);
   font-size: 13px;
   line-height: 1.35;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .date-calendar-shell {
   display: flex;
   justify-content: center;
+  min-width: 0;
   padding: 12px;
   background: var(--color-button-bg-hover);
   border: 1px solid var(--color-border);
@@ -278,6 +303,7 @@
 
 .date-range-calendar.react-datepicker {
   width: min(100%, 360px);
+  max-width: 100%;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);

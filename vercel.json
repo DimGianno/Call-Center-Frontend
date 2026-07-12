@@ -3,7 +3,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "${BACKEND_PROXY_URL}/$1",
+      "dest": "${BACKEND_PROXY_URL}/api/$1",
       "env": ["BACKEND_PROXY_URL"]
     },
     {
