@@ -71,11 +71,11 @@ npm install
 Create a `.env` file in the project root:
 
 ```env
-VITE_API_URL=http://localhost:3000/api
+VITE_API_URL=http://localhost:3000
 ```
 
-During local development, `VITE_API_URL` can point directly at the backend API base, for example
-`http://localhost:3000/api`.
+During local development, `VITE_API_URL` can point directly at the backend, for example
+`http://localhost:3000`.
 
 In production builds the app calls `/api/*` on the current Vercel origin. `vercel.json` rewrites
 those requests to the backend through `BACKEND_PROXY_URL`, which keeps browser requests
@@ -134,8 +134,8 @@ Staging or preview Vercel environment:
 BACKEND_PROXY_URL=https://api-staging.call-center.dimgianno.com
 ```
 
-Do not include `/api` or a trailing slash in `BACKEND_PROXY_URL`; the Vercel rewrite adds the API
-prefix. After changing Vercel environment
+Do not include `/api` or a trailing slash in `BACKEND_PROXY_URL`. The Vercel rewrite removes the
+frontend-facing `/api` prefix before forwarding the request. After changing Vercel environment
 variables, redeploy the affected environment so `vercel.json` uses the new value.
 
 Deployed production builds always call `/api/*` on the current frontend origin. `VITE_API_URL` is
