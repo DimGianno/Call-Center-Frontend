@@ -86,9 +86,7 @@ function isTutorialState(value: unknown): value is TutorialState {
     (typeof candidate.completedAt === "string" || candidate.completedAt === null) &&
     (typeof candidate.skippedAt === "string" || candidate.skippedAt === null) &&
     Array.isArray(candidate.completedTopics) &&
-    candidate.completedTopics.every((topic) => typeof topic === "string") &&
-    Array.isArray(candidate.newTopics) &&
-    candidate.newTopics.every((topic) => typeof topic === "string")
+    candidate.completedTopics.every((topic) => typeof topic === "string")
   );
 }
 

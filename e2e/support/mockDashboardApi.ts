@@ -1,7 +1,6 @@
 import type { Page, Route } from "@playwright/test";
 
 interface MockDashboardOptions {
-  showRelease?: boolean;
   showWelcome?: boolean;
 }
 
@@ -61,23 +60,14 @@ function fulfillJson(route: Route, body: unknown, status = 200) {
 
 export async function mockDashboardApi(
   page: Page,
-  { showRelease = false, showWelcome = false }: MockDashboardOptions = {},
+  { showWelcome = false }: MockDashboardOptions = {},
 ) {
-  await page.route("https://va.vercel-scripts.com/**", async (route) => {
-    await route.fulfill({ status: 200, contentType: "text/javascript", body: "" });
-  });
-
-  let selectedCall = {
-    ...detailedCall,
-    notes: [...detailedCall.notes],
-  };
   let tutorialState = {
-    version: showRelease ? 1 : 2,
+    version: 1,
     hasSeenWelcome: !showWelcome,
     completedAt: null,
     skippedAt: showWelcome ? null : "2026-07-01T00:00:00.000Z",
     completedTopics: [] as string[],
-    newTopics: showRelease ? ["call-item"] : ([] as string[]),
   };
 
   const apiRequestPattern =
@@ -137,22 +127,12 @@ export async function mockDashboardApi(
     }
 
     if (/^\/calls\/[^/]+$/.test(path) && request.method() === "GET") {
-      await fulfillJson(route, selectedCall);
-      return;
-    }
-
-    const deleteNoteMatch = path.match(/^\/calls\/[^/]+\/notes\/([^/]+)$/);
-    if (deleteNoteMatch && request.method() === "DELETE") {
-      selectedCall = {
-        ...selectedCall,
-        notes: selectedCall.notes.filter((note) => note.id !== deleteNoteMatch[1]),
-      };
-      await fulfillJson(route, selectedCall);
+      await fulfillJson(route, detailedCall);
       return;
     }
 
     if (path.startsWith("/calls")) {
-      await fulfillJson(route, selectedCall);
+      await fulfillJson(route, detailedCall);
       return;
     }
 

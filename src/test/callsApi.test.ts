@@ -149,14 +149,12 @@ describe("callsApi", () => {
   });
 
   it("sends request methods and JSON bodies for mutations", async () => {
-    const { addCallNote, archiveCall, deleteCall, deleteCallNote, resetCalls } =
-      await importCallsApi();
+    const { addCallNote, archiveCall, deleteCall, resetCalls } = await importCallsApi();
     const fetchMock = vi.mocked(fetch);
 
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ id: "call-1", notes: [{ content: "Hello" }] }))
       .mockResolvedValueOnce(jsonResponse({ id: "call-1", is_archived: true }))
-      .mockResolvedValueOnce(jsonResponse({ id: "call-1", notes: [] }))
       .mockResolvedValueOnce(emptyResponse())
       .mockResolvedValueOnce(
         jsonResponse({
@@ -168,7 +166,6 @@ describe("callsApi", () => {
 
     await addCallNote("call-1", "Hello");
     await archiveCall("call-1");
-    await deleteCallNote("call-1", "note-1");
     await deleteCall("call-1");
     await resetCalls();
 
@@ -187,16 +184,11 @@ describe("callsApi", () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
-      `${API_URL}/calls/call-1/notes/note-1`,
-      expect.objectContaining({ method: "DELETE" }),
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      4,
       `${API_URL}/calls/call-1`,
       expect.objectContaining({ method: "DELETE" }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
-      5,
+      4,
       `${API_URL}/calls/reset`,
       expect.objectContaining({ method: "POST" }),
     );

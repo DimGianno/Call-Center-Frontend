@@ -58,7 +58,6 @@ export type TutorialTargetId =
   | "call-card"
   | "call-details"
   | "call-details-summary"
-  | "note-delete-actions"
   | "call-update-actions"
   | "note-field"
   | "filters-button"
@@ -88,7 +87,6 @@ export interface TutorialState {
   completedAt: string | null;
   skippedAt: string | null;
   completedTopics: string[];
-  newTopics: string[];
 }
 
 export type TutorialStateUpdate = Partial<TutorialState>;

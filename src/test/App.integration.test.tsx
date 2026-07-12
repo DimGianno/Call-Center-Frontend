@@ -17,7 +17,6 @@ import {
   archiveAllCalls,
   archiveCall,
   deleteCall,
-  deleteCallNote,
   fetchAllCalls,
   fetchCall,
   resetCalls,
@@ -65,7 +64,6 @@ vi.mock("../api/callsApi", () => {
     archiveAllCalls: vi.fn(),
     archiveCall: vi.fn(),
     deleteCall: vi.fn(),
-    deleteCallNote: vi.fn(),
     fetchAllCalls: vi.fn(),
     fetchCall: vi.fn(),
     resetCalls: vi.fn(),
@@ -91,7 +89,6 @@ const addCallNoteMock = vi.mocked(addCallNote);
 const archiveAllCallsMock = vi.mocked(archiveAllCalls);
 const archiveCallMock = vi.mocked(archiveCall);
 const deleteCallMock = vi.mocked(deleteCall);
-const deleteCallNoteMock = vi.mocked(deleteCallNote);
 const fetchAllCallsMock = vi.mocked(fetchAllCalls);
 const fetchCallMock = vi.mocked(fetchCall);
 const resetCallsMock = vi.mocked(resetCalls);
@@ -156,12 +153,11 @@ function createAuthSession(overrides: Partial<AuthSession> = {}): AuthSession {
 
 function createTutorialState(overrides: Partial<TutorialState> = {}): TutorialState {
   return {
-    version: 2,
+    version: 1,
     hasSeenWelcome: true,
     completedAt: "2026-07-01T10:00:00.000Z",
     skippedAt: null,
     completedTopics: ["seeding", "ui", "call-feed", "call-item"],
-    newTopics: [],
     ...overrides,
   };
 }
@@ -175,7 +171,6 @@ function mockTutorialState(overrides: Partial<TutorialState> = {}) {
       ...tutorialState,
       ...update,
       completedTopics: update.completedTopics ?? tutorialState.completedTopics,
-      newTopics: update.newTopics ?? tutorialState.newTopics,
     };
   });
 
@@ -924,7 +919,7 @@ describe("App API-backed user flows", () => {
     await waitFor(() => {
       expect(updateTutorialStateMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          version: 2,
+          version: 1,
           hasSeenWelcome: true,
           skippedAt: expect.any(String),
         }),
@@ -1031,9 +1026,6 @@ describe("App API-backed user flows", () => {
     expect(await screen.findByRole("dialog", { name: "Review a call" })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
-    expect(screen.getByRole("dialog", { name: "Delete a note" })).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog", { name: "Update a call" })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Finish" }));
@@ -1041,11 +1033,10 @@ describe("App API-backed user flows", () => {
     await waitFor(() => {
       expect(updateTutorialStateMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          version: 2,
+          version: 1,
           hasSeenWelcome: true,
           completedAt: expect.any(String),
           completedTopics: ["seeding", "ui", "call-feed", "call-item"],
-          newTopics: [],
         }),
       );
     });
@@ -1098,30 +1089,6 @@ describe("App API-backed user flows", () => {
     expect(screen.getByRole("button", { name: "UI Completed" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Call feed Not started" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Call item Not started" })).toBeInTheDocument();
-  });
-
-  it("announces version 2 once while keeping only Call item marked as new", async () => {
-    mockTutorialState({
-      version: 1,
-      newTopics: ["call-item"],
-    });
-
-    renderApp();
-
-    expect(
-      await screen.findByRole("dialog", { name: "Delete individual call notes" }),
-    ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Not now" }));
-    expect(updateTutorialStateMock).toHaveBeenCalledWith({ version: 2 });
-
-    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
-    await userEvent.click(screen.getByRole("button", { name: "Tutorials New" }));
-
-    expect(screen.getByRole("button", { name: "Full tutorial New" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Call item New" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Seeding calls Completed" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "UI Completed" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Call feed Completed" })).toBeInTheDocument();
   });
 
   it("shows an API error when calls fail to load", async () => {
@@ -1203,49 +1170,6 @@ describe("App API-backed user flows", () => {
       ),
     ).not.toBeInTheDocument();
     expect(screen.getByText("No notes available for this call.")).toBeInTheDocument();
-  });
-
-  it("confirms and deletes one note while leaving the call details open", async () => {
-    const callWithNote = {
-      ...activeCall,
-      notes: [{ id: "note-1", content: "Customer asked for a callback." }],
-    };
-    fetchCallMock.mockResolvedValue(callWithNote);
-    deleteCallNoteMock.mockResolvedValue({ ...callWithNote, notes: [] });
-
-    renderApp();
-
-    await userEvent.click(await screen.findByText("+1 555-0100"));
-    await screen.findByText("Customer asked for a callback.");
-    await userEvent.click(screen.getByRole("button", { name: "Delete note" }));
-
-    const deleteNoteDialog = screen.getByRole("dialog", { name: "Delete this note?" });
-    expect(deleteNoteDialog).toHaveTextContent("This note will be permanently deleted.");
-    await userEvent.click(within(deleteNoteDialog).getByRole("button", { name: "Delete note" }));
-
-    expect(deleteCallNote).toHaveBeenCalledWith("call-1", "note-1");
-    expect(await screen.findByText("No notes available for this call.")).toBeInTheDocument();
-    expect(screen.getByText("Selected Call Info:")).toBeInTheDocument();
-    expect(screen.getByText("Note deleted successfully.")).toBeInTheDocument();
-  });
-
-  it("rolls back an optimistic note deletion when the API fails", async () => {
-    const callWithNote = {
-      ...activeCall,
-      notes: [{ id: "note-1", content: "Keep this note." }],
-    };
-    fetchCallMock.mockResolvedValue(callWithNote);
-    deleteCallNoteMock.mockRejectedValue(new Error("Note deletion failed."));
-
-    renderApp();
-
-    await userEvent.click(await screen.findByText("+1 555-0100"));
-    await userEvent.click(screen.getByRole("button", { name: "Delete note" }));
-    const dialog = screen.getByRole("dialog", { name: "Delete this note?" });
-    await userEvent.click(within(dialog).getByRole("button", { name: "Delete note" }));
-
-    expect(await screen.findByText("Note deletion failed.")).toBeInTheDocument();
-    expect(screen.getByText("Keep this note.")).toBeInTheDocument();
   });
 
   it("archives an active call through the API and removes it from the active feed", async () => {
