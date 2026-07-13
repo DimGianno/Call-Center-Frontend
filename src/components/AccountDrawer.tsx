@@ -13,6 +13,7 @@ interface AccountDrawerProps {
   activeTutorialTarget: TutorialTargetId | null;
   isOpen: boolean;
   onClose: () => void;
+  onChangePassword: () => void;
   onLogout: () => void | Promise<void>;
   onStartTutorial: (topicId: TutorialTopicId) => void;
   onToggleTheme: () => void;
@@ -143,6 +144,7 @@ function AccountDrawer({
   activeTutorialTarget,
   isOpen,
   onClose,
+  onChangePassword,
   onLogout,
   onStartTutorial,
   onToggleTheme,
@@ -291,6 +293,9 @@ function AccountDrawer({
 
         <div className="account-drawer-section">
           <h3>Session</h3>
+          <button className="drawer-password-button" type="button" onClick={onChangePassword}>
+            Change password
+          </button>
           <button className="drawer-logout-button" type="button" onClick={() => onLogout()}>
             Logout
           </button>

@@ -5,6 +5,8 @@ import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import HomePage from "./pages/HomePage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicOnlyRoute from "./routes/PublicOnlyRoute";
 import useAuthSession from "./hooks/useAuthSession";
@@ -72,11 +74,26 @@ function AppRoutes() {
           element={<VerifyEmailPage onToggleTheme={handleToggleTheme} theme={theme} />}
         />
         <Route
+          path="/forgot-password"
+          element={<ForgotPasswordPage onToggleTheme={handleToggleTheme} theme={theme} />}
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <ResetPasswordPage
+              onResetPassword={auth.handleResetPassword}
+              onToggleTheme={handleToggleTheme}
+              theme={theme}
+            />
+          }
+        />
+        <Route
           path="/dashboard"
           element={
             <ProtectedRoute isAuthReady={auth.isAuthReady} session={auth.session}>
               <DashboardPage
                 formattedRemainingSessionTime={formattedRemainingSessionTime}
+                onChangePassword={auth.handleChangePassword}
                 onLogout={auth.handleLogout}
                 onRefreshSessionTimer={auth.handleRefreshSessionTimer}
                 onToggleTheme={handleToggleTheme}
