@@ -274,6 +274,63 @@ describe("authApi", () => {
     );
   });
 
+  it("requests a password reset with the account email", async () => {
+    const { requestPasswordReset } = await importAuthApi();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ message: "Requested" }));
+    await requestPasswordReset("user@example.com");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_URL}/auth/forgot-password`,
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ email: "user@example.com" }),
+      }),
+    );
+  });
+
+  it("resets a password with an emailed token", async () => {
+    const { resetPassword } = await importAuthApi();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ message: "Reset" }));
+    await resetPassword({ token: "reset-token", password: "new-password123" });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_URL}/auth/reset-password`,
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ token: "reset-token", password: "new-password123" }),
+      }),
+    );
+  });
+
+  it("changes the authenticated user's password", async () => {
+    const { changePassword } = await importAuthApi();
+    const fetchMock = vi.mocked(fetch);
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ message: "Changed" }));
+    await changePassword({
+      currentPassword: "password123",
+      newPassword: "new-password123",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_URL}/auth/change-password`,
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          currentPassword: "password123",
+          newPassword: "new-password123",
+        }),
+      }),
+    );
+  });
+
   it("surfaces backend auth errors", async () => {
     const { loginUser } = await importAuthApi();
     const fetchMock = vi.mocked(fetch);

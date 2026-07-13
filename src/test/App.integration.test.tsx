@@ -3,10 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { wakeBackend } from "../api/healthApi";
 import {
+  changePassword,
   getCurrentSession,
   loginUser,
+  requestPasswordReset,
   resendVerificationEmail,
   signupUser,
+  resetPassword,
   verifyEmailToken,
 } from "../api/authApi";
 import App from "../App";
@@ -32,6 +35,7 @@ vi.mock("../api/authApi", () => {
       const storedSession = window.localStorage.getItem("call-center-demo-session");
       return storedSession ? JSON.parse(storedSession) : null;
     }),
+    changePassword: vi.fn(),
     loginUser: vi.fn(),
     logoutUser: vi.fn(async () => {
       window.localStorage.removeItem("call-center-demo-session");
@@ -46,6 +50,8 @@ vi.mock("../api/authApi", () => {
       window.localStorage.setItem("call-center-demo-session", JSON.stringify(refreshedSession));
       return refreshedSession;
     }),
+    requestPasswordReset: vi.fn(),
+    resetPassword: vi.fn(),
     resendVerificationEmail: vi.fn(),
     signupUser: vi.fn(),
     verifyEmailToken: vi.fn(),
@@ -96,7 +102,10 @@ const unarchiveAllCallsMock = vi.mocked(unarchiveAllCalls);
 const unarchiveCallMock = vi.mocked(unarchiveCall);
 const wakeBackendMock = vi.mocked(wakeBackend);
 const getCurrentSessionMock = vi.mocked(getCurrentSession);
+const changePasswordMock = vi.mocked(changePassword);
 const loginUserMock = vi.mocked(loginUser);
+const requestPasswordResetMock = vi.mocked(requestPasswordReset);
+const resetPasswordMock = vi.mocked(resetPassword);
 const resendVerificationEmailMock = vi.mocked(resendVerificationEmail);
 const signupUserMock = vi.mocked(signupUser);
 const verifyEmailTokenMock = vi.mocked(verifyEmailToken);
@@ -256,6 +265,9 @@ describe("App auth gate", () => {
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
     mockTutorialState();
     resendVerificationEmailMock.mockResolvedValue(undefined);
+    requestPasswordResetMock.mockResolvedValue(undefined);
+    resetPasswordMock.mockResolvedValue(undefined);
+    changePasswordMock.mockResolvedValue(undefined);
     verifyEmailTokenMock.mockResolvedValue(undefined);
     loginUserMock.mockResolvedValue(
       createAuthSession({
@@ -601,6 +613,67 @@ describe("App auth gate", () => {
     expect(screen.getByRole("link", { name: "Go to login" })).toHaveAttribute("href", "/login");
   });
 
+  it("requests a password reset from the login page without revealing account existence", async () => {
+    renderApp("/login");
+
+    await userEvent.click(await screen.findByRole("link", { name: "Forgot password?" }));
+    expect(window.location.pathname).toBe("/forgot-password");
+    expect(screen.getByRole("heading", { name: "Forgot password?" })).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Email"), "  recovery@example.com  ");
+    await userEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+
+    expect(requestPasswordResetMock).toHaveBeenCalledWith("recovery@example.com");
+    expect(await screen.findByText(/If an account exists for this email/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to login" })).toHaveAttribute("href", "/login");
+  });
+
+  it("handles missing and invalid password reset links", async () => {
+    const { unmount } = renderApp("/reset-password");
+
+    expect(
+      await screen.findByText("This password reset link is missing a token."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Request a new link" })).toHaveAttribute(
+      "href",
+      "/forgot-password",
+    );
+
+    unmount();
+    resetPasswordMock.mockRejectedValueOnce(new Error("Password reset link is invalid or expired"));
+    renderApp("/reset-password?token=invalid-token");
+    await userEvent.type(await screen.findByLabelText("New password"), "new-password123");
+    await userEvent.type(screen.getByLabelText("Confirm new password"), "new-password123");
+    await userEvent.click(screen.getByRole("button", { name: "Reset password" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Password reset link is invalid or expired",
+    );
+  });
+
+  it("validates password confirmation and completes a password reset", async () => {
+    renderApp("/reset-password?token=reset-token");
+
+    await userEvent.type(await screen.findByLabelText("New password"), "new-password123");
+    await userEvent.type(screen.getByLabelText("Confirm new password"), "different-password");
+    await userEvent.click(screen.getByRole("button", { name: "Reset password" }));
+
+    expect(screen.getByText("Passwords must match.")).toBeInTheDocument();
+    expect(resetPasswordMock).not.toHaveBeenCalled();
+
+    await userEvent.clear(screen.getByLabelText("Confirm new password"));
+    await userEvent.type(screen.getByLabelText("Confirm new password"), "new-password123");
+    await userEvent.click(screen.getByRole("button", { name: "Reset password" }));
+
+    expect(resetPasswordMock).toHaveBeenCalledWith({
+      token: "reset-token",
+      password: "new-password123",
+    });
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(screen.getByText(/Password updated successfully/i)).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/login");
+  });
+
   it("shows validation and login errors without entering the dashboard", async () => {
     loginUserMock.mockRejectedValueOnce(new Error("Invalid email or password"));
 
@@ -717,6 +790,49 @@ describe("App auth gate", () => {
     expect(window.location.pathname).toBe("/login");
   });
 
+  it("opens and cancels the change-password dialog from the account drawer", async () => {
+    seedAuthenticatedSession();
+    renderApp("/dashboard");
+
+    await screen.findByText("+1 555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    await userEvent.click(screen.getByRole("button", { name: "Change password" }));
+
+    expect(screen.getByRole("dialog", { name: "Change password" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Test Agent" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog", { name: "Change password" })).not.toBeInTheDocument();
+  });
+
+  it("shows change-password errors and signs out after success", async () => {
+    seedAuthenticatedSession();
+    changePasswordMock.mockRejectedValueOnce(new Error("Current password is incorrect"));
+    renderApp("/dashboard");
+
+    await screen.findByText("+1 555-0100");
+    await userEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    await userEvent.click(screen.getByRole("button", { name: "Change password" }));
+    await userEvent.type(screen.getByLabelText("Current password"), "password123");
+    await userEvent.type(screen.getByLabelText("New password"), "new-password123");
+    await userEvent.type(screen.getByLabelText("Confirm new password"), "new-password123");
+    await userEvent.click(screen.getByRole("button", { name: "Change password" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Current password is incorrect");
+    expect(window.location.pathname).toBe("/dashboard");
+
+    await userEvent.click(screen.getByRole("button", { name: "Change password" }));
+
+    expect(changePasswordMock).toHaveBeenLastCalledWith({
+      currentPassword: "password123",
+      newPassword: "new-password123",
+    });
+    expect(await screen.findByRole("heading", { name: "Dashboard Access" })).toBeInTheDocument();
+    expect(screen.getByText(/Password updated successfully/i)).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/login");
+    expect(window.localStorage.getItem("call-center-demo-session")).toBeNull();
+  });
+
   it("treats server-side session expiry as a logout", async () => {
     seedAuthenticatedSession();
 
@@ -743,6 +859,9 @@ describe("App API-backed user flows", () => {
     fetchAllCallsMock.mockResolvedValue([activeCall, archivedCall]);
     mockTutorialState();
     resendVerificationEmailMock.mockResolvedValue(undefined);
+    requestPasswordResetMock.mockResolvedValue(undefined);
+    resetPasswordMock.mockResolvedValue(undefined);
+    changePasswordMock.mockResolvedValue(undefined);
     verifyEmailTokenMock.mockResolvedValue(undefined);
   });
 

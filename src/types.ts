@@ -11,6 +11,16 @@ export interface SignupCredentials extends LoginCredentials {
   name: string;
 }
 
+export interface ResetPasswordCredentials {
+  token: string;
+  password: string;
+}
+
+export interface ChangePasswordCredentials {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface AuthUser {
   id: string;
   name: string;

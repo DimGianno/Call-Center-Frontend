@@ -1,5 +1,12 @@
 import { buildSession, clearActiveSession } from "../utils/authStorage";
-import type { AuthResponse, AuthSession, LoginCredentials, SignupCredentials } from "../types";
+import type {
+  AuthResponse,
+  AuthSession,
+  ChangePasswordCredentials,
+  LoginCredentials,
+  ResetPasswordCredentials,
+  SignupCredentials,
+} from "../types";
 import { API_BASE_URL } from "./apiBaseUrl";
 
 interface AuthApiError extends Error {
@@ -122,6 +129,18 @@ export async function resendVerificationEmail() {
 
 export async function verifyEmailToken(token: string) {
   await authRequest("/auth/verify-email", { token });
+}
+
+export async function requestPasswordReset(email: string) {
+  await authRequest("/auth/forgot-password", { email });
+}
+
+export async function resetPassword(credentials: ResetPasswordCredentials) {
+  await authRequest("/auth/reset-password", credentials);
+}
+
+export async function changePassword(credentials: ChangePasswordCredentials) {
+  await authRequest("/auth/change-password", credentials);
 }
 
 export async function logoutUser() {

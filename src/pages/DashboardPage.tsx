@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
-import type { AuthSession, Theme, TutorialTargetId, TutorialTopicId } from "../types";
+import type {
+  AuthSession,
+  ChangePasswordCredentials,
+  Theme,
+  TutorialTargetId,
+  TutorialTopicId,
+} from "../types";
 import AccountDrawer from "../components/AccountDrawer";
 import CallDetails from "../components/CallDetails";
 import CallFeed from "../components/CallFeed";
 import ConfirmDialog from "../components/ConfirmDialog";
+import ChangePasswordDialog from "../components/ChangePasswordDialog";
 import EmailVerificationBanner from "../components/EmailVerificationBanner";
 import StatsCards from "../components/StatsCards";
 import Toast from "../components/Toast";
@@ -16,6 +23,7 @@ import useToast from "../hooks/useToast";
 interface DashboardPageProps {
   formattedRemainingSessionTime: string;
   onLogout: (message?: string) => void | Promise<void>;
+  onChangePassword: (credentials: ChangePasswordCredentials) => Promise<void>;
   onRefreshSessionTimer: () => void | Promise<void>;
   onToggleTheme: () => void;
   session: AuthSession;
@@ -25,12 +33,14 @@ interface DashboardPageProps {
 function DashboardPage({
   formattedRemainingSessionTime,
   onLogout,
+  onChangePassword,
   onRefreshSessionTimer,
   onToggleTheme,
   session,
   theme,
 }: DashboardPageProps) {
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [activeTutorialTarget, setActiveTutorialTarget] = useState<TutorialTargetId | null>(null);
   const { toast, showToast, dismissToast } = useToast();
   const {
@@ -83,6 +93,11 @@ function DashboardPage({
     tutorial.startTutorial(topicId);
   }
 
+  function handleOpenChangePassword() {
+    setIsAccountDrawerOpen(false);
+    setIsChangePasswordOpen(true);
+  }
+
   return (
     <>
       <header className="app-header">
@@ -126,6 +141,7 @@ function DashboardPage({
       <AccountDrawer
         isOpen={isAccountDrawerOpen}
         onClose={handleCloseAccountDrawer}
+        onChangePassword={handleOpenChangePassword}
         onLogout={onLogout}
         onStartTutorial={handleStartTutorial}
         onToggleTheme={onToggleTheme}
@@ -134,6 +150,13 @@ function DashboardPage({
         theme={theme}
         tutorialState={tutorial.tutorialState}
       />
+
+      {isChangePasswordOpen && (
+        <ChangePasswordDialog
+          onCancel={() => setIsChangePasswordOpen(false)}
+          onChangePassword={onChangePassword}
+        />
+      )}
 
       <main
         className="dashboard"
