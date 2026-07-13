@@ -437,6 +437,7 @@ Implemented in `src/api/callsApi.ts`.
 | `fetchAllCalls()`                             | active + archived fetches in parallel  | Gives the dashboard both views.            |
 | `fetchCall(callId)`                           | `GET /calls/:callId`                   | Loads a single call's freshest details.    |
 | `addCallNote(callId, content)`                | `POST /calls/:callId/notes`            | Adds a note and returns the updated call.  |
+| `deleteCallNote(callId, noteId)`              | `DELETE /calls/:callId/notes/:noteId`  | Deletes one note and returns the call.     |
 | `archiveCall(callId)`                         | `PATCH /calls/:callId/archive`         | Archives one call.                         |
 | `unarchiveCall(callId)`                       | `PATCH /calls/:callId/unarchive`       | Restores one call to active.               |
 | `deleteCall(callId)`                          | `DELETE /calls/:callId`                | Deletes one call.                          |
@@ -467,7 +468,15 @@ The event payload is:
 ```ts
 {
   version: 1;
-  action: "archive" | "unarchive" | "delete" | "add_note" | "archive_all" | "unarchive_all" | "reset";
+  action:
+    | "archive"
+    | "unarchive"
+    | "delete"
+    | "add_note"
+    | "delete_note"
+    | "archive_all"
+    | "unarchive_all"
+    | "reset";
   callId?: string;
 }
 ```
@@ -490,6 +499,7 @@ interface TutorialState {
   completedAt: string | null;
   skippedAt: string | null;
   completedTopics: string[];
+  newTopics: string[];
 }
 ```
 
@@ -619,29 +629,30 @@ DashboardPage
 
 `useTutorial()` fetches tutorial state from the backend after the dashboard is ready.
 
-The welcome dialog appears only when the backend state says the user has not seen, skipped, or
-completed the current tutorial version.
+The first-visit welcome appears only when the user has not seen, skipped, or completed onboarding.
+Existing version-1 users receive a one-time version-2 feature notice for individual note deletion.
+Dismissal acknowledges the notice without clearing the persistent `New` badge on Call item.
 
 The current tutorial version is:
 
 ```ts
-export const TUTORIAL_VERSION = 1;
+export const TUTORIAL_VERSION = 2;
 ```
 
-Changing this number in the future can make the tutorial feel new again for users who completed an
-older version.
+`newTopics` tracks which updated categories remain unseen. Completing Call item removes its new
+status; completing Full tutorial clears all new topics without resetting previous completion data.
 
 ### Tutorial Categories
 
 The account drawer tutorial section exposes five launch buttons:
 
-| Topic         | What it covers                                                              |
-| ------------- | --------------------------------------------------------------------------- |
-| Full tutorial | Every tutorial category.                                                    |
-| Seeding calls | How new accounts get sample data.                                           |
-| UI            | Timer, account drawer, stats, controls, filters, pagination, and reset.     |
-| Call feed     | Date groups, routes, types, durations, and list layout.                     |
-| Call item     | Opening details, reading call fields, notes, archive/unarchive, and delete. |
+| Topic         | What it covers                                                            |
+| ------------- | ------------------------------------------------------------------------- |
+| Full tutorial | Every tutorial category.                                                  |
+| Seeding calls | How new accounts get sample data.                                         |
+| UI            | Timer, account drawer, stats, controls, filters, pagination, and reset.   |
+| Call feed     | Date groups, routes, types, durations, and list layout.                   |
+| Call item     | Opening details, adding or deleting notes, archive/unarchive, and delete. |
 
 The section folds under the Tutorials header. Each row has a status badge.
 

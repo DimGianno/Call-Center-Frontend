@@ -175,6 +175,12 @@ export function addCallNote(callId: string, content: string): Promise<Call> {
   });
 }
 
+export function deleteCallNote(callId: string, noteId: string): Promise<Call> {
+  return apiRequest<Call>(`/calls/${callId}/notes/${noteId}`, {
+    method: "DELETE",
+  });
+}
+
 export function archiveCall(callId: string): Promise<Call> {
   return apiRequest<Call>(`/calls/${callId}/archive`, {
     method: "PATCH",

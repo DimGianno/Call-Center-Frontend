@@ -7,6 +7,7 @@ import Modal from "./Modal";
 interface CallDetailsProps {
   call: Call;
   isTutorialActionsActive?: boolean;
+  isTutorialNotesActive?: boolean;
   isTutorialSummaryActive?: boolean;
   onClose: () => void;
   onAddNote: (callId: string, content: string) => Promise<boolean>;
@@ -14,6 +15,7 @@ interface CallDetailsProps {
   onArchiveCall: (callId: string) => Promise<boolean>;
   onUnarchiveCall: (callId: string) => Promise<boolean>;
   onDeleteCall: (callId: string) => boolean;
+  onDeleteNote: (callId: string, noteId: string) => boolean;
 }
 
 type PendingAction = "" | "note" | "archive" | "delete";
@@ -21,6 +23,7 @@ type PendingAction = "" | "note" | "archive" | "delete";
 function CallDetails({
   call,
   isTutorialActionsActive = false,
+  isTutorialNotesActive = false,
   isTutorialSummaryActive = false,
   onClose,
   onAddNote,
@@ -28,6 +31,7 @@ function CallDetails({
   onArchiveCall,
   onUnarchiveCall,
   onDeleteCall,
+  onDeleteNote,
 }: CallDetailsProps) {
   const [noteContent, setNoteContent] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingAction>("");
@@ -134,11 +138,33 @@ function CallDetails({
             <th>
               <strong>Notes:</strong>
             </th>
-            <td>
+            <td data-tutorial-active={isTutorialNotesActive ? "true" : undefined}>
               {call.notes && call.notes.length > 0 ? (
                 <ul className="details-notes">
                   {call.notes.map((note) => (
-                    <li key={note.id}>{note.content}</li>
+                    <li key={note.id}>
+                      <span>{note.content}</span>
+                      <button
+                        className="note-delete-button"
+                        type="button"
+                        title="Delete note"
+                        aria-label="Delete note"
+                        disabled={isBusy}
+                        onClick={() => onDeleteNote(call.id, note.id)}
+                      >
+                        <svg
+                          className="note-delete-icon"
+                          aria-hidden="true"
+                          focusable="false"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M4 7h16" />
+                          <path d="M9 7V4h6v3" />
+                          <path d="m6 7 1 13h10l1-13" />
+                          <path d="M10 11v5M14 11v5" />
+                        </svg>
+                      </button>
+                    </li>
                   ))}
                 </ul>
               ) : (
