@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import type { AuthMode, LoginCredentials, SignupCredentials, Theme } from "../types";
 import {
   getEmailValidationMessage,
@@ -253,6 +254,12 @@ function AuthScreen({
               </span>
             </span>
           </div>
+
+          {!isSignup && (
+            <Link className="auth-forgot-link" to="/forgot-password">
+              Forgot password?
+            </Link>
+          )}
 
           <button
             className="primary-button auth-submit-button"

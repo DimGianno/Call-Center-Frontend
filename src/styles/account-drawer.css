@@ -146,6 +146,25 @@
   justify-self: start;
 }
 
+.drawer-password-button {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-button-bg);
+  color: var(--color-button-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.drawer-password-button:hover {
+  background: var(--color-button-bg-hover);
+  color: var(--color-button-text-hover);
+}
+
 .drawer-theme-toggle .theme-toggle-label {
   max-width: 180px;
   margin-left: 8px;

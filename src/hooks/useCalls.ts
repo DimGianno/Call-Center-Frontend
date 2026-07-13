@@ -4,7 +4,6 @@ import {
   archiveAllCalls,
   archiveCall,
   deleteCall,
-  deleteCallNote,
   fetchAllCalls,
   fetchCall,
   resetCalls,
@@ -76,10 +75,6 @@ function useCalls({
 
               if (event?.action === "add_note" && event.callId === currentSelectedCallId) {
                 showToast("A note was added to this call in another tab.");
-              }
-
-              if (event?.action === "delete_note" && event.callId === currentSelectedCallId) {
-                showToast("A note was deleted from this call in another tab.");
               }
             }
           } else {
@@ -237,43 +232,6 @@ function useCalls({
     }
   }
 
-  function handleDeleteNote(callId: string, noteId: string) {
-    openConfirmDialog({
-      title: "Delete this note?",
-      message: "This note will be permanently deleted.",
-      confirmLabel: "Delete note",
-      isDanger: true,
-      onConfirm: async () => {
-        setErrorMessage("");
-        const previousCalls = calls;
-
-        setCalls((currentCalls) => {
-          return currentCalls.map((call) => {
-            if (call.id !== callId) {
-              return call;
-            }
-
-            return {
-              ...call,
-              notes: (call.notes ?? []).filter((note) => note.id !== noteId),
-            };
-          });
-        });
-
-        try {
-          const updatedCall = await deleteCallNote(callId, noteId);
-          updateCallInState(updatedCall);
-          showToast("Note deleted successfully.");
-        } catch (error) {
-          setCalls(previousCalls);
-          setErrorMessage(getErrorMessage(error));
-        }
-      },
-    });
-
-    return false;
-  }
-
   function handleDeleteCall(callId: string) {
     openConfirmDialog({
       title: "Delete this call?",
@@ -408,7 +366,6 @@ function useCalls({
     handleArchiveAll,
     handleArchiveCall,
     handleDeleteCall,
-    handleDeleteNote,
     handleResetCalls,
     handleSelectCall,
     handleUnarchiveAll,

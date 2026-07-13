@@ -29,7 +29,6 @@ const callDetailsProps = {
   onArchiveCall: vi.fn(async () => true),
   onClose: vi.fn(),
   onDeleteCall: vi.fn(() => false),
-  onDeleteNote: vi.fn(() => false),
   onUnarchiveCall: vi.fn(async () => true),
 };
 

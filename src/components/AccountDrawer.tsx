@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TUTORIAL_VERSION } from "../hooks/useTutorial";
 import useBodyScrollLock from "../hooks/useBodyScrollLock";
 import type {
   AuthSession,
@@ -12,6 +13,7 @@ interface AccountDrawerProps {
   activeTutorialTarget: TutorialTargetId | null;
   isOpen: boolean;
   onClose: () => void;
+  onChangePassword: () => void;
   onLogout: () => void | Promise<void>;
   onStartTutorial: (topicId: TutorialTopicId) => void;
   onToggleTheme: () => void;
@@ -34,7 +36,7 @@ const tutorialOptions: Array<{ description: string; label: string; topicId: Tuto
     topicId: "call-feed",
   },
   {
-    description: "Open details, add or delete notes, archive, delete, and item fields.",
+    description: "Open details, notes, archive, delete, and item fields.",
     label: "Call item",
     topicId: "call-item",
   },
@@ -58,7 +60,7 @@ function getTutorialStatus(
   tutorialState: TutorialState | null,
 ): "completed" | "new" | "not-started" {
   if (topicId === "full") {
-    if ((tutorialState?.newTopics.length ?? 0) > 0) {
+    if (tutorialState?.version !== undefined && tutorialState.version !== TUTORIAL_VERSION) {
       return "new";
     }
 
@@ -69,7 +71,7 @@ function getTutorialStatus(
     return isFirstRunTutorialState(tutorialState) ? "new" : "not-started";
   }
 
-  if (tutorialState?.newTopics.includes(topicId)) {
+  if (tutorialState?.version !== undefined && tutorialState.version !== TUTORIAL_VERSION) {
     return "new";
   }
 
@@ -102,7 +104,7 @@ function areAllTutorialCategoriesComplete(tutorialState: TutorialState | null) {
 }
 
 function getTutorialHeaderStatus(tutorialState: TutorialState | null): "completed" | "new" | null {
-  if ((tutorialState?.newTopics.length ?? 0) > 0) {
+  if (tutorialState?.version !== undefined && tutorialState.version !== TUTORIAL_VERSION) {
     return "new";
   }
 
@@ -142,6 +144,7 @@ function AccountDrawer({
   activeTutorialTarget,
   isOpen,
   onClose,
+  onChangePassword,
   onLogout,
   onStartTutorial,
   onToggleTheme,
@@ -290,6 +293,9 @@ function AccountDrawer({
 
         <div className="account-drawer-section">
           <h3>Session</h3>
+          <button className="drawer-password-button" type="button" onClick={onChangePassword}>
+            Change password
+          </button>
           <button className="drawer-logout-button" type="button" onClick={() => onLogout()}>
             Logout
           </button>

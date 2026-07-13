@@ -1,14 +1,7 @@
 import { API_BASE_URL } from "./apiBaseUrl";
 
 export type CallChangeAction =
-  | "archive"
-  | "unarchive"
-  | "delete"
-  | "add_note"
-  | "delete_note"
-  | "archive_all"
-  | "unarchive_all"
-  | "reset";
+  "archive" | "unarchive" | "delete" | "add_note" | "archive_all" | "unarchive_all" | "reset";
 
 export interface CallChangeEvent {
   version: 1;

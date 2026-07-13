@@ -7,7 +7,6 @@ import Modal from "./Modal";
 interface CallDetailsProps {
   call: Call;
   isTutorialActionsActive?: boolean;
-  isTutorialNotesActive?: boolean;
   isTutorialSummaryActive?: boolean;
   onClose: () => void;
   onAddNote: (callId: string, content: string) => Promise<boolean>;
@@ -15,7 +14,6 @@ interface CallDetailsProps {
   onArchiveCall: (callId: string) => Promise<boolean>;
   onUnarchiveCall: (callId: string) => Promise<boolean>;
   onDeleteCall: (callId: string) => boolean;
-  onDeleteNote: (callId: string, noteId: string) => boolean;
 }
 
 type PendingAction = "" | "note" | "archive" | "delete";
@@ -23,7 +21,6 @@ type PendingAction = "" | "note" | "archive" | "delete";
 function CallDetails({
   call,
   isTutorialActionsActive = false,
-  isTutorialNotesActive = false,
   isTutorialSummaryActive = false,
   onClose,
   onAddNote,
@@ -31,7 +28,6 @@ function CallDetails({
   onArchiveCall,
   onUnarchiveCall,
   onDeleteCall,
-  onDeleteNote,
 }: CallDetailsProps) {
   const [noteContent, setNoteContent] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingAction>("");
@@ -138,23 +134,11 @@ function CallDetails({
             <th>
               <strong>Notes:</strong>
             </th>
-            <td data-tutorial-active={isTutorialNotesActive ? "true" : undefined}>
+            <td>
               {call.notes && call.notes.length > 0 ? (
                 <ul className="details-notes">
                   {call.notes.map((note) => (
-                    <li key={note.id}>
-                      <span>{note.content}</span>
-                      <button
-                        className="note-delete-button"
-                        type="button"
-                        title="Delete note"
-                        aria-label="Delete note"
-                        disabled={isBusy}
-                        onClick={() => onDeleteNote(call.id, note.id)}
-                      >
-                        <span aria-hidden="true">🗑</span>
-                      </button>
-                    </li>
+                    <li key={note.id}>{note.content}</li>
                   ))}
                 </ul>
               ) : (

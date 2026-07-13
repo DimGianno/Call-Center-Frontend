@@ -1,15 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  changePassword,
   getCurrentSession,
   isEmailVerificationRequiredError,
   loginUser,
   logoutUser,
   refreshSession,
+  resetPassword,
   signupUser,
 } from "../api/authApi";
-import { AUTH_SESSION_EXPIRED_EVENT, SESSION_DURATION_SECONDS } from "../utils/authStorage";
-import type { AuthSession, LoginCredentials, SignupCredentials } from "../types";
+import {
+  AUTH_SESSION_EXPIRED_EVENT,
+  clearActiveSession,
+  SESSION_DURATION_SECONDS,
+} from "../utils/authStorage";
+import type {
+  AuthSession,
+  ChangePasswordCredentials,
+  LoginCredentials,
+  ResetPasswordCredentials,
+  SignupCredentials,
+} from "../types";
 
 function getRemainingSessionSeconds(session: AuthSession) {
   const expiresAtMs = Date.parse(session.sessionExpiresAt);
@@ -134,6 +146,31 @@ function useAuthSession() {
     [expireFrontendSession],
   );
 
+  const completePasswordUpdate = useCallback(() => {
+    authMutationIdRef.current += 1;
+    clearActiveSession();
+    setSession(null);
+    setRemainingSessionSeconds(0);
+    setAuthNotice("Password updated successfully. Please log in with your new password.");
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
+  const handleResetPassword = useCallback(
+    async (credentials: ResetPasswordCredentials) => {
+      await resetPassword(credentials);
+      completePasswordUpdate();
+    },
+    [completePasswordUpdate],
+  );
+
+  const handleChangePassword = useCallback(
+    async (credentials: ChangePasswordCredentials) => {
+      await changePassword(credentials);
+      completePasswordUpdate();
+    },
+    [completePasswordUpdate],
+  );
+
   useEffect(() => {
     function handleServerExpiredSession() {
       expireFrontendSession();
@@ -181,6 +218,8 @@ function useAuthSession() {
     handleLogin,
     handleSignup,
     handleLogout,
+    handleResetPassword,
+    handleChangePassword,
     handleRefreshSessionTimer,
   };
 }

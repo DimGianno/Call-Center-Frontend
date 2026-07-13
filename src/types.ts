@@ -11,6 +11,16 @@ export interface SignupCredentials extends LoginCredentials {
   name: string;
 }
 
+export interface ResetPasswordCredentials {
+  token: string;
+  password: string;
+}
+
+export interface ChangePasswordCredentials {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -58,7 +68,6 @@ export type TutorialTargetId =
   | "call-card"
   | "call-details"
   | "call-details-summary"
-  | "note-delete-actions"
   | "call-update-actions"
   | "note-field"
   | "filters-button"
@@ -88,7 +97,6 @@ export interface TutorialState {
   completedAt: string | null;
   skippedAt: string | null;
   completedTopics: string[];
-  newTopics: string[];
 }
 
 export type TutorialStateUpdate = Partial<TutorialState>;

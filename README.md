@@ -12,6 +12,11 @@ This README is intentionally detailed. It is meant to help someone open the proj
 moving pieces, and trace how a user action travels through routes, hooks, API modules, utilities,
 and UI components.
 
+## Project Documentation
+
+- [Project updates](PROJECT_UPDATES.md)
+- [Project roadmap](PROJECT_ROADMAP.md)
+
 ---
 
 ## Table Of Contents
@@ -1032,16 +1037,3 @@ Dangerous or wide-impact actions ask for confirmation:
 - Archive all active calls.
 - Unarchive all archived calls.
 - Reset or seed sample data.
-
----
-
-## Future Improvements
-
-The frontend is in a good place, but the next useful improvements would be:
-
-- Add mailbox verification during signup.
-- Add richer user profile settings.
-- Add server-driven sorting/filtering for very large call histories.
-- Add cursor-based pagination when the backend supports it.
-- Add tutorial version migration notes if tutorial content changes often.
-- Add accessibility audits for keyboard-only workflows around the tutorial and datepicker.

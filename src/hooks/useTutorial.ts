@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchTutorialState, updateTutorialState } from "../api/tutorialApi";
 import type { ShowToast, TutorialEventId, TutorialState, TutorialTopicId } from "../types";
 
-export const TUTORIAL_VERSION = 2;
+export const TUTORIAL_VERSION = 1;
 
 type TutorialFlowId = TutorialTopicId;
 type TutorialEventState = Record<TutorialEventId, boolean>;
@@ -20,15 +20,11 @@ const emptyTutorialEvents: TutorialEventState = {
 };
 
 function shouldShowFirstRunWelcome(tutorialState: TutorialState) {
-  return !tutorialState.hasSeenWelcome && !tutorialState.completedAt && !tutorialState.skippedAt;
-}
+  if (tutorialState.version !== TUTORIAL_VERSION) {
+    return true;
+  }
 
-function shouldShowReleaseNotice(tutorialState: TutorialState) {
-  return (
-    !shouldShowFirstRunWelcome(tutorialState) &&
-    tutorialState.version < TUTORIAL_VERSION &&
-    tutorialState.newTopics.length > 0
-  );
+  return !tutorialState.hasSeenWelcome && !tutorialState.completedAt && !tutorialState.skippedAt;
 }
 
 function getCompletedTopics(flowId: TutorialFlowId) {
@@ -54,7 +50,6 @@ function getSaveErrorMessage(error: unknown) {
 function useTutorial({ showToast }: { showToast: ShowToast }) {
   const [tutorialState, setTutorialState] = useState<TutorialState | null>(null);
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
-  const [isReleaseNoticeOpen, setIsReleaseNoticeOpen] = useState(false);
   const [activeFlow, setActiveFlow] = useState<TutorialFlowId | null>(null);
   const [completedEvents, setCompletedEvents] = useState<TutorialEventState>(emptyTutorialEvents);
 
@@ -73,8 +68,6 @@ function useTutorial({ showToast }: { showToast: ShowToast }) {
 
         if (shouldShowFirstRunWelcome(nextTutorialState)) {
           setIsWelcomeOpen(true);
-        } else if (shouldShowReleaseNotice(nextTutorialState)) {
-          setIsReleaseNoticeOpen(true);
         }
       } catch {
         // Tutorial preferences should never block the dashboard itself.
@@ -102,14 +95,12 @@ function useTutorial({ showToast }: { showToast: ShowToast }) {
 
   const startTutorial = useCallback((flowId: TutorialFlowId = "full") => {
     setIsWelcomeOpen(false);
-    setIsReleaseNoticeOpen(false);
     setActiveFlow(flowId);
     setCompletedEvents(emptyTutorialEvents);
   }, []);
 
   const closeTutorial = useCallback(() => {
     setIsWelcomeOpen(false);
-    setIsReleaseNoticeOpen(false);
     setActiveFlow(null);
     setCompletedEvents(emptyTutorialEvents);
   }, []);
@@ -134,10 +125,6 @@ function useTutorial({ showToast }: { showToast: ShowToast }) {
       tutorialState?.completedTopics ?? [],
       getCompletedTopics(activeFlow),
     );
-    const nextNewTopics =
-      activeFlow === "full"
-        ? []
-        : (tutorialState?.newTopics ?? []).filter((topic) => topic !== activeFlow);
 
     closeTutorial();
 
@@ -147,19 +134,8 @@ function useTutorial({ showToast }: { showToast: ShowToast }) {
       completedAt: activeFlow === "full" ? getNowIsoString() : (tutorialState?.completedAt ?? null),
       skippedAt: tutorialState?.skippedAt ?? null,
       completedTopics: nextCompletedTopics,
-      newTopics: nextNewTopics,
     });
   }, [activeFlow, closeTutorial, saveTutorialState, tutorialState]);
-
-  const dismissReleaseNotice = useCallback(async () => {
-    setIsReleaseNoticeOpen(false);
-    await saveTutorialState({ version: TUTORIAL_VERSION });
-  }, [saveTutorialState]);
-
-  const startReleaseTutorial = useCallback(() => {
-    startTutorial("call-item");
-    void saveTutorialState({ version: TUTORIAL_VERSION });
-  }, [saveTutorialState, startTutorial]);
 
   const recordTutorialEvent = useCallback((eventId: TutorialEventId) => {
     setCompletedEvents((currentEvents) => {
@@ -178,15 +154,12 @@ function useTutorial({ showToast }: { showToast: ShowToast }) {
     activeFlow,
     completedEvents,
     isTutorialActive: activeFlow !== null,
-    isReleaseNoticeOpen,
     isWelcomeOpen,
     tutorialState,
     closeTutorial,
     completeTutorial,
-    dismissReleaseNotice,
     recordTutorialEvent,
     skipTutorial,
-    startReleaseTutorial,
     startTutorial,
   };
 }
