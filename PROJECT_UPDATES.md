@@ -28,7 +28,7 @@ Call Center Dashboard is a React and TypeScript frontend for authenticated users
 
 - **Type:** Feature
 - **Status:** In progress
-- **Summary:** Implemented individual note deletion and a second tutorial version on `feature/delete-call-notes-tutorial-v2`; integration with the latest `main` remains pending.
+- **Summary:** Implemented individual note deletion and a second tutorial version on `feature/delete-call-notes-tutorial-v2`; the branch now includes the latest `main`, and merge into `main` remains pending.
 - **User impact:** Users can confirm and delete individual notes while keeping call details open, and returning users can receive updated tutorial content.
 - **Technical impact:** Added note deletion API handling, optimistic state updates, failure recovery, realtime `delete_note` handling, tutorial versioning changes, responsive coverage, and integration tests.
 - **Related area:** Frontend

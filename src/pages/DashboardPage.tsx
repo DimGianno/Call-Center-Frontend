@@ -14,7 +14,11 @@ import ChangePasswordDialog from "../components/ChangePasswordDialog";
 import EmailVerificationBanner from "../components/EmailVerificationBanner";
 import StatsCards from "../components/StatsCards";
 import Toast from "../components/Toast";
-import { TutorialOverlay, TutorialWelcomeDialog } from "../components/TutorialOverlay";
+import {
+  TutorialOverlay,
+  TutorialReleaseDialog,
+  TutorialWelcomeDialog,
+} from "../components/TutorialOverlay";
 import useCalls from "../hooks/useCalls";
 import useConfirmDialog from "../hooks/useConfirmDialog";
 import useTutorial from "../hooks/useTutorial";
@@ -210,8 +214,10 @@ function DashboardPage({
           onArchiveCall={calls.handleArchiveCall}
           onClose={calls.clearSelectedCall}
           onDeleteCall={calls.handleDeleteCall}
+          onDeleteNote={calls.handleDeleteNote}
           isTutorialActionsActive={activeTutorialTarget === "call-update-actions"}
           isTutorialSummaryActive={activeTutorialTarget === "call-details-summary"}
+          isTutorialNotesActive={activeTutorialTarget === "note-delete-actions"}
           onTutorialNoteTyped={() => recordTutorialEvent("note-typed")}
           onUnarchiveCall={calls.handleUnarchiveCall}
         />
@@ -237,6 +243,13 @@ function DashboardPage({
         <TutorialWelcomeDialog
           onStart={() => tutorial.startTutorial("full")}
           onSkip={tutorial.skipTutorial}
+        />
+      )}
+
+      {tutorial.isReleaseNoticeOpen && (
+        <TutorialReleaseDialog
+          onDismiss={tutorial.dismissReleaseNotice}
+          onStart={tutorial.startReleaseTutorial}
         />
       )}
 

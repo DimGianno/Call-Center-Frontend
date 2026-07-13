@@ -25,7 +25,10 @@ function captureUnexpectedConsoleErrors(page: Page) {
   return errors;
 }
 
-async function loadDashboard(page: Page, options: { showWelcome?: boolean } = {}) {
+async function loadDashboard(
+  page: Page,
+  options: { showRelease?: boolean; showWelcome?: boolean } = {},
+) {
   await mockDashboardApi(page, options);
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Call Center Dashboard" })).toBeVisible();
@@ -175,6 +178,22 @@ test("important overlays remain usable on an iPhone SE viewport", async ({ page 
   await expect(longNote).toBeInViewport();
   await expectNoHorizontalOverflow(page);
   await expectScrollableContentReachable(callDetails);
+  const noteRows = callDetails.locator(".details-notes li");
+  await expect(noteRows).toHaveCount(2);
+  await expect(noteRows.first()).toHaveCSS("border-bottom-style", "solid");
+  await expect(noteRows.last()).toHaveCSS("border-bottom-style", "none");
+  const firstDeleteNoteButton = callDetails.getByRole("button", { name: "Delete note" }).first();
+  await expect(firstDeleteNoteButton.locator(".note-delete-icon")).toHaveCSS("width", "22px");
+  await firstDeleteNoteButton.scrollIntoViewIfNeeded();
+  await expectWithinViewport(page, firstDeleteNoteButton);
+  await firstDeleteNoteButton.click();
+  const deleteNoteDialog = page.getByRole("dialog", { name: "Delete this note?" });
+  await expectWithinViewport(page, deleteNoteDialog);
+  await deleteNoteDialog.getByRole("button", { name: "Delete note" }).click();
+  await expect(page.getByText(longUnbrokenText, { exact: true })).not.toBeAttached();
+  await expectBodyScrollLocked(page, true);
+  await expectNoHorizontalOverflow(page);
+
   const deleteButton = page.getByRole("button", { name: "Delete call" });
   await deleteButton.scrollIntoViewIfNeeded();
   await expectWithinViewport(page, deleteButton);
@@ -244,5 +263,23 @@ test("the tutorial panel remains usable on a Pixel 7 viewport", async ({ page })
   await expectBodyScrollLocked(page, false);
   await expectNoHorizontalOverflow(page);
   await tutorialPanel.getByRole("button", { name: "Skip" }).click();
+  await expectNoConsoleErrors(page, consoleErrors);
+});
+
+test("version 2 announcement keeps only Call item marked as new", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const consoleErrors = captureUnexpectedConsoleErrors(page);
+  await loadDashboard(page, { showRelease: true });
+
+  const releaseDialog = page.getByRole("dialog", { name: "Delete individual call notes" });
+  await expectWithinViewport(page, releaseDialog);
+  await releaseDialog.getByRole("button", { name: "Not now" }).click();
+
+  await page.getByRole("button", { name: "Open account settings" }).click();
+  await page.getByRole("button", { name: "Tutorials New" }).click();
+  await expect(page.getByRole("button", { name: "Full tutorial New" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Call item New" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "UI Not started" })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
   await expectNoConsoleErrors(page, consoleErrors);
 });
