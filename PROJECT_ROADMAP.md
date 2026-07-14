@@ -4,19 +4,19 @@
 
 - **Project maturity:** Production-ready
 - **Actively developed:** Yes
-- **Last reviewed:** 2026-07-14
-
-## Active Work
-
-### Complete account-aware forgot-password feedback
-
-- **Priority:** High
-- **Status:** In progress
-- **Progress:** The recovery form now displays the backend's unknown-account error and withholds the login link until a request succeeds.
-- **Remaining work:** Commit, merge, and deploy the frontend together with the coordinated backend response change.
-- **Dependency:** The backend must return the documented `404` response for an unregistered email address.
+- **Last reviewed:** 2026-07-15
 
 ## Known Limitations
+
+### Forgot-password feedback reveals registered accounts
+
+- **Area:** Security
+- **Severity:** Medium
+- **User impact:** Anyone can distinguish registered from unregistered email addresses through the recovery form.
+- **Technical impact:** The frontend displays the backend's explicit `404` response for unknown accounts to provide actionable feedback.
+- **Current workaround:** The backend avoids generating reset tokens or sending email for unknown accounts and applies a resend cooldown to known accounts.
+- **Suggested resolution:** Reassess generic responses if account privacy becomes the priority, or add backend abuse controls such as route-sensitive rate limiting.
+- **Status:** Known
 
 ### Large call histories are loaded into browser memory
 
