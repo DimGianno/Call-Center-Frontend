@@ -27,8 +27,8 @@ Call Center Dashboard is a React and TypeScript frontend for authenticated users
 ### 2026-07-13 — Individual note deletion and tutorial v2
 
 - **Type:** Feature
-- **Status:** In progress
-- **Summary:** Implemented individual note deletion and a second tutorial version on `feature/delete-call-notes-tutorial-v2`; the branch now includes the latest `main`, and merge into `main` remains pending.
+- **Status:** Completed
+- **Summary:** Added individual note deletion and tutorial version 2 to `main`.
 - **User impact:** Users can confirm and delete individual notes while keeping call details open, and returning users can receive updated tutorial content.
 - **Technical impact:** Added note deletion API handling, optimistic state updates, failure recovery, realtime `delete_note` handling, tutorial versioning changes, responsive coverage, and integration tests.
 - **Related area:** Frontend
@@ -79,7 +79,7 @@ Call Center Dashboard is a React and TypeScript frontend for authenticated users
 - Search phone numbers and filter calls by type, direction, date range, and duration.
 - Sort, group, and paginate call records with configurable page sizes.
 - Archive, unarchive, bulk-move, reset, seed, and delete calls.
-- Add notes to individual calls.
+- Add and delete individual notes on calls.
 - Apply optimistic updates with rollback and toast feedback for failed call mutations.
 - Refresh same-account call data through authenticated Server-Sent Events.
 - Persist guided tutorial progress per user and highlight real interface controls.
