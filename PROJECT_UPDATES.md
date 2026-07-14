@@ -15,6 +15,15 @@ Call Center Dashboard is a React and TypeScript frontend for authenticated users
 
 ## Latest Updates
 
+### 2026-07-14 — Forgot-password error and completion states
+
+- **Type:** Fix
+- **Status:** In progress
+- **Summary:** Implemented account-aware forgot-password feedback on `fix/forgot-password-email-validation`; the change is pending commit and merge.
+- **User impact:** Unknown emails keep users on the recovery form with a clear error, while the “Back to login” link appears only after a successful reset request.
+- **Technical impact:** Updated forgot-password success rendering and added integration coverage for both successful and unknown-account requests.
+- **Related area:** Authentication
+
 ### 2026-07-13 — Password recovery and password-change flows
 
 - **Type:** Feature

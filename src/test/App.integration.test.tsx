@@ -618,7 +618,7 @@ describe("App auth gate", () => {
     expect(screen.getByRole("link", { name: "Go to login" })).toHaveAttribute("href", "/login");
   });
 
-  it("requests a password reset from the login page without revealing account existence", async () => {
+  it("requests a password reset and shows the login link after success", async () => {
     renderApp("/login");
 
     await userEvent.click(await screen.findByRole("link", { name: "Forgot password?" }));
@@ -629,8 +629,26 @@ describe("App auth gate", () => {
     await userEvent.click(screen.getByRole("button", { name: "Send reset link" }));
 
     expect(requestPasswordResetMock).toHaveBeenCalledWith("recovery@example.com");
-    expect(await screen.findByText(/If an account exists for this email/i)).toBeInTheDocument();
+    expect(await screen.findByText(/A password reset link has been sent/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to login" })).toHaveAttribute("href", "/login");
+  });
+
+  it("keeps the forgot-password task active when the account does not exist", async () => {
+    requestPasswordResetMock.mockRejectedValueOnce(
+      new Error("No account found with this email address."),
+    );
+    renderApp("/forgot-password");
+
+    expect(screen.queryByRole("link", { name: "Back to login" })).not.toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Email"), "unknown@example.com");
+    await userEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+
+    expect(
+      await screen.findByText("No account found with this email address."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send reset link" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Back to login" })).not.toBeInTheDocument();
   });
 
   it("handles missing and invalid password reset links", async () => {

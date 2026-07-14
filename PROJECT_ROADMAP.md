@@ -6,6 +6,16 @@
 - **Actively developed:** Yes
 - **Last reviewed:** 2026-07-14
 
+## Active Work
+
+### Complete account-aware forgot-password feedback
+
+- **Priority:** High
+- **Status:** In progress
+- **Progress:** The recovery form now displays the backend's unknown-account error and withholds the login link until a request succeeds.
+- **Remaining work:** Commit, merge, and deploy the frontend together with the coordinated backend response change.
+- **Dependency:** The backend must return the documented `404` response for an unregistered email address.
+
 ## Known Limitations
 
 ### Large call histories are loaded into browser memory
