@@ -71,7 +71,7 @@ function ForgotPasswordPage({ onToggleTheme, theme }: ForgotPasswordPageProps) {
 
         {isSubmitted ? (
           <div className="auth-message" role="status">
-            If an account exists for this email, a password reset link will be sent shortly.
+            A password reset link has been sent to your email address.
           </div>
         ) : (
           <>
@@ -124,9 +124,11 @@ function ForgotPasswordPage({ onToggleTheme, theme }: ForgotPasswordPageProps) {
           </>
         )}
 
-        <Link className="auth-secondary-link" to="/login">
-          Back to login
-        </Link>
+        {isSubmitted && (
+          <Link className="auth-secondary-link" to="/login">
+            Back to login
+          </Link>
+        )}
       </section>
     </main>
   );
