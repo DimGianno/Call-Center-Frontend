@@ -59,6 +59,10 @@ and UI components.
 | Prettier 3            | Formatting.                                                                |
 | react-datepicker 9    | Inline date-range calendar in the filter modal.                            |
 
+Dependency maintenance was last refreshed on 2026-07-22. The frontend keeps Node types aligned with
+the Node.js 24 runtime, uses `@typescript/native` for the TypeScript 7 compiler, and keeps
+`typescript` as the TypeScript 6 compatibility API package for tooling that still expects it.
+
 There are no global state libraries, CSS frameworks, or icon packages. State is kept local with
 React hooks, shared behavior is extracted into custom hooks, and all styling is plain CSS split by
 purpose under `src/styles/`.
@@ -999,6 +1003,8 @@ vite build
 ```
 
 That gives coverage for formatting, types, lint rules, behavior, and production build validity.
+The 2026-07-22 tooling refresh kept the npm audit report clean while preserving the existing runtime
+behavior and TypeScript side-by-side setup.
 
 ---
 

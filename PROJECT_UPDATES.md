@@ -2,7 +2,7 @@
 
 ## Latest Stable State
 
-- **Last updated:** 2026-07-15
+- **Last updated:** 2026-07-22
 - **Current version:** Not versioned
 - **Current status:** Active
 - **Primary branch:** `main`
@@ -14,6 +14,15 @@
 Call Center Dashboard is a React and TypeScript frontend for authenticated users to review and manage call-center records from a responsive web interface. It combines cookie-based sessions, call search and filtering, optimistic mutations, realtime account-scoped refreshes, email verification, password recovery, and a guided onboarding flow. The application is tested with Vitest, React Testing Library, and Playwright, built with Vite, and deployed through Vercel with a same-origin backend proxy.
 
 ## Latest Updates
+
+### 2026-07-22 - Frontend tooling refresh
+
+- **Type:** Maintenance
+- **Status:** Completed
+- **Summary:** Updated safe same-major frontend build and lint tooling on `main`.
+- **User impact:** No behavior changes; the dashboard keeps the same auth, call-management, realtime, tutorial, and deployment behavior.
+- **Technical impact:** Updated Vite, ESLint, Prettier, and TypeScript ESLint packages, with npm audit remaining clean. Node types remain aligned with the Node 24 runtime, and the TypeScript 7 compiler plus TypeScript 6 compatibility API setup remains unchanged.
+- **Related area:** Maintenance
 
 ### 2026-07-14 — Forgot-password error and completion states
 
